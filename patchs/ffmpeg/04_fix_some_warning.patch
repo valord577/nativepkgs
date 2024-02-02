@@ -1,0 +1,40 @@
+diff --git a/libavcodec/arm/vp8.h b/libavcodec/arm/vp8.h
+index 7c59a7d63d..6f128ffebe 100644
+--- a/libavcodec/arm/vp8.h
++++ b/libavcodec/arm/vp8.h
+@@ -29,7 +29,8 @@
+ #define vp8_decode_block_coeffs_internal ff_decode_block_coeffs_armv6
+ int ff_decode_block_coeffs_armv6(VPXRangeCoder *rc, int16_t block[16],
+                                  uint8_t probs[8][3][NUM_DCT_TOKENS-1],
+-                                 int i, uint8_t *token_prob, int16_t qmul[2]);
++                                 int i, const uint8_t *token_prob,
++                                 const int16_t qmul[2]);
+ #endif
+ 
+ #endif /* AVCODEC_ARM_VP8_H */
+diff --git a/libavcodec/audiotoolboxdec.c b/libavcodec/audiotoolboxdec.c
+index 5456f916cf..156cd488e3 100644
+--- a/libavcodec/audiotoolboxdec.c
++++ b/libavcodec/audiotoolboxdec.c
+@@ -35,7 +35,7 @@
+ #include "libavutil/opt.h"
+ #include "libavutil/log.h"
+ 
+-#if __MAC_OS_X_VERSION_MIN_REQUIRED < 101100
++#if MAC_OS_X_VERSION_MIN_REQUIRED < 101100
+ #define kAudioFormatEnhancedAC3 'ec-3'
+ #endif
+ 
+diff --git a/libavcodec/pcm-dvdenc.c b/libavcodec/pcm-dvdenc.c
+index a2e5cbdc2e..d9daa671a5 100644
+--- a/libavcodec/pcm-dvdenc.c
++++ b/libavcodec/pcm-dvdenc.c
+@@ -35,7 +35,7 @@ typedef struct PCMDVDContext {
+ static av_cold int pcm_dvd_encode_init(AVCodecContext *avctx)
+ {
+     PCMDVDContext *s = avctx->priv_data;
+-    int quant, freq, frame_size;
++    int quant = 0, freq, frame_size;
+ 
+     switch (avctx->sample_rate) {
+     case 48000:

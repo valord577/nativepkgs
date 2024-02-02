@@ -1,0 +1,68 @@
+diff --git a/libavcodec/videotoolbox.c b/libavcodec/videotoolbox.c
+index f2269766a2..aa53faf724 100644
+--- a/libavcodec/videotoolbox.c
++++ b/libavcodec/videotoolbox.c
+@@ -915,7 +915,7 @@ static int videotoolbox_start(AVCodecContext *avctx)
+         break;
+     }
+
+-#if defined(MAC_OS_X_VERSION_10_9) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9) && AV_HAS_BUILTIN(__builtin_available)
++#if AV_HAS_BUILTIN(__builtin_available) && TARGET_OS_OSX
+     if (avctx->codec_id == AV_CODEC_ID_PRORES) {
+         if (__builtin_available(macOS 10.9, *)) {
+             VTRegisterProfessionalVideoWorkflowVideoDecoders();
+@@ -923,7 +923,7 @@ static int videotoolbox_start(AVCodecContext *avctx)
+     }
+ #endif
+
+-#if defined(MAC_OS_VERSION_11_0) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_VERSION_11_0) && AV_HAS_BUILTIN(__builtin_available)
++#if AV_HAS_BUILTIN(__builtin_available) && TARGET_OS_OSX
+     if (__builtin_available(macOS 11.0, *)) {
+         VTRegisterSupplementalVideoDecoderIfAvailable(videotoolbox->cm_codec_type);
+     }
+diff --git a/libavcodec/videotoolboxenc.c b/libavcodec/videotoolboxenc.c
+index a7efd7ef3f..3e0edfa894 100644
+--- a/libavcodec/videotoolboxenc.c
++++ b/libavcodec/videotoolboxenc.c
+@@ -1197,8 +1197,8 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
+         return AVERROR_EXTERNAL;
+     }
+
+-#if defined (MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
+-    if (__builtin_available(macOS 10.13, *)) {
++#if AV_HAS_BUILTIN(__builtin_available) && (TARGET_OS_OSX || TARGET_OS_IOS || TARGET_OS_TV)
++    if (__builtin_available(macOS 10.15, iOS 11, tvOS 11, *)) {
+         status = VTCopySupportedPropertyDictionaryForEncoder(avctx->width,
+                                                              avctx->height,
+                                                              codec_type,
+@@ -1614,7 +1614,7 @@ static int vtenc_configure_encoder(AVCodecContext *avctx)
+         return AVERROR(EINVAL);
+     }
+
+-#if defined(MAC_OS_X_VERSION_10_9) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
++#if AV_HAS_BUILTIN(__builtin_available) && TARGET_OS_OSX
+     if (avctx->codec_id == AV_CODEC_ID_PRORES) {
+         if (__builtin_available(macOS 10.10, *)) {
+             VTRegisterProfessionalVideoWorkflowVideoEncoders();
+diff --git a/libavfilter/metal/utils.m b/libavfilter/metal/utils.m
+index f365d3ceea..1cc637fec2 100644
+--- a/libavfilter/metal/utils.m
++++ b/libavfilter/metal/utils.m
+@@ -29,16 +29,13 @@ void ff_metal_compute_encoder_dispatch(id<MTLDevice> device,
+     NSUInteger h = pipeline.maxTotalThreadsPerThreadgroup / w;
+     MTLSize threadsPerThreadgroup = MTLSizeMake(w, h, 1);
+     BOOL fallback = YES;
+-    // MAC_OS_X_VERSION_10_15 is only defined on SDKs new enough to include its functionality (including iOS, tvOS, etc)
+-#ifdef MAC_OS_X_VERSION_10_15
+-    if (@available(macOS 10.15, iOS 11, tvOS 14.5, *)) {
++    if (@available(macOS 10.15, iOS 13, *)) {
+         if ([device supportsFamily:MTLGPUFamilyCommon3]) {
+             MTLSize threadsPerGrid = MTLSizeMake(width, height, 1);
+             [encoder dispatchThreads:threadsPerGrid threadsPerThreadgroup:threadsPerThreadgroup];
+             fallback = NO;
+         }
+     }
+-#endif
+     if (fallback) {
+         MTLSize threadgroups = MTLSizeMake((width + w - 1) / w,
+                                            (height + h - 1) / h,
