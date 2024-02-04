@@ -8,6 +8,8 @@ TARGET_DEPLOYMENT="10"
 if [ "${TARGET_PLATFORM}" == "macosx" ]; then
   TARGET_DEPLOYMENT="10.15"
 fi
+
+export PARALLEL_JOBS="$(sysctl -n hw.ncpu)"
 # ----------------------------
 # cmake
 # ----------------------------

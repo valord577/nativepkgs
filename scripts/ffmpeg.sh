@@ -101,7 +101,7 @@ popd
 
 # build & install
 pushd -- "${PKG_BULD_DIR}"
-MAKE_COMMAND="make -j $(sysctl -n hw.ncpu)"
+MAKE_COMMAND="make -j ${PARALLEL_JOBS}"
 if command -v bear >/dev/null 2>&1 ; then
   MAKE_COMMAND="bear -- ${MAKE_COMMAND}"
 fi

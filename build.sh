@@ -38,16 +38,6 @@ if [ "${UNSUPPORTED_ERR}" == "1" ]; then
   exit 1
 fi
 
-(
-  for SUBPROJ in $(ls -- "${PROJ_ROOT}/patchs"); do
-    pushd -- "${PROJ_ROOT}/${SUBPROJ}"
-    for patch in $(ls -- "${PROJ_ROOT}/patchs/${SUBPROJ}"); do
-      git apply "${PROJ_ROOT}/patchs/${SUBPROJ}/${patch}"
-    done
-    popd
-  done
-)
-
 function compile() {
   (
     export PROJ_ROOT="${PROJ_ROOT}"
@@ -62,7 +52,22 @@ function compile() {
     export PKG_BULD_DIR="${PROJ_ROOT}/tmp/${SUBPROJ}/${PKG_PLATFORM}/${PKG_ARCH}"
     export PKG_INST_DIR="${PROJ_ROOT}/out/${SUBPROJ}/${PKG_PLATFORM}/${PKG_ARCH}"
 
-    sh "${PROJ_ROOT}/scripts/${SUBPROJ}.sh"
+    if [ ! -e "${SUBPROJ_SRC}/.git" ]; then
+      pushd -- "${PROJ_ROOT}"
+      git submodule init -- "deps/${SUBPROJ}"
+      git submodule update -- "deps/${SUBPROJ}"
+      popd
+    fi
+    if [ -e "${PROJ_ROOT}/patchs/${SUBPROJ}" ]; then
+      pushd -- "${SUBPROJ_SRC}"
+      for patch in $(ls -- "${PROJ_ROOT}/patchs/${SUBPROJ}"); do
+        git reset --hard HEAD
+        git apply "${PROJ_ROOT}/patchs/${SUBPROJ}/${patch}"
+      done
+      popd
+    fi
+
+    bash "${PROJ_ROOT}/scripts/${SUBPROJ}.sh"
   )
 }
 

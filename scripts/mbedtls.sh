@@ -59,25 +59,18 @@ cmake -S "${SUBPROJ_SRC}" -B "${PKG_BULD_DIR}" \
   -D ENABLE_PROGRAMS:BOOL=0 -D ENABLE_TESTING:BOOL=0
 EOF
 )
-printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}"
-eval ${CMAKE_COMMAND}
+printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}" && eval ${CMAKE_COMMAND}
 
 # build & install
-cmake --build "${PKG_BULD_DIR}" -j $(sysctl -n hw.ncpu)
+cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS}
 cmake --install "${PKG_BULD_DIR}" ${PKG_INSTALL_STRIP}
 
+PKG_VERSION="unknown"
 if command -v git >/dev/null 2>&1 ; then
   pushd -- "${SUBPROJ_SRC}"
   PKG_VERSION="$(git describe --tags --always --dirty --abbrev=${GIT_ABBREV:-"7"})"
   popd
-else
-  pushd -- "${SUBPROJ_SRC}"
-  PKG_VERSION="$(grep -Inr '^#define MBEDTLS_VERSION_STRING\s\{1,\}"' ./include | grep -o '"\d\{1,\}\.\d\{1,\}\.\d\{1,\}"')"
-  PKG_VERSION="${PKG_VERSION:1:-1}"
-  popd
 fi
-if [ -z "${PKG_VERSION}" ]; then { PKG_VERSION="unknown"; } fi
-
 PKG_CONFIG_FILE="${PKG_INST_DIR}/lib/pkgconfig/mbedtls.pc"
 
 mkdir -p -- "$(dirname ${PKG_CONFIG_FILE})"
