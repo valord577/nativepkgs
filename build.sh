@@ -60,8 +60,9 @@ function compile() {
     fi
     if [ -e "${PROJ_ROOT}/patchs/${SUBPROJ}" ]; then
       pushd -- "${SUBPROJ_SRC}"
+      git reset --hard HEAD
+
       for patch in $(ls -- "${PROJ_ROOT}/patchs/${SUBPROJ}"); do
-        git reset --hard HEAD
         git apply "${PROJ_ROOT}/patchs/${SUBPROJ}/${patch}"
       done
       popd
