@@ -4,12 +4,18 @@ set -e
 # ----------------------------
 # static or shared
 # ----------------------------
-PKG_TYPE=${PKG_TYPE:-"static"}
-if [ "${PKG_TYPE}" == "static" ]; then
-  PKG_TYPE_FLAG=""
-else
-  PKG_TYPE_FLAG="--disable-static --enable-shared"
-fi
+case ${PKG_TYPE} in
+  "static")
+    PKG_TYPE_FLAG=""
+    ;;
+  "shared")
+    PKG_TYPE_FLAG="--disable-static --enable-shared"
+    ;;
+  ?)
+    printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TYPE: '${PKG_TYPE}'."
+    exit 1
+    ;;
+esac
 # ----------------------------
 # optimize
 #  - 0 DEBUG
@@ -95,8 +101,7 @@ ${SUBPROJ_SRC}/configure    \
   ${FF_CONFIGURE_EXTRA}
 EOF
 )
-printf "\e[1m\e[36m%s\e[0m\n" "${CONFIGURE_COMMAND}"
-eval ${CONFIGURE_COMMAND}
+printf "\e[1m\e[36m%s\e[0m\n" "${CONFIGURE_COMMAND}" && eval ${CONFIGURE_COMMAND}
 popd
 
 # build & install

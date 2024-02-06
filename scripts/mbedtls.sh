@@ -24,12 +24,18 @@ python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_SSL_RENEGOTIATION
 # ----------------------------
 # static or shared
 # ----------------------------
-PKG_TYPE=${PKG_TYPE:-"static"}
-if [ "${PKG_TYPE}" == "static" ]; then
-  PKG_TYPE_FLAG="-D USE_STATIC_MBEDTLS_LIBRARY:BOOL=1 -D USE_SHARED_MBEDTLS_LIBRARY:BOOL=0"
-else
-  PKG_TYPE_FLAG="-D USE_STATIC_MBEDTLS_LIBRARY:BOOL=0 -D USE_SHARED_MBEDTLS_LIBRARY:BOOL=1"
-fi
+case ${PKG_TYPE} in
+  "static")
+    PKG_TYPE_FLAG="-D USE_STATIC_MBEDTLS_LIBRARY:BOOL=1 -D USE_SHARED_MBEDTLS_LIBRARY:BOOL=0"
+    ;;
+  "shared")
+    PKG_TYPE_FLAG="-D USE_STATIC_MBEDTLS_LIBRARY:BOOL=0 -D USE_SHARED_MBEDTLS_LIBRARY:BOOL=1"
+    ;;
+  ?)
+    printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TYPE: '${PKG_TYPE}'."
+    exit 1
+    ;;
+esac
 # ----------------------------
 # optimize
 #  - 0 DEBUG
