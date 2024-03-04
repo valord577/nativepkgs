@@ -30,18 +30,36 @@ jobs:
       version: ${{ steps.version.outputs._PKG_VERSION }}
     env:
       _REPO_THIS: "_repo_this"
-      INST_DIR: "${{ github.workspace }}/${{ github.workflow }}"
       _SETP_CAN_RUN: ${{ (! inputs.disable_shared && matrix.pkg_type == 'shared') || (! inputs.disable_static && matrix.pkg_type == 'static') }}
+      INST_DIR: "${{ github.workspace }}/${{ github.workflow }}"
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_GHA_KEY: ${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
+      CCACHE_GHA_KEY_RESTORE: ${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
     steps:
       - name: checkout this repo
         uses: actions/checkout@v4
         with:
           path: ${{ env._REPO_THIS }}
+      - name: install required software(s)
+        run: |
+          brew install ccache
+      - name: gh action ccache restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.CCACHE_GHA_KEY }}
+          restore-keys: |
+            ${{ env.CCACHE_GHA_KEY_RESTORE }}
       - name: buildx library - ${{ github.workflow }}
         if: ${{ env._SETP_CAN_RUN == 'true' }}
         run: |
           source ${{ env._REPO_THIS }}/build-${{ matrix.platform }}-${{ matrix.arch }}.sh
           compile ${{ github.workflow }} ${{ matrix.pkg_type }} ${{ matrix.platform }} ${{ matrix.arch }}
+      - name: gh action ccache save
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.CCACHE_GHA_KEY }}
       - name: set required env `_PKG_VERSION`
         id: version
         if: ${{ env._SETP_CAN_RUN == 'true' }}
@@ -67,6 +85,10 @@ jobs:
           echo -e "${PWD}"
           echo -e "\n"
           ls -Alh -- .
+          echo -e "\n"
+          ccache -s
+          echo -e "\n"
+          ccache -p
       - name: upload library - ${{ github.workflow }}
         if: ${{ env._SETP_CAN_RUN == 'true' }}
         uses: actions/upload-artifact@v4
