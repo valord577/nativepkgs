@@ -1,6 +1,6 @@
-[submodule "ffmpeg"]
-	path = ffmpeg
+[submodule "deps/ffmpeg"]
+	path = deps/ffmpeg
 	url = https://git.ffmpeg.org/ffmpeg.git
-[submodule "mbedtls"]
-	path = mbedtls
+[submodule "deps/mbedtls"]
+	path = deps/mbedtls
 	url = https://github.com/Mbed-TLS/mbedtls.git

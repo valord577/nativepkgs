@@ -4,7 +4,7 @@ set -e
 PROJ_ROOT=$(cd "$(dirname ${BASH_SOURCE[0]})"; pwd)
 
 basename="${BASH_SOURCE[0]##*/}"
-triplet="${basename%\.sh}"
+triplet="${basename%%\.*}"
 triplet_values=(${triplet//-/ })
 triplet_length=${#triplet_values[@]}
 if [ $triplet_length -eq 3 ]; then
@@ -18,7 +18,6 @@ fi
 SUPPORTED_TARGET=$(cat <<- 'EOF'
 macosx/x86_64
 macosx/arm64
-iphoneos/armv7
 iphoneos/arm64
 iphonesimulator/x86_64
 iphonesimulator/arm64
@@ -29,7 +28,14 @@ UNSUPPORTED_ERR="1"
 for t in ${SUPPORTED_TARGET[@]}; do
   if [ "${t}" == "${TARGET_PLATFORM}/${TARGET_ARCH}" ]; then
     UNSUPPORTED_ERR="0"
-    source "${PROJ_ROOT}/env-apple.sh" ${TARGET_PLATFORM} ${TARGET_ARCH}
+
+    case ${TARGET_PLATFORM} in
+      "macosx" | "iphoneos" | "iphonesimulator")
+        source "${PROJ_ROOT}/env-apple.sh" ${TARGET_PLATFORM} ${TARGET_ARCH}
+        ;;
+      ?)
+        ;;
+    esac
   fi
 done
 
@@ -42,33 +48,35 @@ function compile() {
   (
     export PROJ_ROOT="${PROJ_ROOT}"
 
-    export SUBPROJ="${1}"
-    export SUBPROJ_SRC="${PROJ_ROOT}/${SUBPROJ}"
+    export PKG_NAME="${1}"
+    export SUBPROJ_SRC="${PROJ_ROOT}/deps/${PKG_NAME}"
 
     export PKG_TYPE="${2}"
     export PKG_PLATFORM="${3}"
     export PKG_ARCH="${4}"
 
-    export PKG_BULD_DIR="${PROJ_ROOT}/tmp/${SUBPROJ}/${PKG_PLATFORM}/${PKG_ARCH}"
-    export PKG_INST_DIR="${PROJ_ROOT}/out/${SUBPROJ}/${PKG_PLATFORM}/${PKG_ARCH}"
+    export PKG_BULD_DIR=${BULD_DIR:-"${PROJ_ROOT}/tmp/${PKG_NAME}/${PKG_PLATFORM}/${PKG_ARCH}"}
+    export PKG_INST_DIR=${INST_DIR:-"${PROJ_ROOT}/out/${PKG_NAME}/${PKG_PLATFORM}/${PKG_ARCH}"}
 
     if [ ! -e "${SUBPROJ_SRC}/.git" ]; then
       pushd -- "${PROJ_ROOT}"
-      git submodule init -- "deps/${SUBPROJ}"
-      git submodule update -- "deps/${SUBPROJ}"
+      git submodule update --init --depth 1 -- "deps/${PKG_NAME}"
       popd
     fi
-    if [ -e "${PROJ_ROOT}/patchs/${SUBPROJ}" ]; then
+    pushd -- "${SUBPROJ_SRC}"
+    export PKG_VERSION="$(git describe --tags --always --dirty --abbrev=${GIT_ABBREV:-"7"})"
+    popd
+
+    if [ -e "${PROJ_ROOT}/patchs/${PKG_NAME}" ]; then
       pushd -- "${SUBPROJ_SRC}"
       git reset --hard HEAD
 
-      for patch in $(ls -- "${PROJ_ROOT}/patchs/${SUBPROJ}"); do
-        git apply "${PROJ_ROOT}/patchs/${SUBPROJ}/${patch}"
+      for patch in $(ls -- "${PROJ_ROOT}/patchs/${PKG_NAME}"); do
+        git apply "${PROJ_ROOT}/patchs/${PKG_NAME}/${patch}"
       done
       popd
     fi
-
-    bash "${PROJ_ROOT}/scripts/${SUBPROJ}.sh"
+    bash "${PROJ_ROOT}/scripts/${PKG_NAME}.sh"
   )
 }
 
@@ -79,5 +87,9 @@ if command -v ccache >/dev/null 2>&1 ; then
   export CXX="ccache ${CXX}"
 fi
 
-compile mbedtls static                   ${TARGET_PLATFORM} ${TARGET_ARCH}
-compile ffmpeg  ${FF_PKG_TYPE:-"static"} ${TARGET_PLATFORM} ${TARGET_ARCH}
+if [ ! ${GITHUB_ACTIONS} ]; then
+  printf "\e[1m\e[35m%s\e[0m\n" "Uncomment the following  to compile."
+
+  # compile mbedtls static ${TARGET_PLATFORM} ${TARGET_ARCH}
+  # compile ffmpeg  static ${TARGET_PLATFORM} ${TARGET_ARCH}
+fi

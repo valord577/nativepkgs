@@ -1,0 +1,29 @@
+name: mbedtls
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/_buildx.yml'
+      - '.github/workflows/mbedtls.yml'
+      - 'deps/mbedtls'
+      - 'patchs/mbedtls/**'
+      - 'scripts/mbedtls.sh'
+      - 'build.sh'
+      - 'env-apple.sh'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/_buildx.yml'
+      - '.github/workflows/mbedtls.yml'
+      - 'deps/mbedtls'
+      - 'patchs/mbedtls/**'
+      - 'scripts/mbedtls.sh'
+      - 'build.sh'
+      - 'env-apple.sh'
+
+jobs:
+  build:
+    secrets: inherit
+    uses: ./.github/workflows/_buildx.yml
