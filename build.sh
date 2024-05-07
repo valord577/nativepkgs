@@ -5,15 +5,16 @@ PROJ_ROOT=$(cd "$(dirname ${BASH_SOURCE[0]})"; pwd)
 
 basename="${BASH_SOURCE[0]##*/}"
 triplet="${basename%%\.*}"
-triplet_values=(${triplet//-/ })
+triplet_values=(${triplet//_/ })
 triplet_length=${#triplet_values[@]}
-if [ $triplet_length -eq 3 ]; then
-  TARGET_PLATFORM="${triplet_values[1]}"
-  TARGET_ARCH="${triplet_values[2]}"
-else
-  TARGET_PLATFORM="macosx"
-  TARGET_ARCH="$(uname -m)"
+if [ $triplet_length -lt 3 ]; then
+  printf "\e[1m\e[31m%s\e[0m\n" \
+    "Please use wrapper to build the project, such as 'build_\${platform}_\${arch}.sh'."
+  exit 1
 fi
+TARGET_PLATFORM="${triplet_values[1]}"
+prefix="${triplet_values[0]}_${triplet_values[1]}_"
+TARGET_ARCH="${triplet#${prefix}}"
 
 SUPPORTED_TARGET=$(cat <<- 'EOF'
 macosx/x86_64
@@ -80,16 +81,10 @@ function compile() {
   )
 }
 
-export CC=${CC:-"clang"}
-export CXX=${CXX:-"clang++"}
-if command -v ccache >/dev/null 2>&1 ; then
-  export CC="ccache ${CC}"
-  export CXX="ccache ${CXX}"
-fi
-
 if [ ! ${GITHUB_ACTIONS} ]; then
-  printf "\e[1m\e[35m%s\e[0m\n" "Uncomment the following  to compile."
-
-  # compile mbedtls static ${TARGET_PLATFORM} ${TARGET_ARCH}
-  # compile ffmpeg  static ${TARGET_PLATFORM} ${TARGET_ARCH}
+  if [ -z ${1} ]; then
+    printf "\e[1m\e[31m%s\e[0m\n" "Please declare the modules to be compiled."
+    exit 1
+  fi
+  compile ${1} ${2:-"static"} ${TARGET_PLATFORM} ${TARGET_ARCH}
 fi

@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       disable_shared:
-        default: false
+        default: true
         required: false
         type: boolean
       disable_static:
@@ -53,9 +53,10 @@ jobs:
       - name: buildx library - ${{ github.workflow }}
         if: ${{ env._SETP_CAN_RUN == 'true' }}
         run: |
-          source ${{ env._REPO_THIS }}/build-${{ matrix.platform }}-${{ matrix.arch }}.sh
+          source ${{ env._REPO_THIS }}/build_${{ matrix.platform }}_${{ matrix.arch }}.sh
           compile ${{ github.workflow }} ${{ matrix.pkg_type }} ${{ matrix.platform }} ${{ matrix.arch }}
       - name: gh action ccache save
+        if: ${{ env._SETP_CAN_RUN == 'true' }}
         uses: actions/cache/save@v4
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -102,19 +103,12 @@ jobs:
       _REPO_PKGS: "_repo_pkgs"
       _PUSH_CAN_EXE: ${{ github.event_name == 'push' && (! inputs.disable_upload) }}
     steps:
-      - name: setup pkgs deploy key
-        # https://stackoverflow.com/questions/60477061/github-actions-how-to-deploy-to-remote-server-using-ssh
-        run: |
-          echo -e '${{ vars.KNOWN_HOSTS_GITHUB }}' >> '${{ github.workspace }}/known_hosts'
-          echo -e '${{ secrets.PKGS_DEPLOY_KEY }}' >  '${{ github.workspace }}/id_ed25519'
-          chmod 0600 '${{ github.workspace }}/id_ed25519'
-      - name: set required env `GIT_SSH_COMMAND`
-        run: |
-          GIT_SSH_COMMAND='ssh -i ${{ github.workspace }}/id_ed25519 -F /dev/null -o IdentitiesOnly=yes -o UserKnownHostsFile=${{ github.workspace }}/known_hosts'
-          echo "GIT_SSH_COMMAND=${GIT_SSH_COMMAND}" >> "$GITHUB_ENV"
       - name: checkout pkgs repo
-        run: |
-          git clone --depth 1 -- git@github.com:${{ github.repository_owner }}/packages.git ${{ env._REPO_PKGS }}
+        uses: actions/checkout@v4
+        with:
+          path: ${{ env._REPO_PKGS }}
+          ref: packages
+          lfs: true
       - name: download ${{ github.workflow }} libraries
         uses: actions/download-artifact@v4
         with:
@@ -128,38 +122,24 @@ jobs:
           ls -Alh -- .
           echo -e "\n"
           ls -AlhR ${{ github.workflow }}
-      - name: set required env `_PKG_BRANCH`
-        run: |
-          _PKG_BRANCH='${{ github.workflow }}/${{ needs._buildx.outputs.version }}/${{ github.run_id }}'
-          echo "_PKG_BRANCH=${_PKG_BRANCH}" >> "$GITHUB_ENV"
       - name: commit to pre-compiled packages
         run: |
           pushd -- "${{ env._REPO_PKGS }}"
-          (
+          {
             git config user.name  "${{ github.run_id }}@gh-action"
-            git config user.email "${{ github.run_id }}@gh-action.com"
-
-            git checkout -b "${{ env._PKG_BRANCH }}"
+            git config user.email "${{ github.run_id }}@gh-action"
+            git config --list
 
             mkdir -p '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
-            mv ${{ github.workspace }}/${{ github.workflow }}/*/*.zip '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
+            mv -f ${{ github.workspace }}/${{ github.workflow }}/*/*.zip '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
+
+            git lfs track ${{ github.workflow }}/${{ needs._buildx.outputs.version }}/*.zip
+            git add .gitattributes
 
             git add .
-            git commit -m "gh action: ${{ env._PKG_BRANCH }}"
-          )
-          popd
-      - name: create pre-compiled packages pr
-        if: ${{ env._PUSH_CAN_EXE == 'true' }}
-        env:
-          GH_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-        run: |
-          pushd -- "${{ env._REPO_PKGS }}"
-          (
-            git push origin "${{ env._PKG_BRANCH }}"
-          )
-          popd
+            git status
+            git commit -m "gh action: ${{ github.workflow }}/${{ needs._buildx.outputs.version }}/${{ github.run_id }}"
 
-          gh pr create -H "${{ env._PKG_BRANCH }}" -B 'main' \
-            -R '${{ github.repository_owner }}/packages' \
-            -t "update library - ${{ github.workflow }}@${{ needs._buildx.outputs.version }}" \
-            -b "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            if ${{ env._PUSH_CAN_EXE == 'true' }}; then { git push; } fi
+          }
+          popd

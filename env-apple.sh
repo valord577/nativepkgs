@@ -10,10 +10,17 @@ if [ "${TARGET_PLATFORM}" == "macosx" ]; then
 fi
 
 export PARALLEL_JOBS="$(sysctl -n hw.ncpu)"
+if command -v ccache >/dev/null 2>&1 ; then
+  export CC="ccache clang"
+  export CXX="ccache clang++"
+
+  export OBJC="ccache clang"
+  export OBJCXX="ccache clang++"
+fi
 # ----------------------------
 # cmake
 # ----------------------------
-export CMAKE_EXTRA=$(cat <<- EOF
+export CMAKE_EXTRA_ARGS=$(cat <<- EOF
 -D CMAKE_OSX_ARCHITECTURES=${TARGET_ARCH} \
 -D CMAKE_OSX_SYSROOT=${TARGET_PLATFORM} \
 -D CMAKE_OSX_DEPLOYMENT_TARGET=${TARGET_DEPLOYMENT} \
@@ -22,26 +29,26 @@ EOF
 )
 if [ "${TARGET_PLATFORM}" == "iphoneos" ] || \
   [ "${TARGET_PLATFORM}" == "iphonesimulator" ]; then
-  export CMAKE_EXTRA="-D CMAKE_SYSTEM_NAME=iOS ${CMAKE_EXTRA}"
+  export CMAKE_EXTRA_ARGS="-D CMAKE_SYSTEM_NAME=iOS ${CMAKE_EXTRA_ARGS}"
 fi
 # ----------------------------
-# flags (legacy)
+# gnu autotools
 # ----------------------------
 case ${TARGET_PLATFORM} in
   "macosx")
-    TARGET_DEPLOYMENT_FLAG="-mmacosx-version-min=${TARGET_DEPLOYMENT}"
+    TARGET_FLAG="macosx"
     ;;
   "iphoneos")
-    TARGET_DEPLOYMENT_FLAG="-miphoneos-version-min=${TARGET_DEPLOYMENT}"
+    TARGET_FLAG="iphoneos"
     ;;
   "iphonesimulator")
-    TARGET_DEPLOYMENT_FLAG="-mios-simulator-version-min=${TARGET_DEPLOYMENT}"
+    TARGET_FLAG="ios-simulator"
     ;;
   ?)
     ;;
 esac
 
-export SYSROOT_PATH="$(xcrun --sdk ${TARGET_PLATFORM} --show-sdk-path)"
-export CFLAGS_EXTRA="-arch ${TARGET_ARCH} ${TARGET_DEPLOYMENT_FLAG}"
-export CXXFLAGS_EXTRA="-arch ${TARGET_ARCH} ${TARGET_DEPLOYMENT_FLAG}"
-export LDFLAGS_EXTRA="-arch ${TARGET_ARCH} ${TARGET_DEPLOYMENT_FLAG}"
+export SYSROOT="$(xcrun --sdk ${TARGET_PLATFORM} --show-sdk-path)"
+export ECFLAGS="  -arch ${TARGET_ARCH} -m${TARGET_FLAG}-version-min=${TARGET_DEPLOYMENT}"
+export ECXXFLAGS="-arch ${TARGET_ARCH} -m${TARGET_FLAG}-version-min=${TARGET_DEPLOYMENT}"
+export ELDFLAGS=" -arch ${TARGET_ARCH} -m${TARGET_FLAG}-version-min=${TARGET_DEPLOYMENT}"

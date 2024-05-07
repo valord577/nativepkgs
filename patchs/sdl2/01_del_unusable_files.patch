@@ -1,0 +1,144 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2a91824c8..d4ec08a90 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -3591,62 +3591,62 @@ if(NOT SDL2_DISABLE_INSTALL)
+     COMPATIBILITY AnyNewerVersion
+   )
+ 
+-  if(SDL_SHARED)
+-    install(EXPORT SDL2Targets
+-      FILE SDL2Targets.cmake
+-      NAMESPACE SDL2::
+-      DESTINATION "${SDL_INSTALL_CMAKEDIR}"
+-    )
+-    if(ANDROID AND NOT CMAKE_VERSION VERSION_LESS 3.7)
+-      install(EXPORT_ANDROID_MK SDL2Targets
+-        DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/ndk-modules/SDL2")
+-    endif()
+-  endif()
+-
+-  if(NOT WINDOWS_STORE AND NOT SDL2_DISABLE_SDL2MAIN)
+-    install(EXPORT SDL2mainTargets
+-      FILE SDL2mainTargets.cmake
+-      NAMESPACE SDL2::
+-      DESTINATION "${SDL_INSTALL_CMAKEDIR}"
+-    )
+-    if(ANDROID AND NOT CMAKE_VERSION VERSION_LESS 3.7)
+-      install(EXPORT_ANDROID_MK SDL2mainTargets
+-        DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/ndk-modules/SDL2main")
+-    endif()
+-  endif()
+-
+-  if(SDL_STATIC)
+-    install(EXPORT SDL2staticTargets
+-      FILE SDL2staticTargets.cmake
+-      NAMESPACE SDL2::
+-      DESTINATION "${SDL_INSTALL_CMAKEDIR}"
+-    )
+-    if(ANDROID AND NOT CMAKE_VERSION VERSION_LESS 3.7)
+-      install(EXPORT_ANDROID_MK SDL2staticTargets
+-        DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/ndk-modules/SDL2-static")
+-    endif()
+-  endif()
+-
+-  if(SDL_TEST)
+-    install(EXPORT SDL2testTargets
+-      FILE SDL2testTargets.cmake
+-      NAMESPACE SDL2::
+-      DESTINATION "${SDL_INSTALL_CMAKEDIR}"
+-    )
+-    if(ANDROID AND NOT CMAKE_VERSION VERSION_LESS 3.7)
+-      install(EXPORT_ANDROID_MK SDL2testTargets
+-        DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/ndk-modules/SDL2test")
+-    endif()
+-  endif()
+-
+-  install(
+-    FILES
+-      ${CMAKE_CURRENT_BINARY_DIR}/SDL2Config.cmake
+-      ${CMAKE_CURRENT_BINARY_DIR}/SDL2ConfigVersion.cmake
+-      ${SDL2_SOURCE_DIR}/cmake/sdlfind.cmake
+-    DESTINATION "${SDL_INSTALL_CMAKEDIR}"
+-    COMPONENT Devel
+-  )
++  # if(SDL_SHARED)
++  #   install(EXPORT SDL2Targets
++  #     FILE SDL2Targets.cmake
++  #     NAMESPACE SDL2::
++  #     DESTINATION "${SDL_INSTALL_CMAKEDIR}"
++  #   )
++  #   if(ANDROID AND NOT CMAKE_VERSION VERSION_LESS 3.7)
++  #     install(EXPORT_ANDROID_MK SDL2Targets
++  #       DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/ndk-modules/SDL2")
++  #   endif()
++  # endif()
++
++  # if(NOT WINDOWS_STORE AND NOT SDL2_DISABLE_SDL2MAIN)
++  #   install(EXPORT SDL2mainTargets
++  #     FILE SDL2mainTargets.cmake
++  #     NAMESPACE SDL2::
++  #     DESTINATION "${SDL_INSTALL_CMAKEDIR}"
++  #   )
++  #   if(ANDROID AND NOT CMAKE_VERSION VERSION_LESS 3.7)
++  #     install(EXPORT_ANDROID_MK SDL2mainTargets
++  #       DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/ndk-modules/SDL2main")
++  #   endif()
++  # endif()
++
++  # if(SDL_STATIC)
++  #   install(EXPORT SDL2staticTargets
++  #     FILE SDL2staticTargets.cmake
++  #     NAMESPACE SDL2::
++  #     DESTINATION "${SDL_INSTALL_CMAKEDIR}"
++  #   )
++  #   if(ANDROID AND NOT CMAKE_VERSION VERSION_LESS 3.7)
++  #     install(EXPORT_ANDROID_MK SDL2staticTargets
++  #       DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/ndk-modules/SDL2-static")
++  #   endif()
++  # endif()
++
++  # if(SDL_TEST)
++  #   install(EXPORT SDL2testTargets
++  #     FILE SDL2testTargets.cmake
++  #     NAMESPACE SDL2::
++  #     DESTINATION "${SDL_INSTALL_CMAKEDIR}"
++  #   )
++  #   if(ANDROID AND NOT CMAKE_VERSION VERSION_LESS 3.7)
++  #     install(EXPORT_ANDROID_MK SDL2testTargets
++  #       DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/ndk-modules/SDL2test")
++  #   endif()
++  # endif()
++
++  # install(
++  #   FILES
++  #     ${CMAKE_CURRENT_BINARY_DIR}/SDL2Config.cmake
++  #     ${CMAKE_CURRENT_BINARY_DIR}/SDL2ConfigVersion.cmake
++  #     ${SDL2_SOURCE_DIR}/cmake/sdlfind.cmake
++  #   DESTINATION "${SDL_INSTALL_CMAKEDIR}"
++  #   COMPONENT Devel
++  # )
+ 
+   install(
+     FILES
+@@ -3662,7 +3662,7 @@ if(NOT SDL2_DISABLE_INSTALL)
+     set(SOPOSTFIX "")
+   endif()
+ 
+-  install(FILES "LICENSE.txt" DESTINATION "${LICENSES_PREFIX}")
++  # install(FILES "LICENSE.txt" DESTINATION "${LICENSES_PREFIX}")
+   if(FREEBSD)
+     # FreeBSD uses ${PREFIX}/libdata/pkgconfig
+     install(FILES ${SDL2_BINARY_DIR}/sdl2.pc DESTINATION "libdata/pkgconfig")
+@@ -3682,9 +3682,9 @@ if(NOT SDL2_DISABLE_INSTALL)
+           install(FILES ${SDL2_BINARY_DIR}/libSDL2${SOPOSTFIX}${SOEXT} DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+       endif()
+     endif()
+-    install(PROGRAMS ${SDL2_BINARY_DIR}/sdl2-config DESTINATION "${CMAKE_INSTALL_BINDIR}")
++    # install(PROGRAMS ${SDL2_BINARY_DIR}/sdl2-config DESTINATION "${CMAKE_INSTALL_BINDIR}")
+     # TODO: what about the .spec file? Is it only needed for RPM creation?
+-    install(FILES "${SDL2_SOURCE_DIR}/sdl2.m4" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/aclocal")
++    # install(FILES "${SDL2_SOURCE_DIR}/sdl2.m4" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/aclocal")
+   endif()
+ endif()
+ 

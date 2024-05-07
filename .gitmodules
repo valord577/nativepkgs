@@ -4,3 +4,6 @@
 [submodule "deps/mbedtls"]
 	path = deps/mbedtls
 	url = https://github.com/Mbed-TLS/mbedtls.git
+[submodule "deps/sdl2"]
+	path = deps/sdl2
+	url = https://github.com/libsdl-org/SDL.git
