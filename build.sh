@@ -61,7 +61,7 @@ function compile() {
 
     if [ ! -e "${SUBPROJ_SRC}/.git" ]; then
       pushd -- "${PROJ_ROOT}"
-      git submodule update --init --depth 1 -- "deps/${PKG_NAME}"
+      git submodule update --init -f --depth ${GIT_DEPTH:-"20"} -- "deps/${PKG_NAME}"
       popd
     fi
     pushd -- "${SUBPROJ_SRC}"
@@ -81,7 +81,7 @@ function compile() {
   )
 }
 
-if [ ! ${GITHUB_ACTIONS} ]; then
+if [ "${GITHUB_ACTIONS}" != "true" ]; then
   if [ -z ${1} ]; then
     printf "\e[1m\e[31m%s\e[0m\n" "Please declare the modules to be compiled."
     exit 1

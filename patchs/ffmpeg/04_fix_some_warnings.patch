@@ -1,0 +1,52 @@
+diff --git a/configure b/configure
+index 00c3cee33f..87a8fffd32 100755
+--- a/configure
++++ b/configure
+@@ -7386,7 +7386,7 @@ fi
+ enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
+ 
+ # add some useful compiler flags if supported
+-check_cflags -Wdeclaration-after-statement
++# check_cflags -Wdeclaration-after-statement
+ check_cflags -Wall
+ check_cflags -Wdisabled-optimization
+ check_cflags -Wpointer-arith
+diff --git a/libavcodec/audiotoolboxdec.c b/libavcodec/audiotoolboxdec.c
+index 0f7ce8e4eb..a0fc27f76c 100644
+--- a/libavcodec/audiotoolboxdec.c
++++ b/libavcodec/audiotoolboxdec.c
+@@ -36,7 +36,7 @@
+ #include "libavutil/opt.h"
+ #include "libavutil/log.h"
+ 
+-#if __MAC_OS_X_VERSION_MIN_REQUIRED < 101100
++#if MAC_OS_X_VERSION_MIN_REQUIRED < 101100
+ #define kAudioFormatEnhancedAC3 'ec-3'
+ #endif
+ 
+diff --git a/libavcodec/pcm-dvdenc.c b/libavcodec/pcm-dvdenc.c
+index 1e7ee644f6..2da29a9abb 100644
+--- a/libavcodec/pcm-dvdenc.c
++++ b/libavcodec/pcm-dvdenc.c
+@@ -35,7 +35,7 @@ typedef struct PCMDVDContext {
+ static av_cold int pcm_dvd_encode_init(AVCodecContext *avctx)
+ {
+     PCMDVDContext *s = avctx->priv_data;
+-    int quant, freq, frame_size;
++    int quant = 0, freq, frame_size;
+ 
+     switch (avctx->sample_rate) {
+     case 48000:
+diff --git a/libavfilter/vf_yadif_videotoolbox.m b/libavfilter/vf_yadif_videotoolbox.m
+index c47d3edfb8..4ec448de1d 100644
+--- a/libavfilter/vf_yadif_videotoolbox.m
++++ b/libavfilter/vf_yadif_videotoolbox.m
+@@ -172,7 +172,7 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
+ static av_cold void do_uninit(AVFilterContext *ctx) API_AVAILABLE(macos(10.11), ios(8.0))
+ {
+     YADIFVTContext *s = ctx->priv;
+-    YADIFContext *y = &s->yadif;
++    // YADIFContext *y = &s->yadif;
+ 
+     ff_yadif_uninit(ctx);
+ 

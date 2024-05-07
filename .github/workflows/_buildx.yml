@@ -40,9 +40,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: ${{ env._REPO_THIS }}
+          fetch-depth: 0
+          lfs: true
       - name: install required software(s)
         run: |
-          brew install ccache
+          brew list -l
+          brew install ccache nasm
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:

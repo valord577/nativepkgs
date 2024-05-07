@@ -49,6 +49,5 @@ case ${TARGET_PLATFORM} in
 esac
 
 export SYSROOT="$(xcrun --sdk ${TARGET_PLATFORM} --show-sdk-path)"
-export ECFLAGS="  -arch ${TARGET_ARCH} -m${TARGET_FLAG}-version-min=${TARGET_DEPLOYMENT}"
-export ECXXFLAGS="-arch ${TARGET_ARCH} -m${TARGET_FLAG}-version-min=${TARGET_DEPLOYMENT}"
-export ELDFLAGS=" -arch ${TARGET_ARCH} -m${TARGET_FLAG}-version-min=${TARGET_DEPLOYMENT}"
+export ECFLAGS=" -arch ${TARGET_ARCH} -m${TARGET_FLAG}-version-min=${TARGET_DEPLOYMENT}"
+export ELDFLAGS="-arch ${TARGET_ARCH} -m${TARGET_FLAG}-version-min=${TARGET_DEPLOYMENT}"

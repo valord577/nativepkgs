@@ -1,0 +1,12 @@
+diff --git a/configure b/configure
+index 00c3cee33f..50964f2f30 100755
+--- a/configure
++++ b/configure
+@@ -5788,6 +5788,7 @@ case $target_os in
+         if enabled clang; then
+             clang_version=$($cc -dumpversion)
+             test ${clang_version%%.*} -eq 11 && add_cflags -fno-stack-check
++            test ${clang_version%%.*} -eq 15 && add_ldflags -Wl,-ld_classic
+         fi
+         ;;
+     msys*)

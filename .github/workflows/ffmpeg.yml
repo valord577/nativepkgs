@@ -1,0 +1,33 @@
+name: ffmpeg
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/_buildx.yml'
+      - '.github/workflows/ffmpeg.yml'
+      - 'deps/ffmpeg'
+      - 'patchs/ffmpeg/**'
+      - 'scripts/ffmpeg.sh'
+      - 'build.sh'
+      - 'env-apple.sh'
+      - 'pkg-conf.sh'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/_buildx.yml'
+      - '.github/workflows/ffmpeg.yml'
+      - 'deps/ffmpeg'
+      - 'patchs/ffmpeg/**'
+      - 'scripts/ffmpeg.sh'
+      - 'build.sh'
+      - 'env-apple.sh'
+      - 'pkg-conf.sh'
+
+jobs:
+  build:
+    secrets: inherit
+    uses: ./.github/workflows/_buildx.yml
+    with:
+      disable_shared: false
