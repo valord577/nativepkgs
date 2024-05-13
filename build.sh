@@ -47,7 +47,6 @@ fi
 
 function compile() {
   (
-    set -x
     export PROJ_ROOT="${PROJ_ROOT}"
 
     export PKG_NAME="${1}"
