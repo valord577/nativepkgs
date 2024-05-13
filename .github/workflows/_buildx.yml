@@ -149,7 +149,7 @@ jobs:
           echo -e "\n"
           ls -AlhR ${{ github.workflow }}
       - name: commit to pre-compiled packages
-        # if: ${{ env._PUSH_CAN_EXE == 'true' }}
+        if: ${{ env._PUSH_CAN_EXE == 'true' }}
         run: |
           mkdir -p '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
           mv -f ${{ github.workspace }}/${{ github.workflow }}/*/*.zip '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
