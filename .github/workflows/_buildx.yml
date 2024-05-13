@@ -17,6 +17,9 @@ on:
 
 env:
   _OSSUTIL_VER: 'v1.7.18'
+  GH_OSSUTIL_BUCKET: ${{ secrets.GH_OSSUTIL_BUCKET }}
+  GH_OSSUTIL_PKGS: ${{ secrets.GH_OSSUTIL_PKGS }}
+  GH_OSSUTIL_CONF_PATH: ${{ github.workspace }}/ossutilconfig
 
 jobs:
   _buildx:
@@ -63,8 +66,7 @@ jobs:
             --url "https://github.com/aliyun/ossutil/releases/download/${{ env._OSSUTIL_VER }}/ossutil-${{ env._OSSUTIL_VER }}-mac-${ARCH}.zip"
           unzip -j ossutil.zip "*/ossutil" -d .; echo "${PWD}" >> "$GITHUB_PATH"
 
-          echo -e '${{ secrets.GH_OSSUTIL_CONF }}' >  '${{ github.workspace }}/ossutilconfig'
-          echo "GH_OSSUTIL_CONF_PATH=${{ github.workspace }}/ossutilconfig" >> "$GITHUB_ENV"
+          echo -e '${{ secrets.GH_OSSUTIL_CONF }}' > '${GH_OSSUTIL_CONF_PATH}'
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:
@@ -136,7 +138,7 @@ jobs:
             --url "https://github.com/aliyun/ossutil/releases/download/${{ env._OSSUTIL_VER }}/ossutil-${{ env._OSSUTIL_VER }}-linux-${ARCH}.zip"
           unzip -j ossutil.zip "*/ossutil" -d .; echo "${PWD}" >> "$GITHUB_PATH"
 
-          echo -e '${{ secrets.GH_OSSUTIL_CONF }}' >  '${{ github.workspace }}/ossutilconfig'
+          echo -e '${{ secrets.GH_OSSUTIL_CONF }}' > '${GH_OSSUTIL_CONF_PATH}'
       - name: show debug info
         run: |
           env
@@ -149,7 +151,9 @@ jobs:
       - name: commit to pre-compiled packages
         # if: ${{ env._PUSH_CAN_EXE == 'true' }}
         run: |
+          mkdir -p '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
+          mv -f ${{ github.workspace }}/${{ github.workflow }}/*/*.zip '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
           ossutil cp \
-            ${{ github.workspace }}/${{ github.workflow }} \
+            ${{ github.workflow }}/${{ needs._buildx.outputs.version }} \
             oss://${GH_OSSUTIL_BUCKET}/${GH_OSSUTIL_PKGS}/${{ github.workflow }}/${{ needs._buildx.outputs.version }} \
-            --include "*/*.zip" -r --disable-dir-object -c '${{ github.workspace }}/ossutilconfig'
+            --include "*.zip" -r --only-current-dir --disable-dir-object -c '${GH_OSSUTIL_CONF_PATH}'
