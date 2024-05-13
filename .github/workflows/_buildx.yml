@@ -147,7 +147,7 @@ jobs:
           echo -e "\n"
           ls -AlhR ${{ github.workflow }}
       - name: commit to pre-compiled packages
-        if: ${{ env._PUSH_CAN_EXE == 'true' }}
+        # if: ${{ env._PUSH_CAN_EXE == 'true' }}
         run: |
           ossutil cp \
             ${{ github.workspace }}/${{ github.workflow }} \
