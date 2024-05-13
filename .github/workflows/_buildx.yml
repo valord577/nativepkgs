@@ -11,7 +11,7 @@ on:
         required: false
         type: boolean
       disable_upload:
-        default: false
+        default: true
         required: false
         type: boolean
 

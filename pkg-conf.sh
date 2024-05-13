@@ -9,9 +9,6 @@ fi
 if [ -z "${PROJ_ROOT}" ]; then
   PROJ_ROOT=$(cd "$(dirname ${BASH_SOURCE[0]})"; pwd)
 fi
-if [ "${GITHUB_ACTIONS}" == "true" ]; then
-  pushd -- "${PROJ_ROOT}"; { git lfs fetch --all --prune; }; popd
-fi
 export PKG_DEPS_PATH="${PROJ_ROOT}/lib"
 { rm -rf "${PKG_DEPS_PATH}"; mkdir -p "${PKG_DEPS_PATH}"; }
 
@@ -27,12 +24,10 @@ function dl_pkgc() {
     fi
     printf "\e[1m\e[36m%s\e[0m\n" "dl_filename='${dl_filename}'"
 
-    pushd -- "${PROJ_ROOT}"
+    pushd -- "${PKG_DEPS_PATH}"
     {
       set -x
-      git archive --format=tar origin/packages ${pkg_name}/${pkg_version}/${dl_filename} \
-        | tar -xvf - -C "${PKG_DEPS_PATH}" --strip-components=2 --no-same-owner
-      unzip -q "${PKG_DEPS_PATH}/${dl_filename}" -d "${PKG_DEPS_PATH}"
+      ln -sfn ../out/${pkg_name}/${PKG_PLATFORM}/${PKG_ARCH} ${pkg_name}
       set +x
     }
     popd
