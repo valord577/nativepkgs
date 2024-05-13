@@ -15,6 +15,9 @@ on:
         required: false
         type: boolean
 
+env:
+  _OSSUTIL_VER: 'v1.7.18'
+
 jobs:
   _buildx:
     strategy:
@@ -40,12 +43,28 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: ${{ env._REPO_THIS }}
-          fetch-depth: 0
-          lfs: true
       - name: install required software(s)
         run: |
           brew list -l
           brew install ccache nasm
+      - name: setup ali ossutil
+        run: |
+          ARCH="$(uname -m)"
+          case ${ARCH} in
+            "x86_64")
+              ARCH="amd64"
+              ;;
+            ?)
+              printf "\e[1m\e[31m%s\e[0m\n" "Invalid HOST ARCH: '${ARCH}'"
+              exit 1
+              ;;
+          esac
+          curl -fsSL -X GET -o "ossutil.zip" \
+            --url "https://github.com/aliyun/ossutil/releases/download/${{ env._OSSUTIL_VER }}/ossutil-${{ env._OSSUTIL_VER }}-mac-${ARCH}.zip"
+          unzip -j ossutil.zip "*/ossutil" -d .; echo "${PWD}" >> "$GITHUB_PATH"
+
+          echo -e '${{ secrets.GH_OSSUTIL_CONF }}' >  '${{ github.workspace }}/ossutilconfig'
+          echo "GH_OSSUTIL_CONF_PATH=${{ github.workspace }}/ossutilconfig" >> "$GITHUB_ENV"
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:
@@ -82,17 +101,6 @@ jobs:
         if: ${{ env._SETP_CAN_RUN == 'true' }}
         run: |
           zip -ry "${{ env._PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
-      - name: show debug info
-        run: |
-          env
-          echo -e "\n"
-          echo -e "${PWD}"
-          echo -e "\n"
-          ls -Alh -- .
-          echo -e "\n"
-          ccache -s
-          echo -e "\n"
-          ccache -p
       - name: upload library - ${{ github.workflow }}
         if: ${{ env._SETP_CAN_RUN == 'true' }}
         uses: actions/upload-artifact@v4
@@ -103,19 +111,32 @@ jobs:
     needs: _buildx
     runs-on: ubuntu-latest
     env:
-      _REPO_PKGS: "_repo_pkgs"
       _PUSH_CAN_EXE: ${{ github.event_name == 'push' && (! inputs.disable_upload) }}
     steps:
-      - name: checkout pkgs repo
-        uses: actions/checkout@v4
-        with:
-          path: ${{ env._REPO_PKGS }}
-          ref: packages
-          lfs: true
       - name: download ${{ github.workflow }} libraries
         uses: actions/download-artifact@v4
         with:
           path: ${{ github.workspace }}/${{ github.workflow }}
+      - name: setup ali ossutil
+        run: |
+          ARCH="$(uname -m)"
+          case ${ARCH} in
+            "x86_64")
+              ARCH="amd64"
+              ;;
+            "aarch64")
+              ARCH="arm64"
+              ;;
+            ?)
+              printf "\e[1m\e[31m%s\e[0m\n" "Invalid HOST ARCH: '${ARCH}'"
+              exit 1
+              ;;
+          esac
+          curl -fsSL -X GET -o "ossutil.zip" \
+            --url "https://github.com/aliyun/ossutil/releases/download/${{ env._OSSUTIL_VER }}/ossutil-${{ env._OSSUTIL_VER }}-linux-${ARCH}.zip"
+          unzip -j ossutil.zip "*/ossutil" -d .; echo "${PWD}" >> "$GITHUB_PATH"
+
+          echo -e '${{ secrets.GH_OSSUTIL_CONF }}' >  '${{ github.workspace }}/ossutilconfig'
       - name: show debug info
         run: |
           env
@@ -126,23 +147,9 @@ jobs:
           echo -e "\n"
           ls -AlhR ${{ github.workflow }}
       - name: commit to pre-compiled packages
+        if: ${{ env._PUSH_CAN_EXE == 'true' }}
         run: |
-          pushd -- "${{ env._REPO_PKGS }}"
-          {
-            git config user.name  "${{ github.run_id }}@gh-action"
-            git config user.email "${{ github.run_id }}@gh-action"
-            git config --list
-
-            mkdir -p '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
-            mv -f ${{ github.workspace }}/${{ github.workflow }}/*/*.zip '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
-
-            git lfs track ${{ github.workflow }}/${{ needs._buildx.outputs.version }}/*.zip
-            git add .gitattributes
-
-            git add .
-            git status
-            git commit -m "gh action: ${{ github.workflow }}/${{ needs._buildx.outputs.version }}/${{ github.run_id }}"
-
-            if ${{ env._PUSH_CAN_EXE == 'true' }}; then { git push; } fi
-          }
-          popd
+          ossutil cp \
+            ${{ github.workspace }}/${{ github.workflow }} \
+            oss://${GH_OSSUTIL_BUCKET}/${GH_OSSUTIL_PKGS}/${{ github.workflow }}/${{ needs._buildx.outputs.version }} \
+            --include "*/*.zip" -r --disable-dir-object -c '${{ github.workspace }}/ossutilconfig'
