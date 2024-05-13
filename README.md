@@ -1,3 +1,3 @@
-FFmpeg for Apple Platform
+FFmpeg Build Scripts
 ======
 

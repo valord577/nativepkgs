@@ -9,7 +9,7 @@ index 00c3cee33f..12800dcb21 100755
 +if [ "${GITHUB_ACTIONS}" == "true" ]; then
 +    FFMPEG_CONFIGURATION="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} (${GITHUB_SHA})"
 +else
-+    FFMPEG_CONFIGURATION="ffmpeg for apple - $(whoami)@$(uname -n) $(date -u '+%Y-%m-%dT%H:%M:%SZ%:z')"
++    FFMPEG_CONFIGURATION="ffmpeg - $(whoami)@$(uname -n) $(date -u '+%Y-%m-%dT%H:%M:%SZ%:z')"
 +fi
 +
  cat > ffbuild/config.mak <<EOF
