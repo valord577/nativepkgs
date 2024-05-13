@@ -56,8 +56,12 @@ function compile() {
     export PKG_PLATFORM="${3}"
     export PKG_ARCH="${4}"
 
-    export PKG_BULD_DIR=${BULD_DIR:-"${PROJ_ROOT}/tmp/${PKG_NAME}/${PKG_PLATFORM}/${PKG_ARCH}"}
-    export PKG_INST_DIR=${INST_DIR:-"${PROJ_ROOT}/out/${PKG_NAME}/${PKG_PLATFORM}/${PKG_ARCH}"}
+    export PKG_BULD_DIR="${PROJ_ROOT}/tmp/${PKG_NAME}/${PKG_PLATFORM}/${PKG_ARCH}"
+    export PKG_INST_DIR="${PROJ_ROOT}/out/${PKG_NAME}/${PKG_PLATFORM}/${PKG_ARCH}"
+    if [ "${GITHUB_ACTIONS}" == "true" ]; then
+      if [ -n "${BULD_DIR}" ]; then { export PKG_BULD_DIR="${BULD_DIR}"; } fi
+      if [ -n "${INST_DIR}" ]; then { export PKG_INST_DIR="${INST_DIR}"; } fi
+    fi
 
     if [ ! -e "${SUBPROJ_SRC}/.git" ]; then
       pushd -- "${PROJ_ROOT}"

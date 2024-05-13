@@ -7,7 +7,6 @@ set -e
 case ${PKG_TYPE} in
   "static")
     PKG_TYPE_FLAG="-D BUILD_SHARED_LIBS:BOOL=0"
-    PKG_LIBRARY_DEPS="-lmbedtls -lmbedx509 -lmbedcrypto -lp256m -leverest"
     ;;
   ?)
     printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TYPE: '${PKG_TYPE}'."
@@ -49,20 +48,6 @@ printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}" && eval ${CMAKE_COMMAND}
 # build & install
 cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS}
 cmake --install "${PKG_BULD_DIR}" ${PKG_INST_STRIP}
-
-# PKG_CONFIG_FILE="${PKG_INST_DIR}/lib/pkgconfig/mbedtls.pc"
-# mkdir -p -- "$(dirname ${PKG_CONFIG_FILE})"
-# cat > "${PKG_CONFIG_FILE}" <<- EOF
-# prefix=\${pcfiledir}/../..
-# libdir=\${prefix}/lib
-# includedir=\${prefix}/include
-
-# Name: mbedtls
-# Description: An open source, portable, easy to use, readable and flexible TLS library
-# Version: ${PKG_VERSION}
-# Libs: -L\${libdir} ${PKG_LIBRARY_DEPS}
-# Cflags: -I\${includedir}
-# EOF
 
 if command -v tree >/dev/null 2>&1 ; then
   tree ${PKG_INST_DIR}
