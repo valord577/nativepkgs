@@ -29,10 +29,12 @@ function dl_pkgc() {
           fi
           printf "\e[1m\e[36m%s\e[0m\n" "dl_filename='${dl_filename}'"
 
-          ossutil cp \
-            oss://${GH_OSSUTIL_BUCKET}/${GH_OSSUTIL_PKGS}/${pkg_name}/${pkg_version}/${dl_filename} \
-            ./${pkg_name}.zip \
-            -c ${GH_OSSUTIL_CONF_PATH}
+          dl_url=$(
+            ossutil sign \
+              oss://${GH_OSSUTIL_BUCKET}/${GH_OSSUTIL_PKGS}/${pkg_name}/${pkg_version}/${dl_filename} \
+              --disable-encode-slash -c ${GH_OSSUTIL_CONF_PATH} | grep "${dl_filename}"
+          )
+          curl --silent --fail --url "${dl_url}" -L -X GET -o "${pkg_name}.zip"
           unzip -q "${pkg_name}.zip"
         }
       else
