@@ -55,18 +55,8 @@ jobs:
           brew install ccache nasm
       - name: setup ali ossutil
         run: |
-          ARCH="$(uname -m)"
-          case ${ARCH} in
-            "x86_64")
-              ARCH="amd64"
-              ;;
-            ?)
-              printf "\e[1m\e[31m%s\e[0m\n" "Invalid HOST ARCH: '${ARCH}'"
-              exit 1
-              ;;
-          esac
           curl -fsSL -X GET -o "ossutil.zip" \
-            --url "https://github.com/aliyun/ossutil/releases/download/${{ env._OSSUTIL_VER }}/ossutil-${{ env._OSSUTIL_VER }}-mac-${ARCH}.zip"
+            --url "https://github.com/aliyun/ossutil/releases/download/${{ env._OSSUTIL_VER }}/ossutil-${{ env._OSSUTIL_VER }}-mac-arm64.zip"
           unzip -j ossutil.zip "*/ossutil" -d .; echo "${PWD}" >> "$GITHUB_PATH"
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
