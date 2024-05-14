@@ -102,9 +102,13 @@ eval ${MAKE_COMMAND}
 
 make install
 popd
-for solib in ${PKG_DEPS_SHARED}; do
-  cp -a ${PKG_DEPS_PATH}/${solib}/lib/*.so "${PKG_INST_DIR}/lib"
-done
+
+rm -rf ${PKG_INST_DIR}/share
+case ${PKG_PLATFORM} in
+  "macosx")
+    xattr -cs ${PKG_INST_DIR}/bin/*
+    ;;
+esac
 
 if command -v tree >/dev/null 2>&1 ; then
   tree ${PKG_INST_DIR}
