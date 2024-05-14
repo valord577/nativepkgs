@@ -31,3 +31,4 @@ jobs:
     uses: ./.github/workflows/_buildx.yml
     with:
       disable_shared: false
+      disable_upload: true
