@@ -32,7 +32,8 @@ function dl_pkgc() {
           dl_url=$(
             ossutil sign \
               oss://${GH_OSSUTIL_BUCKET}/${GH_OSSUTIL_PKGS}/${pkg_name}/${pkg_version}/${dl_filename} \
-              --disable-encode-slash -c ${GH_OSSUTIL_CONF_PATH} | grep "${dl_filename}"
+              --disable-encode-slash -e ${GH_OSSUTIL_ENDPOINT} -i ${GH_OSSUTIL_AK} -k ${GH_OSSUTIL_SK} \
+              | grep "${dl_filename}" | sed "s@://${GH_OSSUTIL_BUCKET}.${GH_OSSUTIL_ENDPOINT}/@://${GH_OSSUTIL_CNAME}/@g"
           )
           curl --silent --fail --url "${dl_url}" -L -X GET -o "${pkg_name}.zip"
           unzip -q "${pkg_name}.zip"

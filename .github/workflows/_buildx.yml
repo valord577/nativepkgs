@@ -17,9 +17,12 @@ on:
 
 env:
   _OSSUTIL_VER: 'v1.7.18'
+  GH_OSSUTIL_AK: ${{ secrets.GH_OSSUTIL_AK }}
+  GH_OSSUTIL_SK: ${{ secrets.GH_OSSUTIL_SK }}
   GH_OSSUTIL_BUCKET: ${{ secrets.GH_OSSUTIL_BUCKET }}
+  GH_OSSUTIL_ENDPOINT: ${{ secrets.GH_OSSUTIL_ENDPOINT }}
   GH_OSSUTIL_PKGS: ${{ secrets.GH_OSSUTIL_PKGS }}
-  GH_OSSUTIL_CONF_PATH: ${{ github.workspace }}/ossutilconfig
+  GH_OSSUTIL_CNAME: ${{ secrets.GH_OSSUTIL_CNAME }}
 
 jobs:
   _buildx:
@@ -65,8 +68,6 @@ jobs:
           curl -fsSL -X GET -o "ossutil.zip" \
             --url "https://github.com/aliyun/ossutil/releases/download/${{ env._OSSUTIL_VER }}/ossutil-${{ env._OSSUTIL_VER }}-mac-${ARCH}.zip"
           unzip -j ossutil.zip "*/ossutil" -d .; echo "${PWD}" >> "$GITHUB_PATH"
-
-          echo -e '${{ secrets.GH_OSSUTIL_CONF }}' > ${GH_OSSUTIL_CONF_PATH}
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:
@@ -137,8 +138,6 @@ jobs:
           curl -fsSL -X GET -o "ossutil.zip" \
             --url "https://github.com/aliyun/ossutil/releases/download/${{ env._OSSUTIL_VER }}/ossutil-${{ env._OSSUTIL_VER }}-linux-${ARCH}.zip"
           unzip -j ossutil.zip "*/ossutil" -d .; echo "${PWD}" >> "$GITHUB_PATH"
-
-          echo -e '${{ secrets.GH_OSSUTIL_CONF }}' > ${GH_OSSUTIL_CONF_PATH}
       - name: show debug info
         run: |
           env
@@ -156,4 +155,5 @@ jobs:
           ossutil cp \
             ${{ github.workflow }}/${{ needs._buildx.outputs.version }} \
             oss://${GH_OSSUTIL_BUCKET}/${GH_OSSUTIL_PKGS}/${{ github.workflow }}/${{ needs._buildx.outputs.version }} \
-            --include "*.zip" -r --only-current-dir --disable-dir-object -c ${GH_OSSUTIL_CONF_PATH}
+            --include "*.zip" -r --only-current-dir --disable-dir-object \
+            -e ${GH_OSSUTIL_ENDPOINT} -i ${GH_OSSUTIL_AK} -k ${GH_OSSUTIL_SK}
