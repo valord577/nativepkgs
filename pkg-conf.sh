@@ -18,17 +18,30 @@ function dl_pkgc() {
     pkg_version="${2}"
     pkg_type="${3}"
     pkg_extra="${4}"
-    dl_filename="${pkg_name}_${PKG_PLATFORM}_${PKG_ARCH}_${pkg_version}_${pkg_type}.zip"
-    if [ -n "${pkg_extra}" ]; then
-      dl_filename="${pkg_name}_${PKG_PLATFORM}_${PKG_ARCH}_${pkg_version}_${pkg_type}_${pkg_extra}.zip"
-    fi
-    printf "\e[1m\e[36m%s\e[0m\n" "dl_filename='${dl_filename}'"
 
     pushd -- "${PKG_DEPS_PATH}"
     {
-      set -x
-      ln -sfn ../out/${pkg_name}/${PKG_PLATFORM}/${PKG_ARCH} ${pkg_name}
-      set +x
+      if [ "${GITHUB_ACTIONS}" == "true" ]; then
+        {
+          dl_filename="${pkg_name}_${PKG_PLATFORM}_${PKG_ARCH}_${pkg_version}_${pkg_type}.zip"
+          if [ -n "${pkg_extra}" ]; then
+            dl_filename="${pkg_name}_${PKG_PLATFORM}_${PKG_ARCH}_${pkg_version}_${pkg_type}_${pkg_extra}.zip"
+          fi
+          printf "\e[1m\e[36m%s\e[0m\n" "dl_filename='${dl_filename}'"
+
+          ossutil cp \
+            oss://${GH_OSSUTIL_BUCKET}/${GH_OSSUTIL_PKGS}/${pkg_name}/${pkg_version}/${dl_filename} \
+            ./${pkg_name}.zip \
+            -c ${GH_OSSUTIL_CONF_PATH}
+          unzip -q "${pkg_name}.zip"
+        }
+      else
+        {
+          set -x
+          ln -sfn ../out/${pkg_name}/${PKG_PLATFORM}/${PKG_ARCH} ${pkg_name}
+          set +x
+        }
+      fi
     }
     popd
   )
