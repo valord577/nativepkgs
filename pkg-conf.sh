@@ -31,7 +31,7 @@ function dl_pkgc() {
 
           set -x
           dl_url=$(
-            oss sign \
+            ossutil sign \
               oss://${GH_OSSUTIL_BUCKET}/${GH_OSSUTIL_PKGS}/${pkg_name}/${pkg_version}/${dl_filename} \
               --disable-encode-slash -c ${GH_OSSUTIL_CONF_PATH} | grep "${dl_filename}"
           )
