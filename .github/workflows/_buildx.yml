@@ -155,5 +155,5 @@ jobs:
           ossutil cp \
             ${{ github.workflow }}/${{ needs._buildx.outputs.version }} \
             oss://${GH_OSSUTIL_BUCKET}/${GH_OSSUTIL_PKGS}/${{ github.workflow }}/${{ needs._buildx.outputs.version }} \
-            --include "*.zip" -r --only-current-dir --disable-dir-object \
-            -e ${GH_OSSUTIL_ENDPOINT} -i ${GH_OSSUTIL_AK} -k ${GH_OSSUTIL_SK}
+            --include "*.zip" --recursive --force --only-current-dir --disable-dir-object --bigfile-threshold=2048 \
+            -e ${GH_OSSUTIL_ENDPOINT} -i ${GH_OSSUTIL_AK} -k ${GH_OSSUTIL_SK} --disable-all-symlink
