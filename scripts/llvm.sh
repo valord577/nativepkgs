@@ -54,7 +54,7 @@ else
   rm -f ${PKG_BULD_DIR}/**/CMakeCache.txt
 fi
 
-case ${TARGET_ARCH} in
+case ${PKG_ARCH} in
   "amd64" | "x86_64")
     LLVM_TARGET="X86"
     ;;
@@ -62,7 +62,7 @@ case ${TARGET_ARCH} in
     LLVM_TARGET="AArch64"
     ;;
   ?)
-    printf "\e[1m\e[31m%s\e[0m\n" "Invalid TARGET ARCH: '${TARGET_ARCH}'."
+    printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG_ARCH: '${PKG_ARCH}'."
     exit 1
     ;;
 esac
@@ -83,7 +83,6 @@ cmake -G Ninja \
   -D LLVM_INCLUDE_TESTS:BOOL=0 \
   -D LLVM_INCLUDE_DOCS:BOOL=0 \
   -D LLVM_INCLUDE_UTILS:BOOL=0 \
-  -D LLVM_BUILD_TOOLS:BOOL=0 \
   -D LLVM_TARGETS_TO_BUILD="${LLVM_TARGET}" \
   -D LLDB_USE_SYSTEM_DEBUGSERVER:BOOL=1
 EOF
@@ -91,8 +90,8 @@ EOF
 printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}" && eval ${CMAKE_COMMAND}
 
 # build & install
-# cmake --build "${PKG_BULD_DIR}"
-# cmake --install "${PKG_BULD_DIR}" ${PKG_INST_STRIP}
+cmake --build "${PKG_BULD_DIR}"
+cmake --install "${PKG_BULD_DIR}" ${PKG_INST_STRIP}
 
 if command -v tree >/dev/null 2>&1 ; then
   tree ${PKG_INST_DIR}
