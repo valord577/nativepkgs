@@ -11,6 +11,8 @@ fi
 
 export PARALLEL_JOBS="$(sysctl -n hw.ncpu)"
 if command -v ccache >/dev/null 2>&1 ; then
+  export ASM="ccache clang"
+
   export CC="ccache clang"
   export CXX="ccache clang++"
 
