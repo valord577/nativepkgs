@@ -17,6 +17,7 @@ prefix="${triplet_values[0]}_${triplet_values[1]}_"
 TARGET_ARCH="${triplet#${prefix}}"
 
 SUPPORTED_TARGET=$(cat <<- 'EOF'
+linux/amd64
 macosx/x86_64
 macosx/arm64
 iphoneos/arm64
@@ -48,6 +49,7 @@ fi
 function compile() {
   (
     export PROJ_ROOT="${PROJ_ROOT}"
+    export PYPI_MIRROR="-i https://mirrors.bfsu.edu.cn/pypi/web/simple"
 
     export PKG_NAME="${1}"
     export SUBPROJ_SRC="${PROJ_ROOT}/deps/${PKG_NAME}"
