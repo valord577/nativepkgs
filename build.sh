@@ -32,6 +32,9 @@ for t in ${SUPPORTED_TARGET[@]}; do
     UNSUPPORTED_ERR="0"
 
     case ${TARGET_PLATFORM} in
+      "linux")
+        source "${PROJ_ROOT}/env-linux.sh" ${TARGET_PLATFORM} ${TARGET_ARCH}
+        ;;
       "macosx" | "iphoneos" | "iphonesimulator")
         source "${PROJ_ROOT}/env-apple.sh" ${TARGET_PLATFORM} ${TARGET_ARCH}
         ;;

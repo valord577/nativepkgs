@@ -26,6 +26,9 @@ function chk_compiler() {
 function chk_compiler_cc() {
   chk_compiler 'CC' "${1}"
 }
+function chk_compiler_asm() {
+  chk_compiler 'ASM' "${1}"
+}
 function chk_compiler_cxx() {
   chk_compiler 'CXX' "${1}"
 }
@@ -39,6 +42,17 @@ if [ "${flag}" != "0" ]; then
 fi
 if [ "${flag}" != "0" ]; then
   chk_compiler_cc 'gcc'
+  flag="${?}"
+fi
+
+chk_compiler_asm 'cc'
+flag="${?}"
+if [ "${flag}" != "0" ]; then
+  chk_compiler_asm 'clang'
+  flag="${?}"
+fi
+if [ "${flag}" != "0" ]; then
+  chk_compiler_asm 'gcc'
   flag="${?}"
 fi
 
