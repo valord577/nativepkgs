@@ -17,7 +17,7 @@ function chk_compiler() {
   } fi
 
   eval export "${c_key}='ccache ${c_value}'"
-  export CMAKE_EXTRA="${CMAKE_EXTRA} -D ${3}=ccache"
+  export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D ${3}=ccache"
   printf "\e[4m\e[32m%s\e[0m\n" "use ccache for ${c_key}: ${c_value}"
   return 0
 }
