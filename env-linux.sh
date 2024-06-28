@@ -10,7 +10,8 @@ function chk_compiler() {
   if ! command -v ccache >/dev/null 2>&1 ; then { return 0; } fi
 
   local c_key="${1}"
-  local c_value="${2}"
+  local c_value=$(eval echo "\${${c_key}}")
+  if [ -z "${c_value}" ]; then { c_value="${2}"; } fi
   if ! command -v ${c_value} >/dev/null 2>&1 ; then
     printf "\e[4m\e[33m%s\e[0m\n" "Not found ${c_key} compiler: ${c_value}"
     return 1
