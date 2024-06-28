@@ -11,10 +11,10 @@ function chk_compiler() {
 
   local c_key="${1}"
   local c_value="${2}"
-  if ! command -v ${c_value} >/dev/null 2>&1 ; then {
+  if ! command -v ${c_value} >/dev/null 2>&1 ; then
     printf "\e[4m\e[33m%s\e[0m\n" "Not found ${c_key} compiler: ${c_value}"
     return 1
-  } fi
+  fi
 
   eval export "${c_key}='ccache ${c_value}'"
   export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D ${3}=ccache"
