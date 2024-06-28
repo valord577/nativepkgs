@@ -10,60 +10,33 @@ function chk_compiler() {
   if ! command -v ccache >/dev/null 2>&1 ; then { return 0; } fi
 
   local c_key="${1}"
-  local c_value=$(eval echo "\${${c_key}}")
-  if [ -n "${c_value}" ]; then
-    eval export "${c_key}='ccache ${c_value}'"
-    return 0
-  fi
+  local c_value="${2}"
+  if ! command -v ${c_value} >/dev/null 2>&1 ; then {
+    printf "\e[4m\e[33m%s\e[0m\n" "not found ${c_key} compiler: ${c_value}"
+    return 1
+  } fi
 
-  c_value="${2}"
-  if command -v ${c_value} >/dev/null 2>&1 ; then
-    eval export "${c_key}='ccache ${c_value}'"
-    return 0
-  fi
-  return 1
-}
-function chk_compiler_cc() {
-  chk_compiler 'CC' "${1}"
-}
-function chk_compiler_asm() {
-  chk_compiler 'ASM' "${1}"
-}
-function chk_compiler_cxx() {
-  chk_compiler 'CXX' "${1}"
+  eval export "${c_key}='ccache ${c_value}'"
+  export CMAKE_EXTRA="${CMAKE_EXTRA} -D ${3}=ccache"
+  printf "\e[4m\e[32m%s\e[0m\n" "use ccache for ${c_key}: ${c_value}"
+  return 0
 }
 
+# https://cmake.org/cmake/help/latest/command/enable_language.html
+# https://cmake.org/cmake/help/latest/envvar/CMAKE_LANG_COMPILER_LAUNCHER.html
+compilers=(
+  'CC  CMAKE_C_COMPILER_LAUNCHER   cc  clang   gcc'
+  'CXX CMAKE_CXX_COMPILER_LAUNCHER c++ clang++ g++'
+  'ASM CMAKE_ASM_COMPILER_LAUNCHER cc  clang   gcc'
+)
 set +e
-chk_compiler_cc 'cc'
-flag="${?}"
-if [ "${flag}" != "0" ]; then
-  chk_compiler_cc 'clang'
-  flag="${?}"
-fi
-if [ "${flag}" != "0" ]; then
-  chk_compiler_cc 'gcc'
-  flag="${?}"
-fi
+for c in "${compilers[@]}"; do
+  c_list=(${c})
+  c_key="${c_list[0]}"
 
-chk_compiler_asm 'cc'
-flag="${?}"
-if [ "${flag}" != "0" ]; then
-  chk_compiler_asm 'clang'
-  flag="${?}"
-fi
-if [ "${flag}" != "0" ]; then
-  chk_compiler_asm 'gcc'
-  flag="${?}"
-fi
-
-chk_compiler_cxx 'c++'
-flag="${?}"
-if [ "${flag}" != "0" ]; then
-  chk_compiler_cxx 'clang++'
-  flag="${?}"
-fi
-if [ "${flag}" != "0" ]; then
-  chk_compiler_cxx 'g++'
-  flag="${?}"
-fi
+  for c_value in ${c_list[@]:2}; do
+    chk_compiler "${c_key}" "${c_value}" "${c_list[1]}"
+    if [ "${?}" == "0" ]; then { break; } fi
+  done
+done
 set -e
