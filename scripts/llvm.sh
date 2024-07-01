@@ -8,8 +8,8 @@ if [ ! -e "${SUBPROJ_SRC}/.env" ]; then
   pushd -- "${SUBPROJ_SRC}"
   {
     python3 -m venv .env
-    .env/bin/pip3 install ${PYPI_MIRROR} --upgrade pip
-    .env/bin/pip3 install ${PYPI_MIRROR} ninja
+    .env/bin/python3 -m pip install ${PYPI_MIRROR} --upgrade pip
+    .env/bin/python3 -m pip install ${PYPI_MIRROR} ninja
   }
   popd
 fi

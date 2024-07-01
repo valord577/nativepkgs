@@ -52,7 +52,7 @@ function compile() {
       popd
     fi
     pushd -- "${SUBPROJ_SRC}"
-    export PKG_VERSION="$(git describe --tags --always --dirty --abbrev=${GIT_ABBREV:-"7"})"
+    export PKG_VERSION="$(git describe --tags --always --dirty --abbrev=7)"
     popd
 
     if [ -e "${PROJ_ROOT}/patchs/${PKG_NAME}" ]; then
@@ -70,7 +70,7 @@ function compile() {
 
 if [ "${GITHUB_ACTIONS}" != "true" ]; then
   if [ -z ${1} ]; then
-    printf "\e[1m\e[31m%s\e[0m\n" "Please declare the modules to be compiled."
+    printf "\e[1m\e[31m%s\e[0m\n" "Please declare the module to be compiled."
     exit 1
   fi
   compile ${1} ${2:-"static"} ${TARGET_PLATFORM} ${TARGET_ARCH}
