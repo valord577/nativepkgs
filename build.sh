@@ -7,14 +7,14 @@ basename="${BASH_SOURCE[0]##*/}"
 triplet="${basename%%\.*}"
 triplet_values=(${triplet//_/ })
 triplet_length=${#triplet_values[@]}
-if [ $triplet_length -eq 3 ]; then
-  TARGET_PLATFORM="${triplet_values[1]}"
-  TARGET_ARCH="${triplet_values[2]}"
-else
+if [ $triplet_length -lt 3 ]; then
   printf "\e[1m\e[31m%s\e[0m\n" \
     "Please use wrapper to build the project, such as 'build_\${platform}_\${arch}.sh'."
   exit 1
 fi
+TARGET_PLATFORM="${triplet_values[1]}"
+prefix="${triplet_values[0]}_${triplet_values[1]}_"
+TARGET_ARCH="${triplet#${prefix}}"
 
 case ${TARGET_PLATFORM} in
   "linux")

@@ -18,14 +18,14 @@ $PROJ_ROOT = $PSScriptRoot
 $triplet = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
 $triplet_values = $triplet -split '_'
 $triplet_length = $triplet_values.Length
-if ($triplet_length -eq 3) {
-  $TARGET_PLATFORM = $triplet_values[1]
-  $TARGET_ARCH = $triplet_values[2]
-} else {
+if ($triplet_length -lt 3) {
   Write-Host -ForegroundColor Red `
-    "Please use wrapper to build the project, such as 'build_`${platform}_`${arch}.sh'."
+    "Please use wrapper to build the project, such as 'build_`${platform}_`${arch}.ps1'."
   exit 1
 }
+$TARGET_PLATFORM = $triplet_values[1]
+$prefix = $triplet_values[0] + "_" + $triplet_values[1] + "_"
+$TARGET_ARCH = $triplet.Substring($prefix.Length)
 
 switch ($TARGET_PLATFORM) {
   'win-msvc' {
