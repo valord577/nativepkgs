@@ -46,8 +46,8 @@ if ($LIB_RELEASE -ieq "1") {
 # ----------------------------
 # compile :p
 # ----------------------------
-Remove-Item "${env:PKG_INST_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path "${env:PKG_INST_DIR}" *> $null
+#Remove-Item "${env:PKG_INST_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
+#New-Item -ItemType Directory -Path "${env:PKG_INST_DIR}" *> $null
 
 if (-not (Test-Path -PathType Container -Path "${env:PKG_BULD_DIR}")) {
   New-Item -ItemType Directory -Path "${env:PKG_BULD_DIR}" *> $null
@@ -99,8 +99,8 @@ Write-Host -ForegroundColor Cyan "${CMAKE_COMMAND}"
 Invoke-Expression -Command "${CMAKE_COMMAND}"
 
 # build & install
-# cmake --build "${env:PKG_BULD_DIR}"
-# cmake --install "${env:PKG_BULD_DIR}" ${PKG_INST_STRIP}
+cmake --build "${env:PKG_BULD_DIR}"
+cmake --install "${env:PKG_BULD_DIR}" ${PKG_INST_STRIP}
 
 Get-ChildItem "${env:PKG_INST_DIR}"
 $BUILD_DATE = (Get-Date -UFormat "+%Y-%m-%dT%H:%M:%S %Z")
