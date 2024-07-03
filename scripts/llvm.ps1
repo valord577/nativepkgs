@@ -46,8 +46,8 @@ if ($LIB_RELEASE -ieq "1") {
 # ----------------------------
 # compile :p
 # ----------------------------
-#Remove-Item "${env:PKG_INST_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
-#New-Item -ItemType Directory -Path "${env:PKG_INST_DIR}" *> $null
+Remove-Item "${env:PKG_INST_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path "${env:PKG_INST_DIR}" *> $null
 
 if (-not (Test-Path -PathType Container -Path "${env:PKG_BULD_DIR}")) {
   New-Item -ItemType Directory -Path "${env:PKG_BULD_DIR}" *> $null
