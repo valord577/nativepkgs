@@ -40,7 +40,13 @@ if ($LIB_RELEASE -ieq "1") {
   $PKG_BULD_TYPE = "-D CMAKE_BUILD_TYPE=Release"
   $PKG_INST_STRIP = "--strip"
 } else {
-  $PKG_BULD_TYPE = "-D CMAKE_BUILD_TYPE=Debug"
+  $PKG_BULD_TYPE = @"
+``
+  -D CMAKE_BUILD_TYPE=Debug ``
+  -D CMAKE_EXE_LINKER_FLAGS_DEBUG="/debug /INCREMENTAL:NO" ``
+  -D CMAKE_SHARED_LINKER_FLAGS_DEBUG="/debug /INCREMENTAL:NO" ``
+  -D CMAKE_MODULE_LINKER_FLAGS_DEBUG="/debug /INCREMENTAL:NO"
+"@
   $PKG_INST_STRIP = ""
 }
 # ----------------------------
@@ -81,7 +87,8 @@ cmake -G Ninja ``
   -D CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON ``
   -D CMAKE_INSTALL_PREFIX="${env:PKG_INST_DIR}" ``
   -D CMAKE_INSTALL_LIBDIR:PATH=lib ``
-  ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} ``
+  ${PKG_BULD_TYPE} ``
+  ${PKG_TYPE_FLAG} ``
   ${env:CMAKE_EXTRA_ARGS} ``
   -D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lldb" ``
   -D CLANG_PLUGIN_SUPPORT:BOOL=0 ``

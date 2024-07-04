@@ -25,7 +25,7 @@ if ($ccache -ne $null) {
 ``
   ${env:CMAKE_EXTRA_ARGS} ``
   -D CMAKE_RC_COMPILER_LAUNCHER="$($ccache.Source)" ``
-  -D CMAKE_CC_COMPILER_LAUNCHER="$($ccache.Source)" ``
+  -D CMAKE_C_COMPILER_LAUNCHER="$($ccache.Source)" ``
   -D CMAKE_CXX_COMPILER_LAUNCHER="$($ccache.Source)" ``
   -D CMAKE_ASM_COMPILER_LAUNCHER="$($ccache.Source)" ``
   -D CMAKE_ASM_MASM_COMPILER_LAUNCHER="$($ccache.Source)"
