@@ -81,7 +81,7 @@ jobs:
         if: ${{ env._SETP_CAN_RUN == 'true' }}
         run: |
           pushd -- "${{ env._REPO_THIS }}/deps/${{ github.workflow }}"
-          _PKG_VERSION=$(git describe --tags --always --abbrev=7)
+          _PKG_VERSION=$(git rev-parse --short=7 HEAD)
           popd
 
           echo "_PKG_VERSION=${_PKG_VERSION}" >> "$GITHUB_ENV"

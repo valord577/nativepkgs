@@ -16,38 +16,21 @@ TARGET_PLATFORM="${triplet_values[1]}"
 prefix="${triplet_values[0]}_${triplet_values[1]}_"
 TARGET_ARCH="${triplet#${prefix}}"
 
-SUPPORTED_TARGET=$(cat <<- 'EOF'
-macosx/x86_64
-macosx/arm64
-iphoneos/arm64
-iphonesimulator/x86_64
-iphonesimulator/arm64
-EOF
-)
-
-UNSUPPORTED_ERR="1"
-for t in ${SUPPORTED_TARGET[@]}; do
-  if [ "${t}" == "${TARGET_PLATFORM}/${TARGET_ARCH}" ]; then
-    UNSUPPORTED_ERR="0"
-
-    case ${TARGET_PLATFORM} in
-      "macosx" | "iphoneos" | "iphonesimulator")
-        source "${PROJ_ROOT}/env-apple.sh" ${TARGET_PLATFORM} ${TARGET_ARCH}
-        ;;
-      ?)
-        ;;
-    esac
-  fi
-done
-
-if [ "${UNSUPPORTED_ERR}" == "1" ]; then
-  printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TARGET: '${TARGET_PLATFORM}/${TARGET_ARCH}'."
-  exit 1
-fi
+case ${TARGET_PLATFORM} in
+  "linux")
+    source "${PROJ_ROOT}/env-linux.sh" ${TARGET_PLATFORM} ${TARGET_ARCH}
+    ;;
+  "macosx" | "iphoneos" | "iphonesimulator")
+    source "${PROJ_ROOT}/env-apple.sh" ${TARGET_PLATFORM} ${TARGET_ARCH}
+    ;;
+  ?)
+    ;;
+esac
 
 function compile() {
   (
     export PROJ_ROOT="${PROJ_ROOT}"
+    export PYPI_MIRROR="-i https://mirrors.bfsu.edu.cn/pypi/web/simple"
 
     export PKG_NAME="${1}"
     export SUBPROJ_SRC="${PROJ_ROOT}/deps/${PKG_NAME}"
@@ -68,9 +51,6 @@ function compile() {
       git submodule update --init -f -- "deps/${PKG_NAME}"
       popd
     fi
-    pushd -- "${SUBPROJ_SRC}"
-    export PKG_VERSION="$(git describe --tags --always --dirty --abbrev=${GIT_ABBREV:-"7"})"
-    popd
 
     if [ -e "${PROJ_ROOT}/patchs/${PKG_NAME}" ]; then
       pushd -- "${SUBPROJ_SRC}"
@@ -87,7 +67,7 @@ function compile() {
 
 if [ "${GITHUB_ACTIONS}" != "true" ]; then
   if [ -z ${1} ]; then
-    printf "\e[1m\e[31m%s\e[0m\n" "Please declare the modules to be compiled."
+    printf "\e[1m\e[31m%s\e[0m\n" "Please declare the module to be compiled."
     exit 1
   fi
   compile ${1} ${2:-"static"} ${TARGET_PLATFORM} ${TARGET_ARCH}
