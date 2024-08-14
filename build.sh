@@ -51,9 +51,6 @@ function compile() {
       git submodule update --init -f -- "deps/${PKG_NAME}"
       popd
     fi
-    pushd -- "${SUBPROJ_SRC}"
-    export PKG_VERSION="$(git describe --tags --always --dirty --abbrev=7)"
-    popd
 
     if [ -e "${PROJ_ROOT}/patchs/${PKG_NAME}" ]; then
       pushd -- "${SUBPROJ_SRC}"

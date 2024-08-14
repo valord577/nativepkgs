@@ -4,32 +4,15 @@ param (
 )
 
 ${env:PARALLEL_JOBS} = ${env:NUMBER_OF_PROCESSORS}
-${env:CMAKE_EXTRA_ARGS} = "${env:CMAKE_EXTRA_ARGS} -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded"
 
-# https://github.com/ccache/ccache/discussions/978
-${env:RC} = "rc.exe"
-${env:CC} = "cl.exe"
-${env:CXX} = "cl.exe"
-${env:ASM} = "cl.exe"
-${env:ASM_MASM} = "ml64.exe" # only supports 64bit OS
-
+${env:CCACHE_SRC} = ""
 $ccache = Get-Command -Name ccache.exe -CommandType Application -ErrorAction SilentlyContinue
 if ($ccache -ne $null) {
-  ${env:RC} = "$($ccache.Source) ${env:RC}"
-  ${env:CC} = "$($ccache.Source) ${env:CC}"
-  ${env:CXX} = "$($ccache.Source) ${env:CXX}"
-  ${env:ASM} = "$($ccache.Source) ${env:ASM}"
-  ${env:ASM_MASM} = "$($ccache.Source) ${env:ASM_MASM}"
+  ${env:CCACHE_SRC} = "$($ccache.Source)"
 
-  ${env:CMAKE_EXTRA_ARGS} = @"
-``
-  ${env:CMAKE_EXTRA_ARGS} ``
-  -D CMAKE_RC_COMPILER_LAUNCHER="$($ccache.Source)" ``
-  -D CMAKE_C_COMPILER_LAUNCHER="$($ccache.Source)" ``
-  -D CMAKE_CXX_COMPILER_LAUNCHER="$($ccache.Source)" ``
-  -D CMAKE_ASM_COMPILER_LAUNCHER="$($ccache.Source)" ``
-  -D CMAKE_ASM_MASM_COMPILER_LAUNCHER="$($ccache.Source)"
-"@
+  # https://github.com/ccache/ccache/discussions/978
+  ${env:CMAKE_EXTRA_ARGS} = "${env:CMAKE_EXTRA_ARGS} -D CMAKE_C_COMPILER_LAUNCHER=`"${env:CCACHE_SRC}`""
+  ${env:CMAKE_EXTRA_ARGS} = "${env:CMAKE_EXTRA_ARGS} -D CMAKE_CXX_COMPILER_LAUNCHER=`"${env:CCACHE_SRC}`""
 }
 
 # >>> VS DevShell >>>

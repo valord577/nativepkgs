@@ -23,12 +23,10 @@ function chk_compiler() {
   return 0
 }
 
-# https://cmake.org/cmake/help/latest/command/enable_language.html
 # https://cmake.org/cmake/help/latest/envvar/CMAKE_LANG_COMPILER_LAUNCHER.html
 compilers=(
   'CC  CMAKE_C_COMPILER_LAUNCHER   cc  clang   gcc'
   'CXX CMAKE_CXX_COMPILER_LAUNCHER c++ clang++ g++'
-  'ASM CMAKE_ASM_COMPILER_LAUNCHER cc  clang   gcc'
 )
 set +e
 for c in "${compilers[@]}"; do

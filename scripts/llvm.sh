@@ -46,13 +46,7 @@ fi
 # compile :p
 # ----------------------------
 { rm -rf ${PKG_INST_DIR}; mkdir -p "${PKG_INST_DIR}"; }
-
-if [ ! -e "${PKG_BULD_DIR}" ]; then
-  mkdir -p "${PKG_BULD_DIR}"
-else
-  rm -f ${PKG_BULD_DIR}/CMakeCache.txt
-  rm -f ${PKG_BULD_DIR}/**/CMakeCache.txt
-fi
+{ rm -rf ${PKG_BULD_DIR}; mkdir -p "${PKG_BULD_DIR}"; }
 
 case ${PKG_ARCH} in
   "amd64" | "x86_64")
@@ -66,6 +60,10 @@ case ${PKG_ARCH} in
     exit 1
     ;;
 esac
+
+# use CMAKE_<LANG>_COMPILER_LAUNCHER
+if [ -n "${CC}" ]; then { export CC="${CC##*ccache }"; } fi
+if [ -n "${CXX}" ]; then { export CXX="${CXX##*ccache }"; } fi
 
 CMAKE_COMMAND=$(cat <<- EOF
 cmake -G Ninja \

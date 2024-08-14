@@ -67,9 +67,6 @@ $compile = {
     git submodule update --init -f -- "deps/${PKG_NAME}"
     Pop-Location
   }
-  Push-Location "${env:SUBPROJ_SRC}"
-  ${env:PKG_VERSION} = "$(git describe --tags --always --dirty --abbrev=7)"
-  Pop-Location
 
   if (Test-Path -PathType Container -Path "${PROJ_ROOT}/patchs/${PKG_NAME}") {
     Push-Location "${env:SUBPROJ_SRC}"

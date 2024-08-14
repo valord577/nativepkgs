@@ -37,12 +37,17 @@ if ($LIB_RELEASE -eq $null) {
   $LIB_RELEASE = "1"
 }
 if ($LIB_RELEASE -ieq "1") {
-  $PKG_BULD_TYPE = "-D CMAKE_BUILD_TYPE=Release"
+  $PKG_BULD_TYPE = @"
+``
+  -D CMAKE_BUILD_TYPE=Release ``
+  -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+"@
   $PKG_INST_STRIP = "--strip"
 } else {
   $PKG_BULD_TYPE = @"
 ``
   -D CMAKE_BUILD_TYPE=Debug ``
+  -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebug ``
   -D CMAKE_EXE_LINKER_FLAGS_DEBUG="/debug /INCREMENTAL:NO" ``
   -D CMAKE_SHARED_LINKER_FLAGS_DEBUG="/debug /INCREMENTAL:NO" ``
   -D CMAKE_MODULE_LINKER_FLAGS_DEBUG="/debug /INCREMENTAL:NO"
@@ -55,11 +60,8 @@ if ($LIB_RELEASE -ieq "1") {
 Remove-Item "${env:PKG_INST_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path "${env:PKG_INST_DIR}" *> $null
 
-if (-not (Test-Path -PathType Container -Path "${env:PKG_BULD_DIR}")) {
-  New-Item -ItemType Directory -Path "${env:PKG_BULD_DIR}" *> $null
-} else {
-  Get-ChildItem "${env:PKG_BULD_DIR}\*" -Include "CMakeCache.txt" -Recurse | Remove-Item
-}
+Remove-Item "${env:PKG_BULD_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path "${env:PKG_BULD_DIR}" *> $null
 
 switch ($env:PKG_ARCH) {
   'amd64' {
@@ -72,18 +74,12 @@ switch ($env:PKG_ARCH) {
   }
 }
 
-Remove-Item -Path "env:RC"
-Remove-Item -Path "env:CC"
-Remove-Item -Path "env:CXX"
-Remove-Item -Path "env:ASM"
-Remove-Item -Path "env:ASM_MASM"
-
 ${env:CFLAGS} = "/utf-8"
 ${env:CXXFLAGS} = "/utf-8"
 
 $CMAKE_COMMAND = @"
 cmake -G Ninja ``
-  -S "${env:SUBPROJ_SRC}/llvm" -B "${env:PKG_BULD_DIR}" ``
+  -S "${env:SUBPROJ_SRC}\llvm" -B "${env:PKG_BULD_DIR}" ``
   -D CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON ``
   -D CMAKE_INSTALL_PREFIX="${env:PKG_INST_DIR}" ``
   -D CMAKE_INSTALL_LIBDIR:PATH=lib ``
