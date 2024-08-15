@@ -48,7 +48,7 @@ function compile() {
 
     if [ ! -e "${SUBPROJ_SRC}/.git" ]; then
       pushd -- "${PROJ_ROOT}"
-      git submodule update --init -f -- "deps/${PKG_NAME}"
+      git submodule update --init --depth=1 --single-branch -f -- "deps/${PKG_NAME}"
       popd
     fi
 

@@ -64,7 +64,7 @@ $compile = {
 
   if (-not (Test-Path -PathType Any -Path "${env:SUBPROJ_SRC}/.git")) {
     Push-Location "${PROJ_ROOT}"
-    git submodule update --init -f -- "deps/${PKG_NAME}"
+    git submodule update --init --depth=1 --single-branch -f -- "deps/${PKG_NAME}"
     Pop-Location
   }
 

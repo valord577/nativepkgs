@@ -65,6 +65,12 @@ fi
 { rm -rf ${PKG_BULD_DIR}; mkdir -p "${PKG_BULD_DIR}"; }
 { rm -rf ${PKG_INST_DIR}; mkdir -p "${PKG_INST_DIR}"; }
 
+# use CMAKE_<LANG>_COMPILER_LAUNCHER
+if [ -n "${CC}" ]; then { export CC="${CC##*ccache }"; } fi
+if [ -n "${CXX}" ]; then { export CXX="${CXX##*ccache }"; } fi
+if [ -n "${OBJC}" ]; then { export OBJC="${OBJC##*ccache }"; } fi
+if [ -n "${OBJCXX}" ]; then { export OBJCXX="${OBJCXX##*ccache }"; } fi
+
 CMAKE_COMMAND=$(cat <<- EOF
 cmake -S "${SUBPROJ_SRC}" -B "${PKG_BULD_DIR}" \
   -D CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON \
@@ -91,13 +97,13 @@ includedir=\${prefix}/include
 
 Name: mbedtls
 Description: An open source, portable, easy to use, readable and flexible TLS library
-Version: ${PKG_VERSION}
+Version:
 Libs: -L\${libdir} ${PKG_LIBRARY_DEPS}
 Cflags: -I\${includedir}
 EOF
 
 if command -v tree >/dev/null 2>&1 ; then
-  tree ${PKG_INST_DIR}
+  tree -L 3 ${PKG_INST_DIR}
 else
   ls -alh -- ${PKG_INST_DIR}
 fi

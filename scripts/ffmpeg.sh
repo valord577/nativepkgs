@@ -5,7 +5,7 @@ set -e
 # packages
 # ----------------------------
 source "${PROJ_ROOT}/pkg-conf.sh"
-dl_pkgc mbedtls  'v3.6.0'    static '' '--enable-mbedtls'
+dl_pkgc mbedtls  '2ca6c28'   static '' '--enable-mbedtls'
 dl_pkgc sdl2     'fb14975'   static '' ''
 
 printf "\e[1m\e[35m%s\e[0m\n" "${PKG_CONFIG_PATH}"
@@ -94,24 +94,22 @@ popd
 
 # build & install
 pushd -- "${PKG_BULD_DIR}"
-MAKE_COMMAND="make -j ${PARALLEL_JOBS}"
+MAKE_COMMAND="make -j ${PARALLEL_JOBS}; make install"
 if command -v bear >/dev/null 2>&1 ; then
   MAKE_COMMAND="bear -- ${MAKE_COMMAND}"
 fi
 eval ${MAKE_COMMAND}
-
-make install
 popd
 
 rm -rf ${PKG_INST_DIR}/share
-case ${PKG_PLATFORM} in
-  "macosx")
-    xattr -cs ${PKG_INST_DIR}/bin/*
-    ;;
-esac
+# case ${PKG_PLATFORM} in
+#   "macosx")
+#     xattr -cs ${PKG_INST_DIR}/bin/*
+#     ;;
+# esac
 
 if command -v tree >/dev/null 2>&1 ; then
-  tree ${PKG_INST_DIR}
+  tree -L 3 ${PKG_INST_DIR}
 else
   ls -alh -- ${PKG_INST_DIR}
 fi

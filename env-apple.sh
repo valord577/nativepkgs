@@ -11,13 +11,15 @@ fi
 
 export PARALLEL_JOBS="$(sysctl -n hw.ncpu)"
 if command -v ccache >/dev/null 2>&1 ; then
-  export ASM="ccache clang"
-
   export CC="ccache clang"
   export CXX="ccache clang++"
-
   export OBJC="ccache clang"
   export OBJCXX="ccache clang++"
+
+  export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D CMAKE_C_COMPILER_LAUNCHER=ccache"
+  export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D CMAKE_OBJC_COMPILER_LAUNCHER=ccache"
+  export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D CMAKE_OBJCXX_COMPILER_LAUNCHER=ccache"
 fi
 # ----------------------------
 # cmake
@@ -26,7 +28,7 @@ export CMAKE_EXTRA_ARGS=$(cat <<- EOF
 -D CMAKE_OSX_ARCHITECTURES=${TARGET_ARCH} \
 -D CMAKE_OSX_SYSROOT=${TARGET_PLATFORM} \
 -D CMAKE_OSX_DEPLOYMENT_TARGET=${TARGET_DEPLOYMENT} \
--D CMAKE_MACOSX_BUNDLE:BOOL=0
+-D CMAKE_MACOSX_BUNDLE:BOOL=0 ${CMAKE_EXTRA_ARGS}
 EOF
 )
 if [ "${TARGET_PLATFORM}" == "iphoneos" ] || \

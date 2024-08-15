@@ -64,6 +64,8 @@ esac
 # use CMAKE_<LANG>_COMPILER_LAUNCHER
 if [ -n "${CC}" ]; then { export CC="${CC##*ccache }"; } fi
 if [ -n "${CXX}" ]; then { export CXX="${CXX##*ccache }"; } fi
+if [ -n "${OBJC}" ]; then { export OBJC="${OBJC##*ccache }"; } fi
+if [ -n "${OBJCXX}" ]; then { export OBJCXX="${OBJCXX##*ccache }"; } fi
 
 CMAKE_COMMAND=$(cat <<- EOF
 cmake -G Ninja \
@@ -92,7 +94,7 @@ cmake --build "${PKG_BULD_DIR}"
 cmake --install "${PKG_BULD_DIR}" ${PKG_INST_STRIP}
 
 if command -v tree >/dev/null 2>&1 ; then
-  tree ${PKG_INST_DIR}
+  tree -L 3 ${PKG_INST_DIR}
 else
   ls -alh -- ${PKG_INST_DIR}
 fi
