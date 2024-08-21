@@ -29,13 +29,7 @@ function dl_pkgc() {
           fi
           printf "\e[1m\e[36m%s\e[0m\n" "dl_filename='${dl_filename}'"
 
-          dl_url=$(
-            ossutil sign \
-              oss://${GH_OSSUTIL_BUCKET}/${GH_OSSUTIL_PKGS}/${pkg_name}/${pkg_version}/${dl_filename} \
-              --disable-encode-slash -e ${GH_OSSUTIL_ENDPOINT} -i ${GH_OSSUTIL_AK} -k ${GH_OSSUTIL_SK} \
-              | grep "${dl_filename}" | sed "s@://${GH_OSSUTIL_BUCKET}.${GH_OSSUTIL_ENDPOINT}/@://${GH_OSSUTIL_CNAME}/@g"
-          )
-          curl --silent --fail --url "${dl_url}" -L -X GET -o "${pkg_name}.zip"
+          ${PROJ_ROOT}/.github/oss_v4.py pull "${pkg_name}/${pkg_version}/${dl_filename}" "${pkg_name}.zip"
           unzip -q "${pkg_name}.zip"
         }
       else

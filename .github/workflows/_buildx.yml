@@ -16,11 +16,10 @@ on:
         type: boolean
 
 env:
-  _OSSUTIL_VER: 'v1.7.18'
   GH_OSSUTIL_AK: ${{ secrets.GH_OSSUTIL_AK }}
   GH_OSSUTIL_SK: ${{ secrets.GH_OSSUTIL_SK }}
   GH_OSSUTIL_BUCKET: ${{ secrets.GH_OSSUTIL_BUCKET }}
-  GH_OSSUTIL_ENDPOINT: ${{ secrets.GH_OSSUTIL_ENDPOINT }}
+  GH_OSSUTIL_REGION: ${{ secrets.GH_OSSUTIL_REGION }}
   GH_OSSUTIL_PKGS: ${{ secrets.GH_OSSUTIL_PKGS }}
   GH_OSSUTIL_CNAME: ${{ secrets.GH_OSSUTIL_CNAME }}
 
@@ -53,11 +52,6 @@ jobs:
         run: |
           brew list -l
           brew install ccache nasm
-      - name: setup ali ossutil
-        run: |
-          curl -fsSL -X GET -o "ossutil.zip" \
-            --url "https://github.com/aliyun/ossutil/releases/download/${{ env._OSSUTIL_VER }}/ossutil-${{ env._OSSUTIL_VER }}-mac-arm64.zip"
-          unzip -j ossutil.zip "*/ossutil" -d .; echo "${PWD}" >> "$GITHUB_PATH"
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:
@@ -110,24 +104,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ${{ github.workspace }}/${{ github.workflow }}
-      - name: setup ali ossutil
-        run: |
-          ARCH="$(uname -m)"
-          case ${ARCH} in
-            "x86_64")
-              ARCH="amd64"
-              ;;
-            "aarch64")
-              ARCH="arm64"
-              ;;
-            ?)
-              printf "\e[1m\e[31m%s\e[0m\n" "Invalid HOST ARCH: '${ARCH}'"
-              exit 1
-              ;;
-          esac
-          curl -fsSL -X GET -o "ossutil.zip" \
-            --url "https://github.com/aliyun/ossutil/releases/download/${{ env._OSSUTIL_VER }}/ossutil-${{ env._OSSUTIL_VER }}-linux-${ARCH}.zip"
-          unzip -j ossutil.zip "*/ossutil" -d .; echo "${PWD}" >> "$GITHUB_PATH"
       - name: show debug info
         run: |
           env
@@ -142,8 +118,8 @@ jobs:
         run: |
           mkdir -p '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
           mv -f ${{ github.workspace }}/${{ github.workflow }}/*/*.zip '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
-          ossutil cp \
-            ${{ github.workflow }}/${{ needs._buildx.outputs.version }} \
-            oss://${GH_OSSUTIL_BUCKET}/${GH_OSSUTIL_PKGS}/${{ github.workflow }}/${{ needs._buildx.outputs.version }} \
-            --include "*.zip" --recursive --force --only-current-dir --disable-dir-object --bigfile-threshold=2048 \
-            -e ${GH_OSSUTIL_ENDPOINT} -i ${GH_OSSUTIL_AK} -k ${GH_OSSUTIL_SK} --disable-all-symlink
+
+          for ZIP in `ls -- ${{ github.workflow }}/${{ needs._buildx.outputs.version }}`; do
+            ./.github/oss_v4.py push "${{ github.workflow }}/${{ needs._buildx.outputs.version }}/${ZIP}" \
+              "${{ github.workflow }}/${{ needs._buildx.outputs.version }}/${ZIP}"
+          done
