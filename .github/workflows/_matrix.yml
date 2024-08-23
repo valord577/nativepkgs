@@ -89,6 +89,7 @@ jobs:
             ${{ env.CCACHE_GHA_KEY_RESTORE }}
       - name: buildx library - ${{ github.workflow }}
         run: |
+          set -x
           source build_${{ matrix.platform }}_${{ matrix.arch }}.sh
           compile ${{ github.workflow }} ${{ matrix.pkg_type }} ${{ matrix.platform }} ${{ matrix.arch }}
       - name: gh action ccache save
