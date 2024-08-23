@@ -4,10 +4,10 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/_buildx.yml'
+      - '.github/workflows/_matrix.yml'
       - '.github/workflows/sdl2.yml'
       - 'deps/sdl2'
-      - 'patchs/sdl2/**'
+      - 'patches/sdl2/**'
       - 'scripts/sdl2.sh'
       - 'build.sh'
       - 'env-apple.sh'
@@ -15,10 +15,10 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/_buildx.yml'
+      - '.github/workflows/_matrix.yml'
       - '.github/workflows/sdl2.yml'
       - 'deps/sdl2'
-      - 'patchs/sdl2/**'
+      - 'patches/sdl2/**'
       - 'scripts/sdl2.sh'
       - 'build.sh'
       - 'env-apple.sh'
@@ -26,4 +26,4 @@ on:
 jobs:
   build:
     secrets: inherit
-    uses: ./.github/workflows/_buildx.yml
+    uses: ./.github/workflows/_matrix.yml

@@ -23,7 +23,7 @@ case ${TARGET_PLATFORM} in
   "macosx" | "iphoneos" | "iphonesimulator")
     source "${PROJ_ROOT}/env-apple.sh" ${TARGET_PLATFORM} ${TARGET_ARCH}
     ;;
-  ?)
+  *)
     ;;
 esac
 
@@ -52,12 +52,12 @@ function compile() {
       popd
     fi
 
-    if [ -e "${PROJ_ROOT}/patchs/${PKG_NAME}" ]; then
+    if [ -e "${PROJ_ROOT}/patches/${PKG_NAME}" ]; then
       pushd -- "${SUBPROJ_SRC}"
       git reset --hard HEAD
 
-      for patch in $(ls -- "${PROJ_ROOT}/patchs/${PKG_NAME}"); do
-        git apply "${PROJ_ROOT}/patchs/${PKG_NAME}/${patch}"
+      for patch in $(ls -- "${PROJ_ROOT}/patches/${PKG_NAME}"); do
+        git apply "${PROJ_ROOT}/patches/${PKG_NAME}/${patch}"
       done
       popd
     fi

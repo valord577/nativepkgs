@@ -19,7 +19,7 @@ case ${PKG_TYPE} in
   "shared")
     PKG_TYPE_FLAG="--disable-static --enable-shared"
     ;;
-  ?)
+  *)
     printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TYPE: '${PKG_TYPE}'."
     exit 1
     ;;
@@ -76,7 +76,7 @@ case ${PKG_PLATFORM} in
       --disable-libxcb --disable-xlib
     "
     ;;
-  ?)
+  *)
     ;;
 esac
 case ${PKG_PLATFORM} in
@@ -85,7 +85,7 @@ case ${PKG_PLATFORM} in
   "iphoneos" | "iphonesimulator")
     CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --disable-programs"
     ;;
-  ?)
+  *)
     ;;
 esac
 
