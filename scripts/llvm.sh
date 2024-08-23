@@ -87,7 +87,7 @@ cmake -G Ninja \
   -D LLDB_USE_SYSTEM_DEBUGSERVER:BOOL=1
 EOF
 )
-printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}" && eval ${CMAKE_COMMAND}
+printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}"; eval ${CMAKE_COMMAND}
 
 # build & install
 cmake --build "${PKG_BULD_DIR}"

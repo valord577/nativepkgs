@@ -63,11 +63,16 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs._preset.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'bash' }}
+        working-directory: ${{ github.workspace }}
     env:
-      INST_DIR: "${{ github.workspace }}/${{ github.workflow }}"
+      INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_GHA_KEY: ${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
       CCACHE_GHA_KEY_RESTORE: ${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
+      PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
     steps:
       - name: clone with gh
         run: |
@@ -75,7 +80,9 @@ jobs:
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
       - name: install required software(s)
         run: |
-          brew list -l; brew install ccache nasm
+          if [[ ${{ startsWith(matrix.os, 'macos') }} ]]; then
+            brew list -l; brew install ccache nasm tree
+          fi
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:
@@ -92,41 +99,13 @@ jobs:
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-      - name: set required env `_PKG_ZIP_NAME`
-        run: |
-          echo "_PKG_ZIP_NAME=${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}" >> "$GITHUB_ENV"
-      - name: compress library - ${{ github.workflow }}
-        run: |
-          zip -ry "${{ env._PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
       - name: upload library - ${{ github.workflow }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env._PKG_ZIP_NAME }}
-          path: ${{ env._PKG_ZIP_NAME }}.zip
-
-  _upload:
-    needs:
-      - _preset
-      - _buildx
-    runs-on: ubuntu-latest
-    env:
-      _PUSH_CAN_EXE: ${{ github.event_name == 'push' && (! inputs.disable_upload) }}
-    steps:
-      - name: clone with gh
+          name: ${{ env.PKG_ZIP_NAME }}
+          path: ${{ env.INST_DIR }}
+      - name: commit to pre-compiled storage
+        if: ${{ github.event_name == 'push' && (! inputs.disable_upload) }}
         run: |
-          gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
-          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
-      - name: download ${{ github.workflow }} libraries
-        uses: actions/download-artifact@v4
-        with:
-          path: ${{ github.workspace }}/${{ github.workflow }}
-      - name: commit to pre-compiled packages
-        if: ${{ env._PUSH_CAN_EXE == 'true' }}
-        run: |
-          mkdir -p '${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}'
-          mv -f ${{ github.workspace }}/${{ github.workflow }}/*/*.zip '${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}'
-
-          for ZIP in `ls -- ${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}`; do
-            ./.github/oss_v4.py push "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${ZIP}" \
-              "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${ZIP}"
-          done
+          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
+          ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
