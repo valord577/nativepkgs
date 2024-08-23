@@ -41,7 +41,7 @@ case ${PKG_TYPE} in
     PKG_TYPE_FLAG="-D USE_STATIC_MBEDTLS_LIBRARY:BOOL=1 -D USE_SHARED_MBEDTLS_LIBRARY:BOOL=0"
     PKG_LIBRARY_DEPS="-lmbedtls -lmbedx509 -lmbedcrypto -lp256m -leverest"
     ;;
-  ?)
+  *)
     printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TYPE: '${PKG_TYPE}'."
     exit 1
     ;;

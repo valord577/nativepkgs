@@ -1,4 +1,4 @@
-name: _buildx
+name: _matrix
 on:
   workflow_call:
     inputs:
@@ -15,7 +15,11 @@ on:
         required: false
         type: boolean
 
+defaults:
+  run:
+    working-directory: ${{ github.workspace }}
 env:
+  GIT_WORK_TREE: ${{ github.workspace }}
   GH_OSSUTIL_AK: ${{ secrets.GH_OSSUTIL_AK }}
   GH_OSSUTIL_SK: ${{ secrets.GH_OSSUTIL_SK }}
   GH_OSSUTIL_BUCKET: ${{ secrets.GH_OSSUTIL_BUCKET }}
@@ -24,18 +28,36 @@ env:
   GH_OSSUTIL_CNAME: ${{ secrets.GH_OSSUTIL_CNAME }}
 
 jobs:
-  _buildx:
-    strategy:
-      matrix:
-        pkg_type: [shared, static]
-        platform: [iphoneos, iphonesimulator, macosx]
-        arch: [arm64, x86_64]
-        exclude:
-          - platform: 'iphoneos'
-            arch: 'x86_64'
-    runs-on: macos-14
+  _preset:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     outputs:
-      version: ${{ steps.version.outputs._PKG_VERSION }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      pkgver: ${{ steps.set-pkgver.outputs.pkgver }}
+    steps:
+      - name: clone with gh
+        run: |
+          gh repo clone ${{ github.repositoryUrl }} .git -- --bare --depth=1
+          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}
+          git checkout FETCH_HEAD
+      - name: set matrix
+        id: set-matrix
+        run: |
+          matrix=$(cat .github/matrix.json | jq -c -M)
+          echo -n "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
+      - name: set pkgver
+        id: set-pkgver
+        run: |
+          pkgver=$(git ls-tree -d -z --abbrev=7 --format='%(objectname)' HEAD -- deps/${{ github.workflow }})
+          echo -n "pkgver=$pkgver" >> "$GITHUB_OUTPUT"
+
+  _buildx:
+    needs: _preset
+    strategy:
+      matrix: ${{ fromJson(needs._preset.outputs.matrix) }}
+    runs-on: ${{ matrix.on }}
     env:
       _REPO_THIS: "_repo_this"
       _SETP_CAN_RUN: ${{ (! inputs.disable_shared && matrix.pkg_type == 'shared') || (! inputs.disable_static && matrix.pkg_type == 'static') }}
@@ -70,20 +92,10 @@ jobs:
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-      - name: set required env `_PKG_VERSION`
-        id: version
-        if: ${{ env._SETP_CAN_RUN == 'true' }}
-        run: |
-          pushd -- "${{ env._REPO_THIS }}/deps/${{ github.workflow }}"
-          _PKG_VERSION=$(git rev-parse --short=7 HEAD)
-          popd
-
-          echo "_PKG_VERSION=${_PKG_VERSION}" >> "$GITHUB_ENV"
-          echo "_PKG_VERSION=${_PKG_VERSION}" >> "$GITHUB_OUTPUT"
       - name: set required env `_PKG_ZIP_NAME`
         if: ${{ env._SETP_CAN_RUN == 'true' }}
         run: |
-          echo "_PKG_ZIP_NAME=${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ env._PKG_VERSION }}_${{ matrix.pkg_type }}" >> "$GITHUB_ENV"
+          echo "_PKG_ZIP_NAME=${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}" >> "$GITHUB_ENV"
       - name: compress library - ${{ github.workflow }}
         if: ${{ env._SETP_CAN_RUN == 'true' }}
         run: |
@@ -94,8 +106,11 @@ jobs:
         with:
           name: ${{ env._PKG_ZIP_NAME }}
           path: ${{ env._PKG_ZIP_NAME }}.zip
+
   _upload:
-    needs: _buildx
+    needs:
+      - _preset
+      - _buildx
     runs-on: ubuntu-latest
     env:
       _PUSH_CAN_EXE: ${{ github.event_name == 'push' && (! inputs.disable_upload) }}
@@ -116,10 +131,10 @@ jobs:
       - name: commit to pre-compiled packages
         if: ${{ env._PUSH_CAN_EXE == 'true' }}
         run: |
-          mkdir -p '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
-          mv -f ${{ github.workspace }}/${{ github.workflow }}/*/*.zip '${{ github.workflow }}/${{ needs._buildx.outputs.version }}'
+          mkdir -p '${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}'
+          mv -f ${{ github.workspace }}/${{ github.workflow }}/*/*.zip '${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}'
 
-          for ZIP in `ls -- ${{ github.workflow }}/${{ needs._buildx.outputs.version }}`; do
-            ./.github/oss_v4.py push "${{ github.workflow }}/${{ needs._buildx.outputs.version }}/${ZIP}" \
-              "${{ github.workflow }}/${{ needs._buildx.outputs.version }}/${ZIP}"
+          for ZIP in `ls -- ${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}`; do
+            ./.github/oss_v4.py push "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${ZIP}" \
+              "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${ZIP}"
           done

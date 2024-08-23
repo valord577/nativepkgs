@@ -24,7 +24,7 @@ case ${PKG_TYPE} in
   "shared")
     PKG_TYPE_FLAG="-D LLVM_BUILD_LLVM_DYLIB:BOOL=1"
     ;;
-  ?)
+  *)
     printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TYPE: '${PKG_TYPE}'."
     exit 1
     ;;
@@ -55,7 +55,7 @@ case ${PKG_ARCH} in
   "arm64")
     LLVM_TARGET="AArch64"
     ;;
-  ?)
+  *)
     printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG_ARCH: '${PKG_ARCH}'."
     exit 1
     ;;

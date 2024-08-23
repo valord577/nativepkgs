@@ -8,7 +8,7 @@ case ${PKG_TYPE} in
   "static")
     PKG_TYPE_FLAG="-D BUILD_SHARED_LIBS:BOOL=0"
     ;;
-  ?)
+  *)
     printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TYPE: '${PKG_TYPE}'."
     exit 1
     ;;

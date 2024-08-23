@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/_buildx.yml'
+      - '.github/workflows/_matrix.yml'
       - '.github/workflows/sdl2.yml'
       - 'deps/sdl2'
       - 'patchs/sdl2/**'
@@ -15,7 +15,7 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/_buildx.yml'
+      - '.github/workflows/_matrix.yml'
       - '.github/workflows/sdl2.yml'
       - 'deps/sdl2'
       - 'patchs/sdl2/**'
@@ -26,4 +26,4 @@ on:
 jobs:
   build:
     secrets: inherit
-    uses: ./.github/workflows/_buildx.yml
+    uses: ./.github/workflows/_matrix.yml

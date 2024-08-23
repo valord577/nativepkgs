@@ -48,7 +48,7 @@ case ${TARGET_PLATFORM} in
   "iphonesimulator")
     TARGET_FLAG="ios-simulator"
     ;;
-  ?)
+  *)
     ;;
 esac
 

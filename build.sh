@@ -23,7 +23,7 @@ case ${TARGET_PLATFORM} in
   "macosx" | "iphoneos" | "iphonesimulator")
     source "${PROJ_ROOT}/env-apple.sh" ${TARGET_PLATFORM} ${TARGET_ARCH}
     ;;
-  ?)
+  *)
     ;;
 esac
 
