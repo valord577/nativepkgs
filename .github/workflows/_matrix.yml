@@ -50,7 +50,7 @@ jobs:
           fi
           printf "\e[1m\e[33m%s\e[0m\n" "jq_expr: $jq_expr"
 
-          matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr)) )")
+          matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr) )")
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
       - name: set pkgver
