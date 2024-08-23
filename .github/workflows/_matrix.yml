@@ -17,7 +17,6 @@ on:
 
 env:
   GH_TOKEN: ${{ github.token }}
-  GIT_WORK_TREE: ${{ github.workspace }}
   GH_OSSUTIL_AK: ${{ secrets.GH_OSSUTIL_AK }}
   GH_OSSUTIL_SK: ${{ secrets.GH_OSSUTIL_SK }}
   GH_OSSUTIL_BUCKET: ${{ secrets.GH_OSSUTIL_BUCKET }}
