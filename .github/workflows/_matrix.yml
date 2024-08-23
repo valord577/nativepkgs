@@ -46,7 +46,6 @@ jobs:
         run: |
           matrix=$(cat .github/matrix.json | jq -c -M)
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
-          echo "matrix={\"include\":$(echo $matrix)}"
           echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
       - name: set pkgver
         id: set-pkgver
@@ -59,7 +58,7 @@ jobs:
     needs: _preset
     strategy:
       matrix: ${{ fromJson(needs._preset.outputs.matrix) }}
-    runs-on: macos-14
+    runs-on: ${{ matrix.os }}
     env:
       _REPO_THIS: "_repo_this"
       _SETP_CAN_RUN: ${{ (! inputs.disable_shared && matrix.pkg_type == 'shared') || (! inputs.disable_static && matrix.pkg_type == 'static') }}
@@ -68,13 +67,11 @@ jobs:
       CCACHE_GHA_KEY: ${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
       CCACHE_GHA_KEY_RESTORE: ${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
     steps:
-      - name: debug
+      - name: clone with gh
         run: |
-          echo ${{ fromJson(needs._preset.outputs.matrix) }}
-      - name: checkout this repo
-        uses: actions/checkout@v4
-        with:
-          path: ${{ env._REPO_THIS }}
+          gh repo clone ${{ github.repositoryUrl }} .git -- --bare --depth=1
+          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}
+          git checkout FETCH_HEAD
       - name: install required software(s)
         run: |
           brew list -l
@@ -120,19 +117,15 @@ jobs:
     env:
       _PUSH_CAN_EXE: ${{ github.event_name == 'push' && (! inputs.disable_upload) }}
     steps:
+      - name: clone with gh
+        run: |
+          gh repo clone ${{ github.repositoryUrl }} .git -- --bare --depth=1
+          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}
+          git checkout FETCH_HEAD
       - name: download ${{ github.workflow }} libraries
         uses: actions/download-artifact@v4
         with:
           path: ${{ github.workspace }}/${{ github.workflow }}
-      - name: show debug info
-        run: |
-          env
-          echo -e "\n"
-          echo -e "${PWD}"
-          echo -e "\n"
-          ls -Alh -- .
-          echo -e "\n"
-          ls -AlhR ${{ github.workflow }}
       - name: commit to pre-compiled packages
         if: ${{ env._PUSH_CAN_EXE == 'true' }}
         run: |
