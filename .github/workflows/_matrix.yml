@@ -99,39 +99,13 @@ jobs:
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-      - name: compress library - ${{ github.workflow }}
-        run: |
-          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
       - name: upload library - ${{ github.workflow }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PKG_ZIP_NAME }}
-          path: ${{ env.PKG_ZIP_NAME }}.zip
-
-
-  _upload:
-    needs:
-      - _preset
-      - _buildx
-    runs-on: ubuntu-latest
-    env:
-      _PUSH_CAN_EXE: ${{ github.event_name == 'push' && (! inputs.disable_upload) }}
-    steps:
-      - name: clone with gh
+          path: ${{ env.INST_DIR }}
+      - name: commit to pre-compiled storage
+        if: ${{ github.event_name == 'push' && (! inputs.disable_upload) }}
         run: |
-          gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
-          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
-      - name: download ${{ github.workflow }} libraries
-        uses: actions/download-artifact@v4
-        with:
-          path: ${{ github.workspace }}/${{ github.workflow }}
-      - name: commit to pre-compiled packages
-        if: ${{ env._PUSH_CAN_EXE == 'true' }}
-        run: |
-          mkdir -p '${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}'
-          mv -f ${{ github.workspace }}/${{ github.workflow }}/*/*.zip '${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}'
-
-          for ZIP in `ls -- ${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}`; do
-            ./.github/oss_v4.py push "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${ZIP}" \
-              "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${ZIP}"
-          done
+          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
+          ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
