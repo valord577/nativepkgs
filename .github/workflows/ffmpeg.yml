@@ -1,11 +1,5 @@
 name: ffmpeg
 on:
-  workflow_dispatch:
-    inputs:
-      disable_shared:
-        default: true
-        required: false
-        type: boolean
   push:
     branches:
       - main
@@ -36,5 +30,4 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
-      disable_shared: ${{ inputs.disable_shared }}
       disable_upload: true
