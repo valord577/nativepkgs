@@ -60,7 +60,6 @@ jobs:
       matrix: ${{ fromJson(needs._preset.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
     env:
-      _REPO_THIS: "_repo_this"
       _SETP_CAN_RUN: ${{ (! inputs.disable_shared && matrix.pkg_type == 'shared') || (! inputs.disable_static && matrix.pkg_type == 'static') }}
       INST_DIR: "${{ github.workspace }}/${{ github.workflow }}"
       CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -86,7 +85,7 @@ jobs:
       - name: buildx library - ${{ github.workflow }}
         if: ${{ env._SETP_CAN_RUN == 'true' }}
         run: |
-          source ${{ env._REPO_THIS }}/build_${{ matrix.platform }}_${{ matrix.arch }}.sh
+          source build_${{ matrix.platform }}_${{ matrix.arch }}.sh
           compile ${{ github.workflow }} ${{ matrix.pkg_type }} ${{ matrix.platform }} ${{ matrix.arch }}
       - name: gh action ccache save
         if: ${{ env._SETP_CAN_RUN == 'true' }}
