@@ -6,7 +6,7 @@ set -e
 # ----------------------------
 source "${PROJ_ROOT}/pkg-conf.sh"
 dl_pkgc mbedtls  '2ca6c28'   static '' '--enable-mbedtls'
-dl_pkgc sdl2     'fb14975'   static '' ''
+dl_pkgc sdl2     'ba2f78a'   static '' ''
 
 printf "\e[1m\e[35m%s\e[0m\n" "${PKG_CONFIG_PATH}"
 # ----------------------------
