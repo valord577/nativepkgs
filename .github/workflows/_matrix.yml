@@ -45,7 +45,10 @@ jobs:
         id: set-matrix
         run: |
           if [[ ${{ (! inputs.disable_shared) }} ]]; then { jq_expr='(.pkg_type=="shared")'; } fi
-          if [[ ${{ (! inputs.disable_static) }} ]]; then { jq_expr='or (.pkg_type=="static")'; } fi
+          if [[ ${{ (! inputs.disable_static) }} ]]; then
+            if [ -z "${jq_expr}" ]; then { jq_expr='(.pkg_type=="static")'; } else { jq_expr="$jq_expr or (.pkg_type==\"static\")"; } fi
+          fi
+          printf "\e[1m\e[33m%s\e[0m\n" "jq_expr: $jq_expr"
 
           matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr)) )")
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
