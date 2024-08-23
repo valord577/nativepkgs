@@ -81,7 +81,7 @@ jobs:
       - name: install required software(s)
         run: |
           if [[ ${{ startsWith('${{ matrix.os }}', 'macos') }} ]]; then
-            brew list -l; brew install ccache nasm
+            brew list -l; brew install ccache nasm tree
           fi
       - name: gh action ccache restore
         uses: actions/cache/restore@v4

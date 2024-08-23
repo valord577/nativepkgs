@@ -16,9 +16,9 @@ case ${PKG_TYPE} in
   "static")
     PKG_TYPE_FLAG=""
     ;;
-  "shared")
-    PKG_TYPE_FLAG="--disable-static --enable-shared"
-    ;;
+  # "shared")
+  #   PKG_TYPE_FLAG="--disable-static --enable-shared"
+  #   ;;
   *)
     printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TYPE: '${PKG_TYPE}'."
     exit 1
@@ -49,7 +49,7 @@ pushd -- "${PKG_BULD_DIR}"
 CONFIGURE_COMMAND=$(cat <<- EOF
 ${SUBPROJ_SRC}/configure    \
   --prefix='${PKG_INST_DIR}' \
-  --cc='${CC}' --cxx='${CXX}' \
+  --cc='${CC}' \
   ${PKG_TYPE_FLAG}  \
   ${PKG_BULD_TYPE}  \
   ${PKG_INST_STRIP} \
@@ -64,32 +64,22 @@ ${SUBPROJ_SRC}/configure    \
   --disable-devices \
   --enable-indev=lavfi \
   --enable-pic \
+  --disable-libxcb \
+  --disable-xlib
   ${PKG_DEPS_ARGS}
 EOF
 )
-
 case ${PKG_PLATFORM} in
   "macosx" | "iphoneos" | "iphonesimulator")
     CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
-      --enable-cross-compile --sysroot='${SYSROOT}' \
-      --target-os=darwin --arch=${PKG_ARCH} --disable-coreimage \
-      --disable-libxcb --disable-xlib
-    "
-    ;;
-  *)
-    ;;
-esac
-case ${PKG_PLATFORM} in
-  "macosx")
-    ;;
-  "iphoneos" | "iphonesimulator")
-    CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --disable-programs"
+      --enable-cross-compile --sysroot='${SYSROOT}' --target-os=darwin --arch=${PKG_ARCH} --disable-coreimage"
+    if [ "${PKG_PLATFORM}" != "macosx" ]; then { CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --disable-programs"; } fi
     ;;
   *)
     ;;
 esac
 
-printf "\e[1m\e[36m%s\e[0m\n" "${CONFIGURE_COMMAND}" && eval ${CONFIGURE_COMMAND}
+printf "\e[1m\e[36m%s\e[0m\n" "${CONFIGURE_COMMAND}"; eval ${CONFIGURE_COMMAND}
 popd
 
 # build & install
@@ -101,12 +91,10 @@ fi
 eval ${MAKE_COMMAND}
 popd
 
-rm -rf ${PKG_INST_DIR}/share
-# case ${PKG_PLATFORM} in
-#   "macosx")
-#     xattr -cs ${PKG_INST_DIR}/bin/*
-#     ;;
-# esac
+if [ "${PKG_PLATFORM}" == "macosx" ]; then
+  rm -rf ${PKG_INST_DIR}/{include,lib,share}
+  xattr -dr com.apple.quarantine ${PKG_INST_DIR}/bin/*
+fi
 
 if command -v tree >/dev/null 2>&1 ; then
   tree -L 3 ${PKG_INST_DIR}
