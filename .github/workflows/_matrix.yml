@@ -38,7 +38,7 @@ jobs:
     steps:
       - name: clone with gh
         run: |
-          gh repo clone ${{ github.repositoryUrl }} .git -- --bare --depth=1
+          gh repo clone ${{ github.repositoryUrl }} .git -- --no-checkout --single-branch --depth=1
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}
           git checkout FETCH_HEAD
       - name: set matrix
@@ -73,7 +73,7 @@ jobs:
     steps:
       - name: clone with gh
         run: |
-          gh repo clone ${{ github.repositoryUrl }} .git -- --bare --depth=1
+          gh repo clone ${{ github.repositoryUrl }} .git -- --no-checkout --single-branch --depth=1
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}
           git checkout FETCH_HEAD
       - name: install required software(s)
@@ -89,7 +89,6 @@ jobs:
             ${{ env.CCACHE_GHA_KEY_RESTORE }}
       - name: buildx library - ${{ github.workflow }}
         run: |
-          set -x
           source build_${{ matrix.platform }}_${{ matrix.arch }}.sh
           compile ${{ github.workflow }} ${{ matrix.pkg_type }} ${{ matrix.platform }} ${{ matrix.arch }}
       - name: gh action ccache save
@@ -119,7 +118,7 @@ jobs:
     steps:
       - name: clone with gh
         run: |
-          gh repo clone ${{ github.repositoryUrl }} .git -- --bare --depth=1
+          gh repo clone ${{ github.repositoryUrl }} .git -- --no-checkout --single-branch --depth=1
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}
           git checkout FETCH_HEAD
       - name: download ${{ github.workflow }} libraries

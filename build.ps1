@@ -68,11 +68,11 @@ $compile = {
     Pop-Location
   }
 
-  if (Test-Path -PathType Container -Path "${PROJ_ROOT}/patchs/${PKG_NAME}") {
+  if (Test-Path -PathType Container -Path "${PROJ_ROOT}/patches/${PKG_NAME}") {
     Push-Location "${env:SUBPROJ_SRC}"
     git reset --hard HEAD
 
-    foreach ($patch in (Get-ChildItem -Path "${PROJ_ROOT}/patchs/${PKG_NAME}" -File)) {
+    foreach ($patch in (Get-ChildItem -Path "${PROJ_ROOT}/patches/${PKG_NAME}" -File)) {
       git apply ${patch}.FullName
     }
     Pop-Location
