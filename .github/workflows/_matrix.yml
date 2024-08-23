@@ -16,6 +16,7 @@ on:
         type: boolean
 
 env:
+  GH_TOKEN: ${{ github.token }}
   GIT_WORK_TREE: ${{ github.workspace }}
   GH_OSSUTIL_AK: ${{ secrets.GH_OSSUTIL_AK }}
   GH_OSSUTIL_SK: ${{ secrets.GH_OSSUTIL_SK }}
