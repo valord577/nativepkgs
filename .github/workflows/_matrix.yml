@@ -38,8 +38,7 @@ jobs:
       - name: clone with gh
         run: |
           gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
-          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}
-          git checkout FETCH_HEAD
+          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
       - name: set matrix
         id: set-matrix
         run: |
@@ -73,12 +72,10 @@ jobs:
       - name: clone with gh
         run: |
           gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
-          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}
-          git checkout FETCH_HEAD
+          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
       - name: install required software(s)
         run: |
-          brew list -l
-          brew install ccache nasm
+          brew list -l; brew install ccache nasm
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:
@@ -118,8 +115,7 @@ jobs:
       - name: clone with gh
         run: |
           gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
-          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}
-          git checkout FETCH_HEAD
+          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
       - name: download ${{ github.workflow }} libraries
         uses: actions/download-artifact@v4
         with:
