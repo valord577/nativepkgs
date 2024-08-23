@@ -65,7 +65,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        shell: ${{ startsWith(format('{0}', '${{ matrix.os }}'), 'windows') && 'pwsh' || 'bash' }}
+        shell: ${{ startsWith(format('{0}', ${{ matrix.os }}), 'windows') && 'pwsh' || 'bash' }}
         working-directory: ${{ github.workspace }}
     env:
       INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
