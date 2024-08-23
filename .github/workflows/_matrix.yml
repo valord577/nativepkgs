@@ -46,19 +46,19 @@ jobs:
         run: |
           matrix=$(cat .github/matrix.json | jq -c -M)
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
-          echo -n "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
+          echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
       - name: set pkgver
         id: set-pkgver
         run: |
-          pkgver=$(git ls-tree -d -z --abbrev=7 --format='%(objectname)' HEAD -- deps/${{ github.workflow }})
+          pkgver=$(git ls-tree -d --abbrev=7 --format='%(objectname)' HEAD -- deps/${{ github.workflow }})
           printf "\e[1m\e[33m%s\e[0m\n" "pkgver: $pkgver"
-          echo -n "pkgver=$pkgver" >> "$GITHUB_OUTPUT"
+          echo "pkgver=$pkgver" >> "$GITHUB_OUTPUT"
 
   _buildx:
     needs: _preset
     strategy:
       matrix: ${{ fromJson(needs._preset.outputs.matrix) }}
-    runs-on: ${{ matrix.on }}
+    runs-on: macos-14
     env:
       _REPO_THIS: "_repo_this"
       _SETP_CAN_RUN: ${{ (! inputs.disable_shared && matrix.pkg_type == 'shared') || (! inputs.disable_static && matrix.pkg_type == 'static') }}
@@ -67,6 +67,9 @@ jobs:
       CCACHE_GHA_KEY: ${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
       CCACHE_GHA_KEY_RESTORE: ${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
     steps:
+      - name: debug
+        run: |
+          echo ${{ fromJson(needs._preset.outputs.matrix) }}
       - name: checkout this repo
         uses: actions/checkout@v4
         with:
