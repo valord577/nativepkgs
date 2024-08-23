@@ -45,11 +45,13 @@ jobs:
         id: set-matrix
         run: |
           matrix=$(cat .github/matrix.json | jq -c -M)
+          printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo -n "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
       - name: set pkgver
         id: set-pkgver
         run: |
           pkgver=$(git ls-tree -d -z --abbrev=7 --format='%(objectname)' HEAD -- deps/${{ github.workflow }})
+          printf "\e[1m\e[33m%s\e[0m\n" "pkgver: $pkgver"
           echo -n "pkgver=$pkgver" >> "$GITHUB_OUTPUT"
 
   _buildx:
