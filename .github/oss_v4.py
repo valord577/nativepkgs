@@ -9,7 +9,7 @@ from hashlib import sha256
 from typing import Any, Callable, NoReturn
 from urllib.parse import quote as escape
 
-sign_expires_in_seconds = "10"
+sign_expires_in_seconds = "60"
 environ_key_http_debug = "HTTP_DEBUG_MESSAGE"
 oss_storage_basedir = os.getenv("GH_OSSUTIL_PKGS")
 

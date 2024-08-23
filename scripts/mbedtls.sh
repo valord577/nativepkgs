@@ -7,7 +7,7 @@ set -e
 pushd -- "${SUBPROJ_SRC}"
 git submodule set-url -- framework ../mbedtls-framework
 
-git submodule update --init -f -- framework
+git submodule update --init --depth=1 --single-branch -f  -- framework
 popd
 # ----------------------------
 # preset features
