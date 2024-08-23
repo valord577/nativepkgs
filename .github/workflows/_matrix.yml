@@ -15,9 +15,6 @@ on:
         required: false
         type: boolean
 
-defaults:
-  run:
-    working-directory: ${{ github.workspace }}
 env:
   GIT_WORK_TREE: ${{ github.workspace }}
   GH_OSSUTIL_AK: ${{ secrets.GH_OSSUTIL_AK }}
@@ -33,6 +30,7 @@ jobs:
     defaults:
       run:
         shell: bash
+        working-directory: ${{ github.workspace }}
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       pkgver: ${{ steps.set-pkgver.outputs.pkgver }}
