@@ -65,7 +65,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        shell: ${{ startsWith("${{ matrix.os }}", 'windows') && 'pwsh' || 'bash' }}
+        shell: ${{ startsWith(format('{0}', '${{ matrix.os }}'), 'windows') && 'pwsh' || 'bash' }}
         working-directory: ${{ github.workspace }}
     env:
       INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
@@ -80,7 +80,7 @@ jobs:
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
       - name: install required software(s)
         run: |
-          if [[ ${{ startsWith("${{ matrix.os }}", 'macos') }} ]]; then
+          if [[ ${{ startsWith(format('{0}', '${{ matrix.os }}'), 'macos') }} ]]; then
             brew list -l; brew install ccache nasm tree
           fi
       - name: gh action ccache restore
