@@ -61,12 +61,6 @@ case ${PKG_ARCH} in
     ;;
 esac
 
-# use CMAKE_<LANG>_COMPILER_LAUNCHER
-if [ -n "${CC}" ]; then { export CC="${CC##*ccache }"; } fi
-if [ -n "${CXX}" ]; then { export CXX="${CXX##*ccache }"; } fi
-if [ -n "${OBJC}" ]; then { export OBJC="${OBJC##*ccache }"; } fi
-if [ -n "${OBJCXX}" ]; then { export OBJCXX="${OBJCXX##*ccache }"; } fi
-
 CMAKE_COMMAND=$(cat <<- EOF
 cmake -G Ninja \
   -S "${SUBPROJ_SRC}/llvm" -B "${PKG_BULD_DIR}" \

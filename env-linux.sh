@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 set -e
 
-TARGET_PLATFORM=${1}
-TARGET_ARCH=${2}
-
 export PARALLEL_JOBS="$(nproc)"
+if command -v ccache >/dev/null 2>&1 ; then
+  export CCACHE_SRC="$(command -v ccache)"
+
+  export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D CMAKE_C_COMPILER_LAUNCHER=ccache"
+  export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+fi
 
 function chk_compiler() {
-  if ! command -v ccache >/dev/null 2>&1 ; then { return 0; } fi
-
   local c_key="${1}"
   local c_value=$(eval echo "\${${c_key}}")
   if [ -z "${c_value}" ]; then { c_value="${2}"; } fi
@@ -17,16 +18,14 @@ function chk_compiler() {
     return 1
   fi
 
-  eval export "${c_key}='ccache ${c_value}'"
-  export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D ${3}=ccache"
-  printf "\e[4m\e[32m%s\e[0m\n" "Use ccache for ${c_key}: ${c_value}"
+  eval export "${c_key}='${c_value}'"
+  printf "\e[4m\e[32m%s\e[0m\n" "Using ${c_value} for ${c_key} (export ${c_key}=${c_value})"
   return 0
 }
 
-# https://cmake.org/cmake/help/latest/envvar/CMAKE_LANG_COMPILER_LAUNCHER.html
 compilers=(
-  'CC  CMAKE_C_COMPILER_LAUNCHER   cc  clang   gcc'
-  'CXX CMAKE_CXX_COMPILER_LAUNCHER c++ clang++ g++'
+  'CC  maybe cc  clang   gcc'
+  'CXX maybe c++ clang++ g++'
 )
 set +e
 for c in "${compilers[@]}"; do

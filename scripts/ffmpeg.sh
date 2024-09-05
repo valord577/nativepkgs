@@ -47,16 +47,14 @@ if [ "${CLANGD_CODE_COMPLETION}" == "1" ]; then { PKG_BULD_DIR="${SUBPROJ_SRC}";
 
 pushd -- "${PKG_BULD_DIR}"
 CONFIGURE_COMMAND=$(cat <<- EOF
-${SUBPROJ_SRC}/configure    \
+${SUBPROJ_SRC}/configure     \
   --prefix='${PKG_INST_DIR}' \
-  --cc='${CC}' \
+  --cc='${CCACHE_SRC} ${CC}'   \
+  --cxx='${CCACHE_SRC} ${CXX}' \
   ${PKG_TYPE_FLAG}  \
   ${PKG_BULD_TYPE}  \
   ${PKG_INST_STRIP} \
   --pkg-config='${PKG_CONFIG_EXEC}' \
-  --extra-cflags='${ECFLAGS}'  \
-  --extra-cxxflags='${ECFLAGS}'  \
-  --extra-ldflags='${ELDFLAGS}' \
   --enable-gpl \
   --enable-version3 \
   --fatal-warnings \
@@ -72,8 +70,16 @@ EOF
 case ${PKG_PLATFORM} in
   "macosx" | "iphoneos" | "iphonesimulator")
     CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
-      --enable-cross-compile --sysroot='${SYSROOT}' --target-os=darwin --arch=${PKG_ARCH} --disable-coreimage"
+      --enable-cross-compile --sysroot='${SYSROOT}' --target-os=darwin --arch=${PKG_ARCH} --disable-coreimage \
+      --extra-cflags='${CROSS_FLAGS}' --extra-cxxflags='${CROSS_FLAGS}' --extra-ldflags='${CROSS_FLAGS}'"
     if [ "${PKG_PLATFORM}" != "macosx" ]; then { CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --disable-programs"; } fi
+    ;;
+  "linux")
+    if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
+      CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
+        --enable-cross-compile --sysroot='${SYSROOT}' --target-os=linux --arch=${PKG_ARCH} \
+        --extra-ldflags='-fuse-ld=${LD}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
+    fi
     ;;
   *)
     ;;

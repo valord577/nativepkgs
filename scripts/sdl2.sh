@@ -32,12 +32,6 @@ fi
 { rm -rf ${PKG_BULD_DIR}; mkdir -p "${PKG_BULD_DIR}"; }
 { rm -rf ${PKG_INST_DIR}; mkdir -p "${PKG_INST_DIR}"; }
 
-# use CMAKE_<LANG>_COMPILER_LAUNCHER
-if [ -n "${CC}" ]; then { export CC="${CC##*ccache }"; } fi
-if [ -n "${CXX}" ]; then { export CXX="${CXX##*ccache }"; } fi
-if [ -n "${OBJC}" ]; then { export OBJC="${OBJC##*ccache }"; } fi
-if [ -n "${OBJCXX}" ]; then { export OBJCXX="${OBJCXX##*ccache }"; } fi
-
 CMAKE_COMMAND=$(cat <<- EOF
 cmake -S "${SUBPROJ_SRC}" -B "${PKG_BULD_DIR}" \
   -D CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON \
