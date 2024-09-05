@@ -15,10 +15,17 @@ fi
 TARGET_PLATFORM="${triplet_values[1]}"
 prefix="${triplet_values[0]}_${triplet_values[1]}_"
 TARGET_ARCH="${triplet#${prefix}}"
+if [[ "${triplet_values[0]}" =~ ^cross.*$ ]]; then
+  export CROSS_BUILD_ENABLED="1"
+fi
 
 case ${TARGET_PLATFORM} in
   "linux")
-    source "${PROJ_ROOT}/env-linux.sh" ${TARGET_PLATFORM} ${TARGET_ARCH}
+    if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
+      source "${PROJ_ROOT}/env-linux-cross.sh" ${TARGET_ARCH}
+    else
+      source "${PROJ_ROOT}/env-linux.sh"
+    fi
     ;;
   "macosx" | "iphoneos" | "iphonesimulator")
     source "${PROJ_ROOT}/env-apple.sh" ${TARGET_PLATFORM} ${TARGET_ARCH}

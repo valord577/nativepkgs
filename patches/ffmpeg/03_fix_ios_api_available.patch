@@ -20,30 +20,6 @@ index f2269766a2..aa53faf724 100644
      if (__builtin_available(macOS 11.0, *)) {
          VTRegisterSupplementalVideoDecoderIfAvailable(videotoolbox->cm_codec_type);
      }
-diff --git a/libavcodec/videotoolboxenc.c b/libavcodec/videotoolboxenc.c
-index a7efd7ef3f..3e0edfa894 100644
---- a/libavcodec/videotoolboxenc.c
-+++ b/libavcodec/videotoolboxenc.c
-@@ -1197,8 +1197,8 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
-         return AVERROR_EXTERNAL;
-     }
-
--#if defined (MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
--    if (__builtin_available(macOS 10.13, *)) {
-+#if AV_HAS_BUILTIN(__builtin_available) && (TARGET_OS_OSX || TARGET_OS_IOS || TARGET_OS_TV)
-+    if (__builtin_available(macOS 10.15, iOS 11, tvOS 11, *)) {
-         status = VTCopySupportedPropertyDictionaryForEncoder(avctx->width,
-                                                              avctx->height,
-                                                              codec_type,
-@@ -1614,7 +1614,7 @@ static int vtenc_configure_encoder(AVCodecContext *avctx)
-         return AVERROR(EINVAL);
-     }
-
--#if defined(MAC_OS_X_VERSION_10_9) && !TARGET_OS_IPHONE && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_9)
-+#if AV_HAS_BUILTIN(__builtin_available) && TARGET_OS_OSX
-     if (avctx->codec_id == AV_CODEC_ID_PRORES) {
-         if (__builtin_available(macOS 10.10, *)) {
-             VTRegisterProfessionalVideoWorkflowVideoEncoders();
 diff --git a/libavfilter/metal/utils.m b/libavfilter/metal/utils.m
 index f365d3ceea..1cc637fec2 100644
 --- a/libavfilter/metal/utils.m

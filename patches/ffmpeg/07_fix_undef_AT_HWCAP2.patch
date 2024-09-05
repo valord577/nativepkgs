@@ -1,0 +1,15 @@
+diff --git a/libavutil/aarch64/cpu.c b/libavutil/aarch64/cpu.c
+index cfa9306663..3ec07f529b 100644
+--- a/libavutil/aarch64/cpu.c
++++ b/libavutil/aarch64/cpu.c
+@@ -24,6 +24,10 @@
+ #include <stdint.h>
+ #include <sys/auxv.h>
+ 
++#ifndef AT_HWCAP2
++#define AT_HWCAP2 26
++#endif
++
+ #define HWCAP_AARCH64_ASIMDDP (1 << 20)
+ #define HWCAP2_AARCH64_I8MM   (1 << 13)
+ 
