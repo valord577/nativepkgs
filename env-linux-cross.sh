@@ -8,6 +8,10 @@ case ${TARGET_ARCH} in
     __TARGET_ARCH__="aarch64"
     __TARGET_TRIPLE__="aarch64-unknown-linux-gnu"
     ;;
+  "amd64")
+    __TARGET_ARCH__="x86_64"
+    __TARGET_TRIPLE__="x86_64-pc-linux-gnu"
+    ;;
   *)
     printf "\e[1m\e[31m%s\e[0m\n" "Unsupported TARGET ARCH: '${TARGET_ARCH}'."
     exit 1
