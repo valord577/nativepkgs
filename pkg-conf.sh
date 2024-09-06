@@ -25,22 +25,20 @@ function dl_pkgc() {
     pushd -- "${PKG_DEPS_PATH}"
     {
       if [ "${GITHUB_ACTIONS}" == "true" ]; then
-        {
-          dl_filename="${pkg_name}_${PKG_PLATFORM}_${PKG_ARCH}_${pkg_version}_${pkg_type}.zip"
-          if [ -n "${pkg_extra}" ]; then
-            dl_filename="${pkg_name}_${PKG_PLATFORM}_${PKG_ARCH}_${pkg_version}_${pkg_type}_${pkg_extra}.zip"
-          fi
-          printf "\e[1m\e[36m%s\e[0m\n" "dl_filename='${dl_filename}'"
+        (
+          dl_filename="${pkg_name}_${PKG_PLATFORM}_${PKG_ARCH_LIBC}_${pkg_version}_${pkg_type}"
+          if [ -n "${pkg_extra}" ]; then { dl_filename="${dl_filename}_${pkg_extra}"; } fi
+          printf "\e[1m\e[36m%s\e[0m\n" "dl_filename='${dl_filename}.zip'"
 
-          ${PROJ_ROOT}/.github/oss_v4.py pull "${pkg_name}/${pkg_version}/${dl_filename}" "${pkg_name}.zip"
+          ${PROJ_ROOT}/.github/oss_v4.py pull "${pkg_name}/${pkg_version}/${dl_filename}.zip" "${pkg_name}.zip"
           unzip -q "${pkg_name}.zip"
-        }
+        )
       else
-        {
+        (
           set -x
-          ln -sfn ../out/${pkg_name}/${PKG_PLATFORM}/${PKG_ARCH} ${pkg_name}
+          ln -sfn ../out/${pkg_name}/${PKG_PLATFORM}/${PKG_ARCH_LIBC} ${pkg_name}
           set +x
-        }
+        )
       fi
     }
     popd

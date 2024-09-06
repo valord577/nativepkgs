@@ -2,22 +2,23 @@
 set -e
 
 TARGET_ARCH=${1}
+TARGET_LIBC=${2}
 
 case ${TARGET_ARCH} in
   "arm64")
     __TARGET_ARCH__="aarch64"
-    __TARGET_TRIPLE__="aarch64-unknown-linux-gnu"
+    __TARGET_TRIPLE__="aarch64-unknown-linux-${TARGET_LIBC}"
     ;;
   "amd64")
     __TARGET_ARCH__="x86_64"
-    __TARGET_TRIPLE__="x86_64-pc-linux-gnu"
+    __TARGET_TRIPLE__="x86_64-pc-linux-${TARGET_LIBC}"
     ;;
   *)
     printf "\e[1m\e[31m%s\e[0m\n" "Unsupported TARGET ARCH: '${TARGET_ARCH}'."
     exit 1
     ;;
 esac
-BUILTIN_CROSS_TOOLCHAIN_FILE="${PROJ_ROOT}/cross/toolchain-cmake-template.${TARGET_ARCH}"
+BUILTIN_CROSS_TOOLCHAIN_FILE="${PROJ_ROOT}/cross/toolchain-cmake-template.${__TARGET_TRIPLE__}"
 cat ${PROJ_ROOT}/cross/toolchain-cmake-template \
   | sed "s@__TARGET_ARCH__@${__TARGET_ARCH__}@g"     \
   | sed "s@__TARGET_TRIPLE__@${__TARGET_TRIPLE__}@g" \
