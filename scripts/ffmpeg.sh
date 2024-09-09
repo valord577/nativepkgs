@@ -77,7 +77,7 @@ case ${PKG_PLATFORM} in
   "linux")
     if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
       CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
-        --enable-cross-compile --sysroot='${SYSROOT}' --target-os=linux --arch=${PKG_ARCH} \
+        --enable-cross-compile --sysroot='${SYSROOT}' --target-os=linux --arch=${PKG_ARCH} --host-cc='${HOSTCC}' \
         --extra-ldflags='-fuse-ld=${LD}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
     fi
     ;;
