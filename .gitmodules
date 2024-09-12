@@ -10,3 +10,6 @@
 [submodule "deps/llvm"]
 	path = deps/llvm
 	url = https://github.com/llvm/llvm-project.git
+[submodule "deps/ffmpeg-rpi"]
+	path = deps/ffmpeg-rpi
+	url = https://github.com/RPi-Distro/ffmpeg.git

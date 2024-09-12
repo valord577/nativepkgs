@@ -2,11 +2,22 @@
 set -e
 
 # ----------------------------
+# apply patches from rpi
+# ----------------------------
+pushd -- "${SUBPROJ_SRC}"
+{
+  git clean -dx -f -q
+
+  while read patch; do
+    git apply "debian/patches/${patch}"
+  done < "debian/patches/series"
+}
+popd
+# ----------------------------
 # packages
 # ----------------------------
 source "${PROJ_ROOT}/pkg-conf.sh"
 dl_pkgc mbedtls  '71c569d'   static '' '--enable-mbedtls'
-dl_pkgc sdl2     'ba2f78a'   static '' ''
 
 printf "\e[1m\e[35m%s\e[0m\n" "${PKG_CONFIG_PATH}"
 # ----------------------------
@@ -31,7 +42,7 @@ esac
 # ----------------------------
 LIB_RELEASE=${LIB_RELEASE:-"1"}
 if [ "${LIB_RELEASE}" == "1" ]; then
-  PKG_BULD_TYPE="--disable-debug --disable-logging"
+  PKG_BULD_TYPE="--disable-debug"
   PKG_INST_STRIP=""
 else
   PKG_BULD_TYPE="--disable-optimizations --enable-extra-warnings"
@@ -97,10 +108,6 @@ fi
 eval ${MAKE_COMMAND}
 popd
 
-if [ "${PKG_PLATFORM}" == "macosx" ]; then
-  rm -rf ${PKG_INST_DIR}/{include,lib,share}
-  xattr -dr com.apple.quarantine ${PKG_INST_DIR}/bin/*
-fi
 
 if command -v tree >/dev/null 2>&1 ; then
   tree -L 3 ${PKG_INST_DIR}
