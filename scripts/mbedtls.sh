@@ -27,8 +27,6 @@ python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_ECDH_VARIANT_EVEREST_ENABLE
 python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_SSL_PROTO_TLS1_3
 python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_SSL_TLS1_3_COMPATIBILITY_MODE
 
-python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_VERSION_C
-python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_VERSION_FEATURES
 python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_DEBUG_C
 python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_SELF_TEST
 python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_SSL_SRV_C
