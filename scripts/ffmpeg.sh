@@ -63,7 +63,8 @@ ${SUBPROJ_SRC}/configure     \
   --enable-indev=lavfi \
   --enable-pic \
   --disable-libxcb \
-  --disable-xlib
+  --disable-xlib  \
+  --disable-vaapi \
   ${PKG_DEPS_ARGS}
 EOF
 )
@@ -78,8 +79,13 @@ case ${PKG_PLATFORM} in
     if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
       CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
         --enable-cross-compile --sysroot='${SYSROOT}' --target-os=linux --arch=${PKG_ARCH} --host-cc='${HOSTCC}' \
-        --disable-vaapi --extra-ldflags='-fuse-ld=${LD}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
+        --extra-ldflags='-fuse-ld=${LD}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
     fi
+    ;;
+  "mingw")
+    CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
+      --enable-cross-compile --sysroot='${SYSROOT}' --target-os=mingw64 --arch=${PKG_ARCH} --host-cc='${CC}' \
+      --windres='${WINDRES}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
     ;;
   *)
     ;;
@@ -90,7 +96,10 @@ popd
 
 # build & install
 pushd -- "${PKG_BULD_DIR}"
-MAKE_COMMAND="make -j ${PARALLEL_JOBS}; make install"
+MAKE_COMMAND="make -j ${PARALLEL_JOBS}; make install-progs"
+if [ "${PKG_TYPE}" == "shared" ]; then
+  MAKE_COMMAND="${MAKE_COMMAND}; make install-libs"
+fi
 if command -v bear >/dev/null 2>&1 ; then
   MAKE_COMMAND="bear -- ${MAKE_COMMAND}"
 fi
@@ -98,7 +107,6 @@ eval ${MAKE_COMMAND}
 popd
 
 if [ "${PKG_PLATFORM}" == "macosx" ]; then
-  rm -rf ${PKG_INST_DIR}/{include,lib,share}
   xattr -dr com.apple.quarantine ${PKG_INST_DIR}/bin/*
 fi
 

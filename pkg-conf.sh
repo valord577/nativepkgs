@@ -5,7 +5,7 @@ export PKG_CONFIG_EXEC="pkg-config"
 if command -v pkgconf >/dev/null 2>&1 ; then
   export PKG_CONFIG_EXEC="pkgconf"
 fi
-if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
+if [ -n "${CROSS_TOOLCHAIN_PKGCONF}" ]; then
   export PKG_CONFIG_EXEC="${CROSS_TOOLCHAIN_PKGCONF}"
 fi
 
