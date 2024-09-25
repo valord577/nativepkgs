@@ -99,13 +99,14 @@ pushd -- "${PKG_BULD_DIR}"
 MAKE_COMMAND="make -j ${PARALLEL_JOBS}"
 if [ "${PKG_PLATFORM}" == "iphoneos" ] || \
   [ "${PKG_PLATFORM}" == "iphonesimulator" ]; then
-  MAKE_COMMAND="${MAKE_COMMAND}; make install-headers"
+  MAKE_COMMAND="${MAKE_COMMAND}; make install-headers; make install-libs"
 else
   MAKE_COMMAND="${MAKE_COMMAND}; make install-progs"
+  if [ "${PKG_TYPE}" == "shared" ]; then
+    MAKE_COMMAND="${MAKE_COMMAND}; make install-libs"
+  fi
 fi
-if [ "${PKG_TYPE}" == "shared" ]; then
-  MAKE_COMMAND="${MAKE_COMMAND}; make install-libs"
-fi
+
 if command -v bear >/dev/null 2>&1 ; then
   MAKE_COMMAND="bear -- ${MAKE_COMMAND}"
 fi
