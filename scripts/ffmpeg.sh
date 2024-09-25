@@ -96,14 +96,20 @@ popd
 
 # build & install
 pushd -- "${PKG_BULD_DIR}"
-MAKE_COMMAND="make -j ${PARALLEL_JOBS}; make install-progs"
+MAKE_COMMAND="make -j ${PARALLEL_JOBS}"
+if [ "${PKG_PLATFORM}" == "iphoneos" ] || \
+  [ "${PKG_PLATFORM}" == "iphonesimulator" ]; then
+  MAKE_COMMAND="${MAKE_COMMAND}; make install-headers"
+else
+  MAKE_COMMAND="${MAKE_COMMAND}; make install-progs"
+fi
 if [ "${PKG_TYPE}" == "shared" ]; then
   MAKE_COMMAND="${MAKE_COMMAND}; make install-libs"
 fi
 if command -v bear >/dev/null 2>&1 ; then
   MAKE_COMMAND="bear -- ${MAKE_COMMAND}"
 fi
-eval ${MAKE_COMMAND}
+printf "\e[1m\e[36m%s\e[0m\n" "${MAKE_COMMAND}"; eval ${MAKE_COMMAND}
 popd
 
 if [ "${PKG_PLATFORM}" == "macosx" ]; then
