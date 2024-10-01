@@ -34,7 +34,7 @@ case ${TARGET_PLATFORM} in
   "macosx" | "iphoneos" | "iphonesimulator")
     source "${PROJ_ROOT}/env-apple.sh" ${TARGET_PLATFORM} ${TARGET_ARCH}
     ;;
-  "mingw")
+  "win-mingw")
     source "${PROJ_ROOT}/env-mingw.sh" ${TARGET_ARCH}
     ;;
   *)

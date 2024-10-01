@@ -31,7 +31,7 @@ python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_SSL_SRV_C
 python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_SSL_RENEGOTIATION
 
 case ${PKG_PLATFORM} in
-  "mingw")
+  "win-mingw")
     if [ "${PKG_ARCH}" == "x86_64" ]; then
       python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT
       python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_SHA512_USE_A64_CRYPTO_IF_PRESENT
@@ -49,7 +49,7 @@ case ${PKG_TYPE} in
   "static")
     PKG_TYPE_FLAG="-D USE_STATIC_MBEDTLS_LIBRARY:BOOL=1 -D USE_SHARED_MBEDTLS_LIBRARY:BOOL=0"
     PKG_LIBRARY_DEPS="-lmbedtls -lmbedx509 -lmbedcrypto -lp256m -leverest"
-    if [ "${PKG_PLATFORM}" == "mingw" ]; then { PKG_LIBRARY_DEPS="${PKG_LIBRARY_DEPS} -lws2_32 -lbcrypt"; } fi
+    if [ "${PKG_PLATFORM}" == "win-mingw" ]; then { PKG_LIBRARY_DEPS="${PKG_LIBRARY_DEPS} -lws2_32 -lbcrypt"; } fi
     ;;
   *)
     printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TYPE: '${PKG_TYPE}'."

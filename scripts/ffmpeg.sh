@@ -82,7 +82,7 @@ case ${PKG_PLATFORM} in
         --extra-ldflags='-fuse-ld=${LD}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
     fi
     ;;
-  "mingw")
+  "win-mingw")
     CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
       --enable-cross-compile --sysroot='${SYSROOT}' --target-os=mingw64 --arch=${PKG_ARCH} --host-cc='${CC}' \
       --windres='${WINDRES}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
