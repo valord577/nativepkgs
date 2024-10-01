@@ -28,7 +28,7 @@ case ${TARGET_PLATFORM} in
     if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
       source "${PROJ_ROOT}/env-linux-cross.sh" ${TARGET_ARCH} ${TARGET_LIBC}
     else
-      source "${PROJ_ROOT}/env-linux.sh"
+      source "${PROJ_ROOT}/env-linux-native.sh"
     fi
     ;;
   "macosx" | "iphoneos" | "iphonesimulator")
