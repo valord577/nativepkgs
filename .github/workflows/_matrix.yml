@@ -133,13 +133,14 @@ jobs:
     env:
       INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_GHA_KEY: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
+      CCACHE_GHA_KEY: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
+      CCACHE_GHA_KEY_RESTORE: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
       PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
     steps:
       - name: print env
         run: |
           export -p; pwd; ls -alh
-      - name: clone with gh
+      - name: clone with git
         run: |
-          gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
+          git clone --no-checkout --single-branch --depth=1 ${{ github.repositoryUrl }} .
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
