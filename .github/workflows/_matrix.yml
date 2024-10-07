@@ -66,7 +66,7 @@ jobs:
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix-container={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
 
-  _buildx:
+  _buildx_on_host:
     needs: _preset
     strategy:
       matrix: ${{ fromJson(needs._preset.outputs.matrix) }}
@@ -114,3 +114,26 @@ jobs:
         run: |
           zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
           ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
+
+  _buildx_on_container:
+    needs: _preset
+    strategy:
+      matrix: ${{ fromJson(needs._preset.outputs.matrix-container) }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+    env:
+      INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_GHA_KEY: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
+      PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
+    steps:
+      - name: clone with gh
+        run: |
+          gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
+          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
+      - name: print env
+        run: |
+          export -p; pwd;
