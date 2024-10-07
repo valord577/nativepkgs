@@ -67,7 +67,6 @@ jobs:
           echo "matrix-container={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
 
   _buildx_on_host:
-    # if: ${{ false }}
     needs: _preset
     strategy:
       matrix: ${{ fromJson(needs._preset.outputs.matrix) }}
