@@ -67,6 +67,7 @@ jobs:
           echo "matrix-container={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
 
   _buildx_on_host:
+    if: ${{ false }}
     needs: _preset
     strategy:
       matrix: ${{ fromJson(needs._preset.outputs.matrix) }}
@@ -78,7 +79,8 @@ jobs:
     env:
       INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_GHA_KEY: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
+      CCACHE_GHA_KEY: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
+      CCACHE_GHA_KEY_RESTORE: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
       PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
     steps:
       - name: clone with gh
@@ -95,6 +97,8 @@ jobs:
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
+          restore-keys: |
+            ${{ env.CCACHE_GHA_KEY_RESTORE }}
       - name: buildx library - ${{ github.workflow }}
         run: |
           source build_${{ matrix.platform }}_${{ matrix.arch }}.sh
@@ -120,6 +124,8 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs._preset.outputs.matrix-container) }}
     runs-on: ubuntu-latest
+    container:
+      image: valord577/linux310-cross:578bca67789f3845680ae9e192e26c85affa3292
     defaults:
       run:
         shell: bash
@@ -136,4 +142,4 @@ jobs:
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
       - name: print env
         run: |
-          export -p; pwd;
+          export -p; pwd; ls -alh
