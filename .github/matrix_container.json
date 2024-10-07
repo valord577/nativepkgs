@@ -1,0 +1,9 @@
+[
+  {
+    "os": "ubuntu-latest",
+    "platform": "linux",
+    "arch": "arm64",
+    "pkg_type": "static",
+    "lib_impl": "gnu"
+  }
+]

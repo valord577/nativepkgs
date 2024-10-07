@@ -32,31 +32,39 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
       pkgver: ${{ steps.set-pkgver.outputs.pkgver }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix-container: ${{ steps.set-matrix-container.outputs.matrix-container }}
     steps:
       - name: clone with gh
         run: |
           gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
-      - name: set matrix
-        id: set-matrix
-        run: |
-          if [[ ${{ (! inputs.disable_shared) }} ]]; then { jq_expr='(.pkg_type=="shared")'; } fi
-          if [[ ${{ (! inputs.disable_static) }} ]]; then
-            if [ -z "${jq_expr}" ]; then { jq_expr='(.pkg_type=="static")'; } else { jq_expr="$jq_expr or (.pkg_type==\"static\")"; } fi
-          fi
-          printf "\e[1m\e[33m%s\e[0m\n" "jq_expr: $jq_expr"
-
-          matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr) )")
-          printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
-          echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
       - name: set pkgver
         id: set-pkgver
         run: |
           pkgver=$(git ls-tree -d --abbrev=7 --format='%(objectname)' HEAD -- deps/${{ github.workflow }})
           printf "\e[1m\e[33m%s\e[0m\n" "pkgver: $pkgver"
           echo "pkgver=$pkgver" >> "$GITHUB_OUTPUT"
+      - name: jq filters
+        run: |
+          if [[ ${{ (! inputs.disable_shared) }} ]]; then { jq_expr='(.pkg_type=="shared")'; } fi
+          if [[ ${{ (! inputs.disable_static) }} ]]; then
+            if [ -z "${jq_expr}" ]; then { jq_expr='(.pkg_type=="static")'; } else { jq_expr="$jq_expr or (.pkg_type==\"static\")"; } fi
+          fi
+          printf "\e[1m\e[33m%s\e[0m\n" "jq_expr: $jq_expr"; echo "jq_expr=$jq_expr" >> "$GITHUB_ENV"
+      - name: set matrix
+        id: set-matrix
+        run: |
+          matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr) )")
+          printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
+          echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
+      - name: set matrix container
+        id: set-matrix-container
+        run: |
+          matrix=$(cat .github/matrix_container.json | jq -c -M "map(. | select($jq_expr) )")
+          printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
+          echo "matrix-container={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
 
   _buildx:
     needs: _preset
@@ -70,8 +78,7 @@ jobs:
     env:
       INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_GHA_KEY: ${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
-      CCACHE_GHA_KEY_RESTORE: ${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
+      CCACHE_GHA_KEY: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
       PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
     steps:
       - name: clone with gh
@@ -88,8 +95,6 @@ jobs:
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-          restore-keys: |
-            ${{ env.CCACHE_GHA_KEY_RESTORE }}
       - name: buildx library - ${{ github.workflow }}
         run: |
           source build_${{ matrix.platform }}_${{ matrix.arch }}.sh
