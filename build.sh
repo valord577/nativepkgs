@@ -85,10 +85,8 @@ function compile() {
   )
 }
 
-if [ "${GITHUB_ACTIONS}" != "true" ]; then
-  if [ -z ${1} ]; then
-    printf "\e[1m\e[31m%s\e[0m\n" "Please declare the module to be compiled."
-    exit 1
-  fi
-  compile ${1} ${2:-"static"} ${TARGET_PLATFORM} ${TARGET_ARCH} ${TARGET_LIBC}
+if [ -z ${1} ]; then
+  printf "\e[1m\e[31m%s\e[0m\n" "Please declare the module to be compiled."
+  exit 1
 fi
+compile ${1} ${2:-"static"} ${TARGET_PLATFORM} ${TARGET_ARCH} ${TARGET_LIBC}
