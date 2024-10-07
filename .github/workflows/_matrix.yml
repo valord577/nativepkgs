@@ -124,7 +124,7 @@ jobs:
       matrix: ${{ fromJson(needs._preset.outputs.matrix-container) }}
     runs-on: ubuntu-latest
     container:
-      image: valord577/linux310-cross:578bca67789f3845680ae9e192e26c85affa3292
+      image: ${{ matrix.image }}
     defaults:
       run:
         shell: bash
