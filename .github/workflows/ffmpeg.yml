@@ -4,25 +4,27 @@ on:
     branches:
       - main
     paths:
+      - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/ffmpeg.yml'
       - 'deps/ffmpeg'
       - 'patches/ffmpeg/**'
       - 'scripts/ffmpeg.sh'
       - 'build.sh'
-      - 'env-apple.sh'
+      - 'env-*.sh'
       - 'pkg-conf.sh'
   pull_request:
     branches:
       - main
     paths:
+      - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/ffmpeg.yml'
       - 'deps/ffmpeg'
       - 'patches/ffmpeg/**'
       - 'scripts/ffmpeg.sh'
       - 'build.sh'
-      - 'env-apple.sh'
+      - 'env-*.sh'
       - 'pkg-conf.sh'
 
 jobs:
