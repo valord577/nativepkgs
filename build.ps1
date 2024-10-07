@@ -80,11 +80,9 @@ $compile = {
   & "${PROJ_ROOT}\scripts\${PKG_NAME}.ps1"
 }
 
-if ($GITHUB_ACTIONS -ne "true") {
-  if (($PKG_NAME -eq $null) -or ($PKG_NAME -eq "")) {
-    Write-Host -ForegroundColor Red "Please declare the module to be compiled."
-    exit 1
-  }
-  Invoke-Command -ScriptBlock ${compile} `
-    -ArgumentList ${PKG_NAME}, ${PKG_TYPE}, ${TARGET_PLATFORM}, ${TARGET_ARCH}
+if (($PKG_NAME -eq $null) -or ($PKG_NAME -eq "")) {
+  Write-Host -ForegroundColor Red "Please declare the module to be compiled."
+  exit 1
 }
+Invoke-Command -ScriptBlock ${compile} `
+  -ArgumentList ${PKG_NAME}, ${PKG_TYPE}, ${TARGET_PLATFORM}, ${TARGET_ARCH}

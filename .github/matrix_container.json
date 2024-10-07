@@ -1,0 +1,30 @@
+[
+  {
+    "platform": "linux",
+    "arch": "amd64",
+    "pkg_type": "static",
+    "lib_impl": "gnu",
+    "image": "valord577/linux310-cross:578bca67789f3845680ae9e192e26c85affa3292"
+  },
+  {
+    "platform": "linux",
+    "arch": "arm64",
+    "pkg_type": "static",
+    "lib_impl": "gnu",
+    "image": "valord577/linux310-cross:578bca67789f3845680ae9e192e26c85affa3292"
+  },
+  {
+    "platform": "linux",
+    "arch": "amd64",
+    "pkg_type": "static",
+    "lib_impl": "musl",
+    "image": "valord577/linux310-cross:578bca67789f3845680ae9e192e26c85affa3292"
+  },
+  {
+    "platform": "linux",
+    "arch": "arm64",
+    "pkg_type": "static",
+    "lib_impl": "musl",
+    "image": "valord577/linux310-cross:578bca67789f3845680ae9e192e26c85affa3292"
+  }
+]

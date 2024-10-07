@@ -32,33 +32,41 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
       pkgver: ${{ steps.set-pkgver.outputs.pkgver }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix-container: ${{ steps.set-matrix-container.outputs.matrix-container }}
     steps:
       - name: clone with gh
         run: |
           gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
-      - name: set matrix
-        id: set-matrix
-        run: |
-          if [[ ${{ (! inputs.disable_shared) }} ]]; then { jq_expr='(.pkg_type=="shared")'; } fi
-          if [[ ${{ (! inputs.disable_static) }} ]]; then
-            if [ -z "${jq_expr}" ]; then { jq_expr='(.pkg_type=="static")'; } else { jq_expr="$jq_expr or (.pkg_type==\"static\")"; } fi
-          fi
-          printf "\e[1m\e[33m%s\e[0m\n" "jq_expr: $jq_expr"
-
-          matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr) )")
-          printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
-          echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
       - name: set pkgver
         id: set-pkgver
         run: |
           pkgver=$(git ls-tree -d --abbrev=7 --format='%(objectname)' HEAD -- deps/${{ github.workflow }})
           printf "\e[1m\e[33m%s\e[0m\n" "pkgver: $pkgver"
           echo "pkgver=$pkgver" >> "$GITHUB_OUTPUT"
+      - name: jq filters
+        run: |
+          if [[ ${{ (! inputs.disable_shared) }} ]]; then { jq_expr='(.pkg_type=="shared")'; } fi
+          if [[ ${{ (! inputs.disable_static) }} ]]; then
+            if [ -z "${jq_expr}" ]; then { jq_expr='(.pkg_type=="static")'; } else { jq_expr="$jq_expr or (.pkg_type==\"static\")"; } fi
+          fi
+          printf "\e[1m\e[33m%s\e[0m\n" "jq_expr: $jq_expr"; echo "jq_expr=$jq_expr" >> "$GITHUB_ENV"
+      - name: set matrix
+        id: set-matrix
+        run: |
+          matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr) )")
+          printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
+          echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
+      - name: set matrix container
+        id: set-matrix-container
+        run: |
+          matrix=$(cat .github/matrix_container.json | jq -c -M "map(. | select($jq_expr) )")
+          printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
+          echo "matrix-container={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
 
-  _buildx:
+  _buildx_on_host:
     needs: _preset
     strategy:
       matrix: ${{ fromJson(needs._preset.outputs.matrix) }}
@@ -70,8 +78,8 @@ jobs:
     env:
       INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_GHA_KEY: ${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
-      CCACHE_GHA_KEY_RESTORE: ${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
+      CCACHE_GHA_KEY: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
+      CCACHE_GHA_KEY_RESTORE: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
       PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
     steps:
       - name: clone with gh
@@ -92,8 +100,79 @@ jobs:
             ${{ env.CCACHE_GHA_KEY_RESTORE }}
       - name: buildx library - ${{ github.workflow }}
         run: |
-          source build_${{ matrix.platform }}_${{ matrix.arch }}.sh
-          compile ${{ github.workflow }} ${{ matrix.pkg_type }} ${{ matrix.platform }} ${{ matrix.arch }}
+          ./build_${{ matrix.platform }}_${{ matrix.arch }}.sh ${{ github.workflow }} ${{ matrix.pkg_type }}
+      - name: gh action ccache save
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.CCACHE_GHA_KEY }}
+      - name: upload library - ${{ github.workflow }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PKG_ZIP_NAME }}
+          path: ${{ env.INST_DIR }}
+      - name: commit to pre-compiled storage
+        if: ${{ github.event_name == 'push' && (! inputs.disable_upload) }}
+        run: |
+          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
+          ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
+
+  _buildx_on_container:
+    needs: _preset
+    strategy:
+      matrix: ${{ fromJson(needs._preset.outputs.matrix-container) }}
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+    env:
+      INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+    steps:
+      - name: set required env
+        run: |
+          CCACHE_GHA_KEY='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}'
+          CCACHE_GHA_KEY_RESTORE='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}'
+          PKG_ZIP_NAME='${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}'
+          if [[ ${{ matrix.platform == 'linux' }} ]]; then
+            CCACHE_GHA_KEY='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.lib_impl }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}'
+            CCACHE_GHA_KEY_RESTORE='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.lib_impl }}'
+            PKG_ZIP_NAME='${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}-${{ matrix.lib_impl }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}'
+          fi
+
+          echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
+          echo "CCACHE_GHA_KEY_RESTORE=${CCACHE_GHA_KEY_RESTORE}" >> "$GITHUB_ENV"
+          echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$GITHUB_ENV"
+      - name: clone with gh
+        run: |
+          curl --fail-with-body -sSL \
+            -o '/etc/apt/keyrings/githubcli-archive-keyring.gpg' \
+            --url 'https://cli.github.com/packages/githubcli-archive-keyring.gpg'
+          echo 'deb [signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main' \
+            >> '/etc/apt/sources.list.d/github-cli.list'; cat '/etc/apt/sources.list.d/github-cli.list'
+          apt-get update -qq; apt-get install -qqy gh
+
+          git config --global --add safe.directory "*"
+          gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
+          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}
+          git checkout FETCH_HEAD
+      - name: gh action ccache restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.CCACHE_GHA_KEY }}
+          restore-keys: |
+            ${{ env.CCACHE_GHA_KEY_RESTORE }}
+      - name: buildx library - ${{ github.workflow }}
+        run: |
+          SCRIPT_NAME='build_${{ matrix.platform }}_${{ matrix.arch }}.sh'
+          if [[ ${{ matrix.platform == 'linux' }} ]]; then
+            SCRIPT_NAME='crossbuild_${{ matrix.platform }}_${{ matrix.lib_impl }}_${{ matrix.arch }}.sh'
+          fi
+          ./${SCRIPT_NAME} ${{ github.workflow }} ${{ matrix.pkg_type }}
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
