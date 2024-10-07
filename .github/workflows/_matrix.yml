@@ -145,9 +145,9 @@ jobs:
           curl --fail-with-body -sSL \
             -o '/etc/apt/keyrings/githubcli-archive-keyring.gpg' \
             --url 'https://cli.github.com/packages/githubcli-archive-keyring.gpg'
-          echo 'deb signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main' \
+          echo 'deb [signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main' \
             >> '/etc/apt/sources.list.d/github-cli.list'; cat '/etc/apt/sources.list.d/github-cli.list'
-          apt-get update; apt-get install -y gh
+          apt-get update -qq; apt-get install -qqy gh
 
           gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
