@@ -132,10 +132,21 @@ jobs:
     env:
       INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      CCACHE_GHA_KEY: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
-      CCACHE_GHA_KEY_RESTORE: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
-      PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
     steps:
+      - name: set required env
+        run: |
+          CCACHE_GHA_KEY='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}'
+          CCACHE_GHA_KEY_RESTORE='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}'
+          PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
+          if [[ ${{ matrix.platform == 'linux' }} ]]; then
+            CCACHE_GHA_KEY='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.lib_impl }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}'
+            CCACHE_GHA_KEY_RESTORE='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.lib_impl }}'
+            PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}-${{ matrix.lib_impl }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
+          fi
+
+          echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
+          echo "CCACHE_GHA_KEY_RESTORE=${CCACHE_GHA_KEY_RESTORE}" >> "$GITHUB_ENV"
+          echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$GITHUB_ENV"
       - name: clone with gh
         run: |
           curl --fail-with-body -sSL \
@@ -168,6 +179,13 @@ jobs:
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-      - name: print env
+      - name: upload library - ${{ github.workflow }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PKG_ZIP_NAME }}
+          path: ${{ env.INST_DIR }}
+      - name: commit to pre-compiled storage
+        if: ${{ github.event_name == 'push' && (! inputs.disable_upload) }}
         run: |
-          export -p; pwd; ls -alh; git status
+          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
+          ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
