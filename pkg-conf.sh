@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-export PKG_CONFIG_EXEC="pkg-config"
-if command -v pkgconf >/dev/null 2>&1 ; then
-  export PKG_CONFIG_EXEC="pkgconf"
-fi
 if [ -n "${CROSS_TOOLCHAIN_PKGCONF}" ]; then
   export PKG_CONFIG_EXEC="${CROSS_TOOLCHAIN_PKGCONF}"
 fi
@@ -16,12 +12,7 @@ dep_libs_dir="${PROJ_ROOT}/lib"
 if [ ! -e "${dep_libs_dir}" ]; then { mkdir -p "${dep_libs_dir}"; } fi
 
 function dl_pkgc() {
-  need_update="0"
-  for pkg_name in ${UPDATE_DL_PKG:-""}; do
-    if [ "${pkg_name}" == "${1}" ]; then { need_update="1"; break; } fi
-  done
-
-  if [ ! -e "${dep_libs_dir}/${1}" ] || [ "${need_update}" != "0" ]; then
+  if [ ! -e "${dep_libs_dir}/${1}" ]; then
     (
       pkg_name="${1}"
       pkg_version="${2}"

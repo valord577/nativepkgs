@@ -19,6 +19,8 @@ python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_HAVE_SSE2
 python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_DEPRECATED_WARNING
 python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_DEPRECATED_REMOVED
 
+python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT
+python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_SHA512_USE_A64_CRYPTO_IF_PRESENT
 python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_PSA_P256M_DRIVER_ENABLED
 python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_ECDH_VARIANT_EVEREST_ENABLED
 
@@ -30,16 +32,20 @@ python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_SELF_TEST
 python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_SSL_SRV_C
 python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_SSL_RENEGOTIATION
 
+
 case ${PKG_PLATFORM} in
   "win-mingw")
-    if [ "${PKG_ARCH}" == "x86_64" ]; then
-      python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT
-      python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_SHA512_USE_A64_CRYPTO_IF_PRESENT
+    if [ "${PKG_ARCH}" == "aarch64" ]; then
+      python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT
+      python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_SHA512_USE_A64_CRYPTO_IF_PRESENT
+    fi
+    ;;
+  "linux")
+    if [ "${PKG_ARCH}" == "armv7" ]; then
+      python3 ${SUBPROJ_SRC}/scripts/config.py unset MBEDTLS_ECDH_VARIANT_EVEREST_ENABLED
     fi
     ;;
   *)
-    python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT
-    python3 ${SUBPROJ_SRC}/scripts/config.py set MBEDTLS_SHA512_USE_A64_CRYPTO_IF_PRESENT
     ;;
 esac
 # ----------------------------
