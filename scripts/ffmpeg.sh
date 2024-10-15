@@ -54,7 +54,6 @@ ${SUBPROJ_SRC}/configure     \
   ${PKG_TYPE_FLAG}  \
   ${PKG_BULD_TYPE}  \
   ${PKG_INST_STRIP} \
-  --pkg-config='${PKG_CONFIG_EXEC}' \
   --enable-gpl \
   --enable-version3 \
   --fatal-warnings \
@@ -68,6 +67,10 @@ ${SUBPROJ_SRC}/configure     \
   ${PKG_DEPS_ARGS}
 EOF
 )
+if [ -n "${PKG_CONFIG_EXEC}" ]; then
+  CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --pkg-config='${PKG_CONFIG_EXEC}'"
+fi
+
 case ${PKG_PLATFORM} in
   "macosx" | "iphoneos" | "iphonesimulator")
     CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
@@ -78,8 +81,8 @@ case ${PKG_PLATFORM} in
   "linux")
     if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
       CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
-        --enable-cross-compile --sysroot='${SYSROOT}' --target-os=linux --arch=${PKG_ARCH} --host-cc='${HOSTCC}' \
-        --extra-ldflags='-fuse-ld=${LD}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
+        --enable-cross-compile --target-os=linux --arch=${PKG_ARCH} \
+        --host-cc='${HOSTCC}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
     fi
     ;;
   "win-mingw")
