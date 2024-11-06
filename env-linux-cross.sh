@@ -42,6 +42,12 @@ if [ -z "${CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE}" ]; then
 fi
 CROSS_TOOLCHAIN_FILE_CMAKE="${CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE}.${TARGET_TRIPLE}"
 export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_TOOLCHAIN_FILE=${CROSS_TOOLCHAIN_FILE_CMAKE}"
+# meson toolchain file
+if [ -z "${CROSS_TOOLCHAIN_FILE_PREFIX_MESON}" ]; then
+  CROSS_TOOLCHAIN_FILE_PREFIX_MESON="${CROSS_TOOLCHAIN_ROOT}/toolchain-meson-template"
+fi
+CROSS_TOOLCHAIN_FILE_MESON="${CROSS_TOOLCHAIN_FILE_PREFIX_MESON}.${TARGET_TRIPLE}"
+export MESON_EXTRA="${MESON_EXTRA} --cross-file ${CROSS_TOOLCHAIN_FILE_MESON}"
 # pkgconf bin
 if [ -z "${CROSS_TOOLCHAIN_PKGCONF_PREFIX}" ]; then
   CROSS_TOOLCHAIN_PKGCONF_PREFIX="${CROSS_TOOLCHAIN_ROOT}/pkgconf-wrapper"
@@ -57,8 +63,13 @@ export AR="$(command -v llvm-ar)";
 export AS="$(command -v llvm-as)";
 export RANLIB="$(command -v llvm-ranlib)";
 export STRIP="$(command -v llvm-strip)";
+export OBJCOPY="$(command -v llvm-objcopy)";
 
-export CROSS_FLAGS="--target=${TARGET_TRIPLE} --gcc-toolchain=${CROSS_TOOLCHAIN_ROOT} -Wno-unused-command-line-argument -fuse-ld=${LD} --sysroot=${SYSROOT}"
+export CROSS_FLAGS="--target=${TARGET_TRIPLE} --gcc-toolchain=${CROSS_TOOLCHAIN_ROOT} --sysroot=${SYSROOT}"
+if [ "${TARGET_ARCH}" == "armv7" ]; then
+  export CROSS_FLAGS="${CROSS_FLAGS} -march=armv7-a -mfpu=neon-vfpv4"
+fi
+export CROSS_LDFLAGS="-fuse-ld=${LD} --sysroot=${SYSROOT}"
 export CC="$(command -v clang) ${CROSS_FLAGS}";
 export CXX="$(command -v clang++) ${CROSS_FLAGS}";
 export CPP="$(command -v clang-cpp) ${CROSS_FLAGS}";

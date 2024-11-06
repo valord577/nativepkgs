@@ -43,8 +43,25 @@ function dl_pkgc() {
   fi
 
   export PKG_DEPS_ARGS="${PKG_DEPS_ARGS} ${5}"
-  if [ "${3}" == "shared" ]; then { export PKG_DEPS_SHARED="${PKG_DEPS_SHARED} ${1}"; } fi
-
-  export PKG_DEPS_CMAKE="${dep_libs_dir}/${1};${PKG_DEPS_CMAKE}"
   export PKG_CONFIG_PATH="${dep_libs_dir}/${1}/lib/pkgconfig:${PKG_CONFIG_PATH}"
+
+  # mark libraries (shared static)
+  #  - PKG_DEPS_SHARED
+  #  - PKG_DEPS_STATIC
+  eval export "PKG_DEPS_${3^^}=\"\${PKG_DEPS_${3^^}} ${dep_libs_dir}/${1}\""
+
+  # https://cmake.org/cmake/help/latest/variable/CMAKE_MODULE_PATH.html
+  cmake_search_path="${dep_libs_dir}/${1}"
+  if [ -n "${6}" ]; then
+    cmake_search_path="${dep_libs_dir}/${1}/${6}"
+  fi
+  export PKG_DEPS_CMAKE="${cmake_search_path};${PKG_DEPS_CMAKE}"
+
+  # for shared library's own dependencies
+  if [ -n "${7}" ]; then
+    triplet_values=(${7//:/ })
+    for path in ${triplet_values[@]}; do
+      export LD_LIBRARY_PATH="${dep_libs_dir}/${1}/${path}:${LD_LIBRARY_PATH}"
+    done
+  fi
 }

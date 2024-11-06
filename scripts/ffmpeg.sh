@@ -40,12 +40,13 @@ fi
 # ----------------------------
 # compile :p
 # ----------------------------
-{ rm -rf ${PKG_BULD_DIR}; mkdir -p "${PKG_BULD_DIR}"; }
-{ rm -rf ${PKG_INST_DIR}; mkdir -p "${PKG_INST_DIR}"; }
+if [ "${CLANGD_CODE_COMPLETION}" == "1" ]; then
+  PKG_BULD_DIR="${PROJ_ROOT}"
+else
+  { rm -rf ${PKG_BULD_DIR}; mkdir -p "${PKG_BULD_DIR}"; }
+  { rm -rf ${PKG_INST_DIR}; mkdir -p "${PKG_INST_DIR}"; }
+fi
 
-if [ "${CLANGD_CODE_COMPLETION}" == "1" ]; then { PKG_BULD_DIR="${SUBPROJ_SRC}"; } fi
-
-pushd -- "${PKG_BULD_DIR}"
 CONFIGURE_COMMAND=$(cat <<- EOF
 ${SUBPROJ_SRC}/configure     \
   --prefix='${PKG_INST_DIR}' \
@@ -81,8 +82,8 @@ case ${PKG_PLATFORM} in
   "linux")
     if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
       CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
-        --enable-cross-compile --target-os=linux --arch=${PKG_ARCH} \
-        --host-cc='${HOSTCC}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
+        --enable-cross-compile --target-os=linux --arch=${PKG_ARCH} --host-cc='${HOSTCC}' \
+        --extra-ldflags='${CROSS_LDFLAGS}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
     fi
     ;;
   "win-mingw")
@@ -94,11 +95,10 @@ case ${PKG_PLATFORM} in
     ;;
 esac
 
-printf "\e[1m\e[36m%s\e[0m\n" "${CONFIGURE_COMMAND}"; eval ${CONFIGURE_COMMAND}
-popd
+printf "\e[1m\e[36m%s\e[0m\n" "${CONFIGURE_COMMAND}"
+pushd -- "${PKG_BULD_DIR}"; eval ${CONFIGURE_COMMAND}; popd
 
 # build & install
-pushd -- "${PKG_BULD_DIR}"
 MAKE_COMMAND="make -j ${PARALLEL_JOBS}"
 if [ "${PKG_PLATFORM}" == "iphoneos" ] || \
   [ "${PKG_PLATFORM}" == "iphonesimulator" ]; then
@@ -113,17 +113,9 @@ fi
 if command -v bear >/dev/null 2>&1 ; then
   MAKE_COMMAND="bear -- ${MAKE_COMMAND}"
 fi
-printf "\e[1m\e[36m%s\e[0m\n" "${MAKE_COMMAND}"; eval ${MAKE_COMMAND}
-popd
+printf "\e[1m\e[36m%s\e[0m\n" "${MAKE_COMMAND}"
+pushd -- "${PKG_BULD_DIR}"; eval ${MAKE_COMMAND}; popd
 
 if [ "${PKG_PLATFORM}" == "macosx" ]; then
   xattr -dr com.apple.quarantine ${PKG_INST_DIR}/bin/*
 fi
-
-if command -v tree >/dev/null 2>&1 ; then
-  tree -L 3 ${PKG_INST_DIR}
-else
-  ls -alh -- ${PKG_INST_DIR}
-fi
-BUILD_DATE=$(date -u '+%Y-%m-%dT%H:%M:%SZ%:z')
-printf "\e[1m\e[35m%s\e[0m\n" "${SUBPROJ_SRC} - Build Done @${BUILD_DATE}"
