@@ -4,27 +4,27 @@
     "arch": "amd64",
     "pkg_type": "static",
     "lib_impl": "gnu",
-    "image": "valord577/linux-cross:e4a0c3df4ab4bb131df067d7c712144def81b6a4"
+    "image": "valord577/linux-cross:8f5ae7a4cdb84029631416c9dab0fda405679030"
   },
   {
     "platform": "linux",
     "arch": "arm64",
     "pkg_type": "static",
     "lib_impl": "gnu",
-    "image": "valord577/linux-cross:e4a0c3df4ab4bb131df067d7c712144def81b6a4"
+    "image": "valord577/linux-cross:8f5ae7a4cdb84029631416c9dab0fda405679030"
   },
   {
     "platform": "linux",
     "arch": "amd64",
     "pkg_type": "static",
     "lib_impl": "musl",
-    "image": "valord577/linux-cross:e4a0c3df4ab4bb131df067d7c712144def81b6a4"
+    "image": "valord577/linux-cross:8f5ae7a4cdb84029631416c9dab0fda405679030"
   },
   {
     "platform": "linux",
     "arch": "arm64",
     "pkg_type": "static",
     "lib_impl": "musl",
-    "image": "valord577/linux-cross:e4a0c3df4ab4bb131df067d7c712144def81b6a4"
+    "image": "valord577/linux-cross:8f5ae7a4cdb84029631416c9dab0fda405679030"
   }
 ]
