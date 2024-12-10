@@ -5,9 +5,6 @@ if [ -n "${CROSS_TOOLCHAIN_PKGCONF}" ]; then
   export PKG_CONFIG_EXEC="${CROSS_TOOLCHAIN_PKGCONF}"
 fi
 
-if [ -z "${PROJ_ROOT}" ]; then
-  PROJ_ROOT=$(cd "$(dirname ${BASH_SOURCE[0]})"; pwd)
-fi
 dep_libs_dir="${PROJ_ROOT}/lib"
 if [ ! -e "${dep_libs_dir}" ]; then { mkdir -p "${dep_libs_dir}"; } fi
 

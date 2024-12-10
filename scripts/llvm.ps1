@@ -85,7 +85,7 @@ cmake -G Ninja ``
   -D CMAKE_INSTALL_LIBDIR:PATH=lib ``
   ${PKG_BULD_TYPE} ``
   ${PKG_TYPE_FLAG} ``
-  ${env:CMAKE_EXTRA_ARGS} ``
+  ${env:CMAKE_EXTRA} ``
   -D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lldb" ``
   -D CLANG_PLUGIN_SUPPORT:BOOL=0 ``
   -D LLVM_APPEND_VC_REV:BOOL=0 ``

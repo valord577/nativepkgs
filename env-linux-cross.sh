@@ -34,7 +34,7 @@ if [ -z "${CROSS_TOOLCHAIN_ROOT}" ]; then
   printf "\e[1m\e[31m%s\e[0m\n" "Blank CROSS_TOOLCHAIN_ROOT: '${CROSS_TOOLCHAIN_ROOT}'."
   exit 1
 fi
-export SYSROOT="${CROSS_TOOLCHAIN_ROOT}/${TARGET_TRIPLE}/sysroot"
+export SYSROOT="${CROSS_TOOLCHAIN_ROOT}/${TARGET_TRIPLE}"
 
 # cmake toolchain file
 if [ -z "${CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE}" ]; then
@@ -63,9 +63,9 @@ export AR="$(command -v llvm-ar)";
 export AS="$(command -v llvm-as)";
 export RANLIB="$(command -v llvm-ranlib)";
 export STRIP="$(command -v llvm-strip)";
-export OBJCOPY="$(command -v llvm-objcopy)";
+export READELF="$(command -v llvm-readelf)";
 
-export CROSS_FLAGS="--target=${TARGET_TRIPLE} --gcc-toolchain=${CROSS_TOOLCHAIN_ROOT} --sysroot=${SYSROOT}"
+export CROSS_FLAGS="--target=${TARGET_TRIPLE} --gcc-toolchain=${SYSROOT}/usr --sysroot=${SYSROOT}"
 if [ "${TARGET_ARCH}" == "armv7" ]; then
   export CROSS_FLAGS="${CROSS_FLAGS} -march=armv7-a -mfpu=neon-vfpv4"
 fi
