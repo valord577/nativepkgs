@@ -31,9 +31,7 @@ jobs:
   build:
     # if: ${{ false }}
     secrets: inherit
-    steps:
-      - uses: ./.github/workflows/_matrix.yml
-        with:
-          disable_upload: true
-        continue-on-error: true
-
+    uses: ./.github/workflows/_matrix.yml
+    with:
+      disable_upload: true
+    continue-on-error: true
