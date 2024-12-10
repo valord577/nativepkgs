@@ -45,7 +45,8 @@ function dl_pkgc() {
   # mark libraries (shared static)
   #  - PKG_DEPS_SHARED
   #  - PKG_DEPS_STATIC
-  eval export "PKG_DEPS_${3^^}=\"\${PKG_DEPS_${3^^}} ${dep_libs_dir}/${1}\""
+  _pkg_type_=$(echo ${3} | tr "[:lower:]" "[:upper:]") # fixed: run on macos zsh
+  eval export "PKG_DEPS_${_pkg_type_}=\"\${PKG_DEPS_${_pkg_type_}} ${dep_libs_dir}/${1}\""
 
   # https://cmake.org/cmake/help/latest/variable/CMAKE_MODULE_PATH.html
   cmake_search_path="${dep_libs_dir}/${1}"
