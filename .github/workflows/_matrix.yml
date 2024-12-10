@@ -14,6 +14,10 @@ on:
         default: false
         required: false
         type: boolean
+      allow_failure:
+        default: false
+        required: false
+        type: boolean
 
 env:
   GH_TOKEN: ${{ github.token }}
@@ -71,6 +75,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs._preset.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ inputs.allow_failure }}
     defaults:
       run:
         shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'bash' }}
@@ -122,6 +127,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs._preset.outputs.matrix-container) }}
     runs-on: ubuntu-latest
+    continue-on-error: ${{ inputs.allow_failure }}
     container:
       image: ${{ matrix.image }}
     defaults:
