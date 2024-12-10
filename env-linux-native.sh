@@ -14,12 +14,29 @@ case "$(uname -m)" in
     ;;
 esac
 
+# check libc implementation
+if ! command -v ldd >/dev/null 2>&1 ; then
+  printf "\e[1m\e[31m%s\e[0m\n" "Unknown exec 'ldd'."
+  exit 1
+fi
+libc_is_musl=$(ldd --version | grep 'musl' 2>&1 >/dev/null; echo $?)
+if [ "${libc_is_musl}" == "0" ]; then
+  export TARGET_LIBC="musl"
+else
+  if [ "${TARGET_ARCH}" == "armv7" ]; then
+    export TARGET_LIBC="gnueabihf"
+  else
+    export TARGET_LIBC="gnu"
+  fi
+fi
+
+
 export PARALLEL_JOBS="$(nproc)"
 if command -v ccache >/dev/null 2>&1 ; then
   export CCACHE_SRC="$(command -v ccache)"
 
-  export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D CMAKE_C_COMPILER_LAUNCHER=ccache"
-  export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=ccache"
+  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
 fi
 
 function chk_compiler() {

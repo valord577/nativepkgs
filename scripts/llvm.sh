@@ -67,7 +67,7 @@ cmake -G Ninja \
   -D CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON \
   -D CMAKE_INSTALL_PREFIX="${PKG_INST_DIR}" \
   -D CMAKE_INSTALL_LIBDIR:PATH=lib \
-  ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} ${CMAKE_EXTRA_ARGS} \
+  ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} ${CMAKE_EXTRA} \
   -D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lldb" \
   -D CLANG_PLUGIN_SUPPORT:BOOL=0 \
   -D LLVM_APPEND_VC_REV:BOOL=0 \
@@ -86,11 +86,3 @@ printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}"; eval ${CMAKE_COMMAND}
 # build & install
 cmake --build "${PKG_BULD_DIR}"
 cmake --install "${PKG_BULD_DIR}" ${PKG_INST_STRIP}
-
-if command -v tree >/dev/null 2>&1 ; then
-  tree -L 3 ${PKG_INST_DIR}
-else
-  ls -alh -- ${PKG_INST_DIR}
-fi
-BUILD_DATE=$(date -u '+%Y-%m-%dT%H:%M:%SZ%:z')
-printf "\e[1m\e[35m%s\e[0m\n" "${SUBPROJ_SRC} - Build Done @${BUILD_DATE}"

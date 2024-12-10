@@ -31,7 +31,7 @@ fi
 export SYSROOT="${CROSS_TOOLCHAIN_ROOT}/${__TARGET_TRIPLE__}"
 
 export PARALLEL_JOBS="$(nproc)"
-export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D CMAKE_TOOLCHAIN_FILE=${CROSS_TOOLCHAIN_FILE_CMAKE}"
+export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_TOOLCHAIN_FILE=${CROSS_TOOLCHAIN_FILE_CMAKE}"
 
 # for cross-compiling, cmake sets compiler vars by toolchain file, so keep CC/CXX.
 export CC="${CROSS_TOOLCHAIN_ROOT}/bin/${__TARGET_TRIPLE__}-clang"
@@ -46,6 +46,6 @@ export STRIP="${CROSS_TOOLCHAIN_ROOT}/bin/${__TARGET_TRIPLE__}-strip"
 if command -v ccache >/dev/null 2>&1 ; then
   export CCACHE_SRC="$(command -v ccache)"
 
-  export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D CMAKE_C_COMPILER_LAUNCHER=ccache"
-  export CMAKE_EXTRA_ARGS="${CMAKE_EXTRA_ARGS} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=ccache"
+  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
 fi

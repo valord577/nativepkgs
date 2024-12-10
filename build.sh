@@ -82,6 +82,15 @@ function compile() {
       popd
     fi
     bash "${PROJ_ROOT}/scripts/${PKG_NAME}.sh"
+
+
+    if [ "${CLANGD_CODE_COMPLETION}" != "1" ]; then
+      { command -v tree >/dev/null 2>&1; } \
+        && { tree -L 3 ${PKG_INST_DIR}; }  \
+        || { ls -alh -- ${PKG_INST_DIR}; }
+    fi
+    BUILD_DATE=$(date -u '+%Y-%m-%dT%H:%M:%SZ%:z')
+    printf "\e[1m\e[35m%s\e[0m\n" "${SUBPROJ_SRC} - Build Done @${BUILD_DATE}"
   )
 }
 

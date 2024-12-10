@@ -88,7 +88,7 @@ cmake -S "${SUBPROJ_SRC}" -B "${PKG_BULD_DIR}" \
   -D CMAKE_INSTALL_PREFIX="${PKG_INST_DIR}" \
   -D CMAKE_INSTALL_LIBDIR:PATH=lib \
   ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} \
-  -D MBEDTLS_AS_SUBPROJECT:BOOL=1 ${CMAKE_EXTRA_ARGS} \
+  -D MBEDTLS_AS_SUBPROJECT:BOOL=1 ${CMAKE_EXTRA} \
   -D ENABLE_PROGRAMS:BOOL=0 -D ENABLE_TESTING:BOOL=0
 EOF
 )
@@ -111,11 +111,3 @@ Version:
 Libs: -L\${libdir} ${PKG_LIBRARY_DEPS}
 Cflags: -I\${includedir}
 EOF
-
-if command -v tree >/dev/null 2>&1 ; then
-  tree -L 3 ${PKG_INST_DIR}
-else
-  ls -alh -- ${PKG_INST_DIR}
-fi
-BUILD_DATE=$(date -u '+%Y-%m-%dT%H:%M:%SZ%:z')
-printf "\e[1m\e[35m%s\e[0m\n" "${SUBPROJ_SRC} - Build Done @${BUILD_DATE}"

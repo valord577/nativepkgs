@@ -11,8 +11,8 @@ if ($ccache -ne $null) {
   ${env:CCACHE_SRC} = "$($ccache.Source)"
 
   # https://github.com/ccache/ccache/discussions/978
-  ${env:CMAKE_EXTRA_ARGS} = "${env:CMAKE_EXTRA_ARGS} -D CMAKE_C_COMPILER_LAUNCHER=`"${env:CCACHE_SRC}`""
-  ${env:CMAKE_EXTRA_ARGS} = "${env:CMAKE_EXTRA_ARGS} -D CMAKE_CXX_COMPILER_LAUNCHER=`"${env:CCACHE_SRC}`""
+  ${env:CMAKE_EXTRA} = "${env:CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=`"${env:CCACHE_SRC}`""
+  ${env:CMAKE_EXTRA} = "${env:CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=`"${env:CCACHE_SRC}`""
 }
 
 # >>> VS DevShell >>>

@@ -33,4 +33,5 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
+      allow_failure: true
       disable_upload: true
