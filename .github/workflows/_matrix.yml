@@ -60,13 +60,19 @@ jobs:
       - name: set matrix
         id: set-matrix
         run: |
+          host_macos='.platform == "iphoneos" or .platform == "iphonesimulator" or .platform == "macosx"'
+
           matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr) )")
+          matrix=$(echo ${matrix} | jq -c -M "map(if ${host_macos} then . + {os: \"macos-14\"} else . end)")
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
       - name: set matrix container
         id: set-matrix-container
         run: |
+          container_linux="valord577/linux-cross:d62159e85069a9c141b90f1429600183908c0f90"
+
           matrix=$(cat .github/matrix_container.json | jq -c -M "map(. | select($jq_expr) )")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\" then . + {image: \"${container_linux}\"} else . end)")
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix-container={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
 
