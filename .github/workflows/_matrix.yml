@@ -69,7 +69,11 @@ jobs:
       - name: set matrix container
         id: set-matrix-container
         run: |
-          container_linux="valord577/linux-cross:d62159e85069a9c141b90f1429600183908c0f90"
+          container_linux_vers='07dcb8281c82686f54791e993f5f894360dfa5c9'
+          container_linux="valord577/linux310-gcc4-cross:${container_linux_vers}"
+          [ "${{ github.workflow }}" == "llvm" ] && \
+            { container_linux="valord577/linux310-gcc7-cross:${container_linux_vers}"; }
+
 
           matrix=$(cat .github/matrix_container.json | jq -c -M "map(. | select($jq_expr) )")
           matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\" then . + {image: \"${container_linux}\"} else . end)")

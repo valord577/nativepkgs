@@ -9,7 +9,8 @@ dep_libs_dir="${PROJ_ROOT}/lib"
 if [ ! -e "${dep_libs_dir}" ]; then { mkdir -p "${dep_libs_dir}"; } fi
 
 function dl_pkgc() {
-  if [ ! -e "${dep_libs_dir}/${1}" ]; then
+  _this_lib_dir_="${dep_libs_dir}/${1}"
+  if [ ! -e "${_this_lib_dir_}" ]; then
     (
       pkg_name="${1}"
       pkg_version="${2}"
@@ -40,26 +41,31 @@ function dl_pkgc() {
   fi
 
   export PKG_DEPS_ARGS="${PKG_DEPS_ARGS} ${5}"
-  export PKG_CONFIG_PATH="${dep_libs_dir}/${1}/lib/pkgconfig:${PKG_CONFIG_PATH}"
+  export PKG_CONFIG_PATH="${_this_lib_dir_}/lib/pkgconfig:${PKG_CONFIG_PATH}"
 
   # mark libraries (shared static)
   #  - PKG_DEPS_SHARED
   #  - PKG_DEPS_STATIC
   _pkg_type_=$(echo ${3} | tr "[:lower:]" "[:upper:]") # fixed: run on macos zsh
-  eval export "PKG_DEPS_${_pkg_type_}=\"\${PKG_DEPS_${_pkg_type_}} ${dep_libs_dir}/${1}\""
+  eval export "PKG_DEPS_${_pkg_type_}=\"\${PKG_DEPS_${_pkg_type_}} ${_this_lib_dir_}\""
 
   # https://cmake.org/cmake/help/latest/variable/CMAKE_MODULE_PATH.html
-  cmake_search_path="${dep_libs_dir}/${1}"
+  cmake_search_path="${_this_lib_dir_}"
   if [ -n "${6}" ]; then
-    cmake_search_path="${dep_libs_dir}/${1}/${6}"
+    cmake_search_path="${_this_lib_dir_}/${6}"
   fi
   export PKG_DEPS_CMAKE="${cmake_search_path};${PKG_DEPS_CMAKE}"
+  if [ -n "${7}" ]; then
+    eval export "${7}_LIBRARY=\"${_this_lib_dir_}/lib\""
+    eval export "${7}_INCLUDE_DIR=\"${_this_lib_dir_}/include\""
+    eval export "${7}_ROOT=\"${_this_lib_dir_}\""
+  fi
 
   # for shared library's own dependencies
-  if [ -n "${7}" ]; then
-    triplet_values=(${7//:/ })
+  if [ -n "${8}" ]; then
+    triplet_values=(${8//:/ })
     for path in ${triplet_values[@]}; do
-      export LD_LIBRARY_PATH="${dep_libs_dir}/${1}/${path}:${LD_LIBRARY_PATH}"
+      export LD_LIBRARY_PATH="${_this_lib_dir_}/${path}:${LD_LIBRARY_PATH}"
     done
   fi
 }
