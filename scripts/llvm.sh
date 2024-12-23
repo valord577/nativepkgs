@@ -68,17 +68,35 @@ cmake -G Ninja \
   -D LLVM_INCLUDE_DOCS:BOOL=0  \
   -D LLVM_INCLUDE_UTILS:BOOL=0 \
   -D LLVM_ENABLE_ZLIB="FORCE_ON" \
+  -D LLVM_ENABLE_ZSTD="OFF"      \
   -D LLVM_TARGETS_TO_BUILD="AArch64;ARM;RISCV;WebAssembly;X86" \
   -D LLDB_USE_SYSTEM_DEBUGSERVER:BOOL=1
 EOF
 )
-if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
-  [ "${PKG_ARCH}" == "amd64" ] && { LLVM_ARCH="X86"; }
-  [ "${PKG_ARCH}" == "arm64" ] && { LLVM_ARCH="AArch64"; }
-  [ "${PKG_ARCH}" == "armv7" ] && { LLVM_ARCH="ARM"; }
-  CMAKE_COMMAND="${CMAKE_COMMAND} -D LLVM_HOST_TRIPLE=${TARGET_TRIPLE} -D LLVM_TARGET_ARCH=${LLVM_ARCH} \
-    -D CMAKE_C_HOST_COMPILER='${HOSTCC}' -D CMAKE_CXX_HOST_COMPILER='${HOSTCXX}'"
-fi
+
+case ${PKG_PLATFORM} in
+  "iphoneos" | "iphonesimulator")
+    printf "\e[1m\e[31m%s\e[0m\n" "Unsupported PLATFORM: '${PKG_PLATFORM}'."
+    exit 1
+    ;;
+  "macosx")
+    [ "${PKG_ARCH}" == "x86_64" ] && { LLVM_ARCH="X86"; }
+    [ "${PKG_ARCH}" == "arm64"  ] && { LLVM_ARCH="AArch64"; }
+      CMAKE_COMMAND="${CMAKE_COMMAND} -D LLVM_HOST_TRIPLE=${PKG_ARCH}-apple-darwin -D LLVM_TARGET_ARCH=${LLVM_ARCH} \
+        -D CMAKE_C_HOST_COMPILER='${HOSTCC}' -D CMAKE_CXX_HOST_COMPILER='${HOSTCXX}'"
+    ;;
+  "linux")
+    if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
+      [ "${PKG_ARCH}" == "amd64" ] && { LLVM_ARCH="X86"; }
+      [ "${PKG_ARCH}" == "arm64" ] && { LLVM_ARCH="AArch64"; }
+      [ "${PKG_ARCH}" == "armv7" ] && { LLVM_ARCH="ARM"; }
+      CMAKE_COMMAND="${CMAKE_COMMAND} -D LLVM_HOST_TRIPLE=${TARGET_TRIPLE} -D LLVM_TARGET_ARCH=${LLVM_ARCH} \
+        -D CMAKE_C_HOST_COMPILER='${HOSTCC}' -D CMAKE_CXX_HOST_COMPILER='${HOSTCXX}'"
+    fi
+    ;;
+  *)
+    ;;
+esac
 printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}"; eval ${CMAKE_COMMAND}
 
 # build & install
