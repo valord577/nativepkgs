@@ -1,0 +1,37 @@
+name: llvm
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/llvm.yml'
+      - 'deps/llvm'
+      - 'patches/llvm/**'
+      - 'scripts/llvm.sh'
+      - 'build.sh'
+      - 'env-*.sh'
+      - 'pkg-conf.sh'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/llvm.yml'
+      - 'deps/llvm'
+      - 'patches/llvm/**'
+      - 'scripts/llvm.sh'
+      - 'build.sh'
+      - 'env-*.sh'
+      - 'pkg-conf.sh'
+
+jobs:
+  build:
+    secrets: inherit
+    uses: ./.github/workflows/_matrix.yml
+    with:
+      allow_failure: true
+      disable_upload: true

@@ -27,6 +27,8 @@ env:
   GH_OSSUTIL_REGION: ${{ secrets.GH_OSSUTIL_REGION }}
   GH_OSSUTIL_PKGS: ${{ secrets.GH_OSSUTIL_PKGS }}
   GH_OSSUTIL_CNAME: ${{ secrets.GH_OSSUTIL_CNAME }}
+  INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
 
 jobs:
   _preset:
@@ -64,6 +66,10 @@ jobs:
 
           matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr) )")
           matrix=$(echo ${matrix} | jq -c -M "map(if ${host_macos} then . + {os: \"macos-14\"} else . end)")
+
+          [ "${{ github.workflow }}" == "llvm" ] && \
+            { matrix=$(echo ${matrix} | jq -c -M 'map(. | select((.platform=="macosx")) )'); }
+
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
       - name: set matrix container
@@ -91,8 +97,6 @@ jobs:
         shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'bash' }}
         working-directory: ${{ github.workspace }}
     env:
-      INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
-      CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_GHA_KEY: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
       CCACHE_GHA_KEY_RESTORE: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
       PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
@@ -116,6 +120,9 @@ jobs:
       - name: buildx library - ${{ github.workflow }}
         run: |
           ./build_${{ matrix.platform }}_${{ matrix.arch }}.sh ${{ github.workflow }} ${{ matrix.pkg_type }}
+
+          # keep file permissions and case sensitivity
+          tar -cvf ${{ env.PKG_ZIP_NAME }}.tar ${{ github.workflow }}
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
@@ -125,7 +132,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PKG_ZIP_NAME }}
-          path: ${{ env.INST_DIR }}
+          path: ${{ env.PKG_ZIP_NAME }}.tar
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_upload) }}
         run: |
@@ -145,19 +152,16 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
     env:
-      INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
-      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_GHA_KEY: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}
+      CCACHE_GHA_KEY_RESTORE: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
+      PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
     steps:
       - name: set required env
+        if: ${{ matrix.platform == 'linux' }}
         run: |
-          CCACHE_GHA_KEY='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}'
-          CCACHE_GHA_KEY_RESTORE='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}'
-          PKG_ZIP_NAME='${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}'
-          if [[ ${{ matrix.platform == 'linux' }} ]]; then
-            CCACHE_GHA_KEY='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.lib_impl }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}'
-            CCACHE_GHA_KEY_RESTORE='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.lib_impl }}'
-            PKG_ZIP_NAME='${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}-${{ matrix.lib_impl }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}'
-          fi
+          CCACHE_GHA_KEY='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.lib_impl }}-${{ github.run_id }}-${{ github.run_number }}-${{ github.run_attempt }}'
+          CCACHE_GHA_KEY_RESTORE='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.lib_impl }}'
+          PKG_ZIP_NAME='${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}-${{ matrix.lib_impl }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}'
 
           echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
           echo "CCACHE_GHA_KEY_RESTORE=${CCACHE_GHA_KEY_RESTORE}" >> "$GITHUB_ENV"
@@ -189,6 +193,9 @@ jobs:
             SCRIPT_NAME='crossbuild_${{ matrix.platform }}_${{ matrix.lib_impl }}_${{ matrix.arch }}.sh'
           fi
           ./${SCRIPT_NAME} ${{ github.workflow }} ${{ matrix.pkg_type }}
+
+          # keep file permissions and case sensitivity
+          tar -cvf ${{ env.PKG_ZIP_NAME }}.tar ${{ github.workflow }}
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
@@ -198,7 +205,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PKG_ZIP_NAME }}
-          path: ${{ env.INST_DIR }}
+          path: ${{ env.PKG_ZIP_NAME }}.tar
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_upload) }}
         run: |
