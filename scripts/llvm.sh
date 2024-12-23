@@ -83,8 +83,12 @@ printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}"; eval ${CMAKE_COMMAND}
 
 # build & install
 cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS} \
-  --target 'clangd;lldb;lldb-dap;lldb-server;lldbIntelFeatures;lldb-instr'
-cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP}
+  --target 'clangd;lldb;lldb-dap;lldb-server;lldb-instr'
+cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb
+cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-argdumper
+cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-dap
+cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-instr
+cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-server
 cmake --install "${PKG_BULD_DIR}/tools/lldb"  ${PKG_INST_STRIP} --component liblldb
 cmake --install "${PKG_BULD_DIR}/tools/clang" ${PKG_INST_STRIP} --component clangd
 cmake --install "${PKG_BULD_DIR}/tools/clang" ${PKG_INST_STRIP} --component clang-resource-headers

@@ -91,8 +91,12 @@ Invoke-Expression -Command "${CMAKE_COMMAND}"
 
 # build & install
 cmake --build "${env:PKG_BULD_DIR}" -j ${env:PARALLEL_JOBS} `
-  --target 'clangd;lldb;lldb-dap;lldb-server;lldbIntelFeatures;lldb-instr'
-cmake --install "${env:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP}
+  --target 'clangd;lldb;lldb-dap;lldb-server;lldb-instr'
+cmake --install "${env:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb
+cmake --install "${env:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-argdumper
+cmake --install "${env:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-dap
+cmake --install "${env:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-instr
+cmake --install "${env:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-server
 cmake --install "${env:PKG_BULD_DIR}\tools\lldb"  ${PKG_INST_STRIP} --component liblldb
 cmake --install "${env:PKG_BULD_DIR}\tools\clang" ${PKG_INST_STRIP} --component clangd
 cmake --install "${env:PKG_BULD_DIR}\tools\clang" ${PKG_INST_STRIP} --component clang-resource-headers
