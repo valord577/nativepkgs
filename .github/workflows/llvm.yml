@@ -1,4 +1,4 @@
-name: ffmpeg
+name: llvm
 on:
   workflow_dispatch:
   push:
@@ -7,10 +7,10 @@ on:
     paths:
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
-      - '.github/workflows/ffmpeg.yml'
-      - 'deps/ffmpeg'
-      - 'patches/ffmpeg/**'
-      - 'scripts/ffmpeg.sh'
+      - '.github/workflows/llvm.yml'
+      - 'deps/llvm'
+      - 'patches/llvm/**'
+      - 'scripts/llvm.sh'
       - 'build.sh'
       - 'env-*.sh'
       - 'pkg-conf.sh'
@@ -20,10 +20,10 @@ on:
     paths:
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
-      - '.github/workflows/ffmpeg.yml'
-      - 'deps/ffmpeg'
-      - 'patches/ffmpeg/**'
-      - 'scripts/ffmpeg.sh'
+      - '.github/workflows/llvm.yml'
+      - 'deps/llvm'
+      - 'patches/llvm/**'
+      - 'scripts/llvm.sh'
       - 'build.sh'
       - 'env-*.sh'
       - 'pkg-conf.sh'

@@ -1,0 +1,43 @@
+diff --git a/.gitignore b/.gitignore
+index 20c4f52cd378..80bd660499d3 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -70,3 +70,6 @@ pythonenv*
+ /clang/utils/analyzer/projects/*/RefScanBuildResults
+ # automodapi puts generated documentation files here.
+ /lldb/docs/python_api/
++
++/.env
++/.cache
+diff --git a/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp b/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp
+index 5d2b4b03fe60..2161fe0eaf23 100644
+--- a/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp
++++ b/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp
+@@ -66,6 +66,9 @@
+ #define TRAP_HWBKPT 4
+ #endif
+ 
++#ifndef AT_HWCAP2
++#define AT_HWCAP2 26
++#endif
+ #ifndef HWCAP2_MTE
+ #define HWCAP2_MTE (1 << 18)
+ #endif
+diff --git a/llvm/cmake/modules/CrossCompile.cmake b/llvm/cmake/modules/CrossCompile.cmake
+index 55bf3be75642..1c838b1f81b7 100644
+--- a/llvm/cmake/modules/CrossCompile.cmake
++++ b/llvm/cmake/modules/CrossCompile.cmake
+@@ -15,10 +15,10 @@ function(llvm_create_cross_target project_name target_name toolchain buildtype)
+   if (EXISTS ${LLVM_MAIN_SRC_DIR}/cmake/platforms/${toolchain}.cmake)
+     set(CROSS_TOOLCHAIN_FLAGS_INIT
+       -DCMAKE_TOOLCHAIN_FILE=\"${LLVM_MAIN_SRC_DIR}/cmake/platforms/${toolchain}.cmake\")
+-  elseif (NOT CMAKE_CROSSCOMPILING)
++  elseif (CMAKE_CROSSCOMPILING)
+     set(CROSS_TOOLCHAIN_FLAGS_INIT
+-      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+-      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
++      -DCMAKE_C_COMPILER=${CMAKE_C_HOST_COMPILER}
++      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_HOST_COMPILER}
+       )
+   endif()
+   set(CROSS_TOOLCHAIN_FLAGS_${target_name} ${CROSS_TOOLCHAIN_FLAGS_INIT}

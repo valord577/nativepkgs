@@ -1,15 +1,10 @@
 # ----------------------------
-# prepare env
-# ----------------------------
-# if (-not (Test-Path -PathType Container -Path "${env:SUBPROJ_SRC}\.env")) {
-#   Push-Location "${env:SUBPROJ_SRC}"
-#   python -m venv .env
-
-#   .\.env\Scripts\python -m pip install ${env:PYPI_MIRROR} --upgrade pip
-#   .\.env\Scripts\python -m pip install ${env:PYPI_MIRROR} ninja
-#   Pop-Location
+# if (-not (Test-Path -PathType Container -Path "${env:PROJ_ROOT}\.env")) {
+#   Push-Location "${env:PROJ_ROOT}"; python -m venv .env; Pop-Location
 # }
-# & ${env:SUBPROJ_SRC}\.env\Scripts\activate.ps1
+# & ${env:PROJ_ROOT}\.env\Scripts\activate.ps1
+# python -m pip install ${env:PYPI_MIRROR} --upgrade pip
+# python -m pip install ${env:PYPI_MIRROR} --upgrade ninja
 # ----------------------------
 # static or shared
 # ----------------------------
@@ -44,6 +39,7 @@ if ($LIB_RELEASE -ieq "1") {
 "@
   $PKG_INST_STRIP = "--strip"
 } else {
+  <#
   $PKG_BULD_TYPE = @"
 ``
   -D CMAKE_BUILD_TYPE=Debug ``
@@ -53,6 +49,9 @@ if ($LIB_RELEASE -ieq "1") {
   -D CMAKE_MODULE_LINKER_FLAGS_DEBUG="/debug /INCREMENTAL:NO"
 "@
   $PKG_INST_STRIP = ""
+  #>
+  Write-Host -ForegroundColor Red "Unsupported LIB_RELEASE: '${LIB_RELEASE}'."
+  exit 1
 }
 # ----------------------------
 # compile :p
@@ -62,17 +61,6 @@ New-Item -ItemType Directory -Path "${env:PKG_INST_DIR}" *> $null
 
 Remove-Item "${env:PKG_BULD_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path "${env:PKG_BULD_DIR}" *> $null
-
-switch ($env:PKG_ARCH) {
-  'amd64' {
-    $LLVM_TARGET = "X86"
-    break
-  }
-  default {
-    Write-Host -ForegroundColor Red "Invalid PKG_ARCH: '${PKG_ARCH}'."
-    exit 1
-  }
-}
 
 ${env:CFLAGS} = "/utf-8"
 ${env:CXXFLAGS} = "/utf-8"
@@ -95,16 +83,16 @@ cmake -G Ninja ``
   -D LLVM_INCLUDE_TESTS:BOOL=0 ``
   -D LLVM_INCLUDE_DOCS:BOOL=0 ``
   -D LLVM_INCLUDE_UTILS:BOOL=0 ``
-  -D LLVM_TARGETS_TO_BUILD="${LLVM_TARGET}" ``
+  -D LLVM_TARGETS_TO_BUILD="AArch64;ARM;RISCV;WebAssembly;X86" ``
   -D LLDB_USE_SYSTEM_DEBUGSERVER:BOOL=1
 "@
 Write-Host -ForegroundColor Cyan "${CMAKE_COMMAND}"
 Invoke-Expression -Command "${CMAKE_COMMAND}"
 
 # build & install
-cmake --build "${env:PKG_BULD_DIR}"
-cmake --install "${env:PKG_BULD_DIR}" ${PKG_INST_STRIP}
-
-Get-ChildItem "${env:PKG_INST_DIR}"
-$BUILD_DATE = (Get-Date -UFormat "+%Y-%m-%dT%H:%M:%S %Z")
-Write-Host -ForegroundColor Magenta "${env:SUBPROJ_SRC} - Build Done @${BUILD_DATE}"
+cmake --build "${env:PKG_BULD_DIR}" -j ${env:PARALLEL_JOBS} `
+  --target 'clangd;lldb;lldb-dap;lldb-server;lldbIntelFeatures;lldb-instr'
+cmake --install "${env:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP}
+cmake --install "${env:PKG_BULD_DIR}\tools\lldb"  ${PKG_INST_STRIP} --component liblldb
+cmake --install "${env:PKG_BULD_DIR}\tools\clang" ${PKG_INST_STRIP} --component clangd
+cmake --install "${env:PKG_BULD_DIR}\tools\clang" ${PKG_INST_STRIP} --component clang-resource-headers

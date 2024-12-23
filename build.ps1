@@ -78,6 +78,13 @@ $compile = {
     Pop-Location
   }
   & "${PROJ_ROOT}\scripts\${PKG_NAME}.ps1"
+
+
+  if (${env:CLANGD_CODE_COMPLETION} -ne "1") {
+    Get-ChildItem "${env:PKG_INST_DIR}"
+  }
+  $BUILD_DATE = (Get-Date -UFormat "+%Y-%m-%dT%H:%M:%S %Z")
+  Write-Host -ForegroundColor Magenta "${env:SUBPROJ_SRC} - Build Done @${BUILD_DATE}"
 }
 
 if (($PKG_NAME -eq $null) -or ($PKG_NAME -eq "")) {
