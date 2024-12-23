@@ -1,0 +1,31 @@
+name: zlib-ng
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/zlib-ng.yml'
+      - 'deps/zlib-ng'
+      - 'patches/zlib-ng/**'
+      - 'scripts/zlib-ng.sh'
+      - 'build.sh'
+      - 'env-*.sh'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/zlib-ng.yml'
+      - 'deps/zlib-ng'
+      - 'patches/zlib-ng/**'
+      - 'scripts/zlib-ng.sh'
+      - 'build.sh'
+      - 'env-*.sh'
+
+jobs:
+  build:
+    secrets: inherit
+    uses: ./.github/workflows/_matrix.yml
