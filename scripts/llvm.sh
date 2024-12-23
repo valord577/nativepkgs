@@ -12,7 +12,10 @@ python3 -m pip install ${PYPI_MIRROR} --upgrade ninja
 # packages
 # ----------------------------
 source "${PROJ_ROOT}/pkg-conf.sh"
-dl_pkgc zlib-ng  'c939498'   static
+[ "${PKG_PLATFORM}" != "macosx" ] && \
+  {
+    dl_pkgc zlib-ng  'c939498'   static
+  }
 
 printf "\e[1m\e[35m%s\e[0m\n" "${PKG_CONFIG_PATH}"
 # ----------------------------
@@ -101,7 +104,8 @@ printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}"; eval ${CMAKE_COMMAND}
 
 # build & install
 cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS} \
-  --target 'clangd;lldb;lldb-dap;lldb-server;lldb-instr'
+  --target 'clangd;lldb;lldb-dap;lldb-server;lldb-instr;llvm-symbolizer'
+cmake --install "${PKG_BULD_DIR}/tools" ${PKG_INST_STRIP} --component llvm-symbolizer
 cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb
 cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-argdumper
 cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-dap

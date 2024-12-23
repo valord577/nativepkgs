@@ -91,7 +91,8 @@ Invoke-Expression -Command "${CMAKE_COMMAND}"
 
 # build & install
 cmake --build "${env:PKG_BULD_DIR}" -j ${env:PARALLEL_JOBS} `
-  --target 'clangd;lldb;lldb-dap;lldb-server;lldb-instr'
+  --target 'clangd;lldb;lldb-dap;lldb-server;lldb-instr;llvm-symbolizer'
+cmake --install "${env:PKG_BULD_DIR}\tools" ${PKG_INST_STRIP} --component llvm-symbolizer
 cmake --install "${env:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb
 cmake --install "${env:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-argdumper
 cmake --install "${env:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-dap
