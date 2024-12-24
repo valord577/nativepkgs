@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
+if [ "${PKG_PLATFORM}" == "iphoneos" ] || [ "${PKG_PLATFORM}" == "iphonesimulator" ]; then
+  printf "\e[1m\e[31m%s\e[0m\n" "Unsupported PLATFORM: '${PKG_PLATFORM}'."
+  exit 1
+fi
 # ----------------------------
 if [ ! -e "${PROJ_ROOT}/.env" ]; then
   pushd -- ${PROJ_ROOT}; python3 -m venv .env; popd
@@ -78,10 +82,6 @@ EOF
 )
 
 case ${PKG_PLATFORM} in
-  "iphoneos" | "iphonesimulator")
-    printf "\e[1m\e[31m%s\e[0m\n" "Unsupported PLATFORM: '${PKG_PLATFORM}'."
-    exit 1
-    ;;
   "macosx")
     [ "${PKG_ARCH}" == "x86_64" ] && { LLVM_ARCH="X86"; }
     [ "${PKG_ARCH}" == "arm64"  ] && { LLVM_ARCH="AArch64"; }
@@ -103,14 +103,26 @@ esac
 printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}"; eval ${CMAKE_COMMAND}
 
 # build & install
-cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS} \
-  --target 'clangd;lldb;lldb-dap;lldb-server;lldb-instr;llvm-symbolizer'
+_BULD_TARGET_="clangd;llvm-symbolizer;lldb;lldb-dap;lldb-instr"
+if [ "${PKG_PLATFORM}" != "macosx" ]; then
+  _BULD_TARGET_="${_BULD_TARGET_};lldb-server;lldbIntelFeatures"
+fi
+cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS} --target "${_BULD_TARGET_}"
+
+
 cmake --install "${PKG_BULD_DIR}/tools" ${PKG_INST_STRIP} --component llvm-symbolizer
 cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb
 cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-argdumper
 cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-dap
 cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-instr
-cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-server
+
 cmake --install "${PKG_BULD_DIR}/tools/lldb"  ${PKG_INST_STRIP} --component liblldb
 cmake --install "${PKG_BULD_DIR}/tools/clang" ${PKG_INST_STRIP} --component clangd
 cmake --install "${PKG_BULD_DIR}/tools/clang" ${PKG_INST_STRIP} --component clang-resource-headers
+
+if [ "${PKG_PLATFORM}" != "macosx" ]; then
+  cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-server
+  cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldbIntelFeatures
+else
+  ln -sfn "/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Versions/A/Resources/debugserver" "${PKG_INST_DIR}/bin/lldb-server"
+fi
