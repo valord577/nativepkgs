@@ -9,13 +9,7 @@
 	url = https://github.com/libsdl-org/SDL.git
 [submodule "deps/llvm"]
 	path = deps/llvm
-	url = http://mirrors.bfsu.edu.cn/git/llvm-project.git
+	url = https://github.com/llvm/llvm-project.git
 [submodule "deps/zlib-ng"]
 	path = deps/zlib-ng
 	url = https://github.com/zlib-ng/zlib-ng.git
-[submodule "deps/libedit"]
-	path = deps/libedit
-	url = https://salsa.debian.org/debian/libedit.git
-[submodule "deps/ncurses"]
-	path = deps/ncurses
-	url = https://salsa.debian.org/debian/ncurses.git
