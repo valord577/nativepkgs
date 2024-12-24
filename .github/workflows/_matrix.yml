@@ -79,7 +79,7 @@ jobs:
           matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr) )")
           matrix=$(echo ${matrix} | jq -c -M "map(if ${host_macos} then . + {os: \"macos-15\"} else . end)")
 
-          [ ${{ inputs.host_executable }} ] && \
+          [ "${{ inputs.host_executable" }} == "true" ] && \
             { matrix=$(echo ${matrix} | jq -c -M 'map(. | select((.platform=="macosx")) )'); }
 
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
