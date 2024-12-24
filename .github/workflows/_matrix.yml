@@ -10,7 +10,11 @@ on:
         default: false
         required: false
         type: boolean
-      only_executable:
+      disable_commit:
+        default: false
+        required: false
+        type: boolean
+      host_executable:
         default: false
         required: false
         type: boolean
@@ -75,7 +79,7 @@ jobs:
           matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr) )")
           matrix=$(echo ${matrix} | jq -c -M "map(if ${host_macos} then . + {os: \"macos-15\"} else . end)")
 
-          [ ${{ inputs.only_executable }} ] && \
+          [ ${{ inputs.host_executable }} ] && \
             { matrix=$(echo ${matrix} | jq -c -M 'map(. | select((.platform=="macosx")) )'); }
 
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
@@ -138,7 +142,7 @@ jobs:
           name: ${{ env.PKG_ZIP_NAME }}
           path: ${{ env.PKG_ZIP_NAME }}.tar
       - name: commit to pre-compiled storage
-        if: ${{ github.event_name == 'push' && (! inputs.only_executable) }}
+        if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
           zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
           ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
@@ -211,7 +215,7 @@ jobs:
           name: ${{ env.PKG_ZIP_NAME }}
           path: ${{ env.PKG_ZIP_NAME }}.tar
       - name: commit to pre-compiled storage
-        if: ${{ github.event_name == 'push' && (! inputs.only_executable) }}
+        if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
           zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
           ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
