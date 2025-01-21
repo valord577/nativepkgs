@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 set -e
 
-if [ "${PKG_PLATFORM}" == "iphoneos" ] || [ "${PKG_PLATFORM}" == "iphonesimulator" ]; then
-  printf "\e[1m\e[31m%s\e[0m\n" "Unsupported PLATFORM: '${PKG_PLATFORM}'."
-  exit 1
-fi
+case ${PKG_TYPE} in
+  "iphoneos" | "iphonesimulator")
+    printf "\e[1m\e[31m%s\e[0m\n" "Unsupported PLATFORM: '${PKG_PLATFORM}'."
+    exit 1
+    ;;
+  *)
+    ;;
+esac
 # ----------------------------
 if [ ! -e "${PROJ_ROOT}/.env" ]; then
   pushd -- ${PROJ_ROOT}; python3 -m venv .env; popd
@@ -16,7 +20,7 @@ python3 -m pip install ${PYPI_MIRROR} --upgrade ninja
 # packages
 # ----------------------------
 source "${PROJ_ROOT}/pkg-conf.sh"
-[ "${PKG_PLATFORM}" != "macosx" ] && \
+[ "${PLATFORM_APPLE}" != "1" ] && \
   {
     dl_pkgc zlib-ng  'c939498'   static
   }

@@ -5,6 +5,7 @@ TARGET_PLATFORM=${1}
 TARGET_ARCH=${2}
 
 export PARALLEL_JOBS="$(sysctl -n hw.ncpu)"
+export PLATFORM_APPLE="1"
 
 if command -v ccache >/dev/null 2>&1 ; then
   export CCACHE_SRC="$(command -v ccache)"
@@ -40,8 +41,8 @@ export SYSROOT="$(xcrun --sdk ${TARGET_PLATFORM} --show-sdk-path)"
 export CROSS_FLAGS="-arch ${TARGET_ARCH} -m${TARGET_FLAG}-version-min=${TARGET_DEPLOYMENT}"
 
 export HOSTCC="$(xcrun -f clang)"; export HOSTCXX="$(xcrun -f clang++)"
-export CC="${HOSTCC}   ${CROSS_FLAGS} --sysroot=${SYSROOT}"
-export CXX="${HOSTCXX} ${CROSS_FLAGS} --sysroot=${SYSROOT}";
+export CC=" ${CCACHE_SRC} ${HOSTCC}  ${CROSS_FLAGS} --sysroot=${SYSROOT}"
+export CXX="${CCACHE_SRC} ${HOSTCXX} ${CROSS_FLAGS} --sysroot=${SYSROOT}"
 export OBJC="${CC}"; export OBJCXX="${CXX}";
 
 

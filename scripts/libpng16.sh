@@ -5,7 +5,7 @@ set -e
 # packages
 # ----------------------------
 source "${PROJ_ROOT}/pkg-conf.sh"
-[ "${PKG_PLATFORM}" != "macosx" ] && \
+[ "${PLATFORM_APPLE}" != "1" ] && \
   {
     dl_pkgc zlib-ng  'c939498'   static
   }
@@ -43,6 +43,7 @@ ${SUBPROJ_SRC}/configure     \
   --disable-tests  \
   --disable-tools  \
   --enable-werror  \
+  --without-binconfigs \
   --disable-dependency-tracking \
   --enable-hardware-optimizations=yes \
   ${PKG_DEPS_ARGS}
@@ -52,6 +53,13 @@ EOF
 case ${PKG_PLATFORM} in
   "macosx" | "iphoneos" | "iphonesimulator")
     CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --host=${PKG_ARCH}"
+    ;;
+  "linux")
+    if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
+      export CPPFLAGS="$(${PKG_CONFIG_EXEC} --cflags zlib)"
+      export LDFLAGS="${CROSS_LDFLAGS} $(${PKG_CONFIG_EXEC} --libs-only-L zlib)"
+      CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --host=${TARGET_TRIPLE}"
+    fi
     ;;
   *)
     ;;

@@ -55,21 +55,22 @@ fi
 export CROSS_TOOLCHAIN_PKGCONF="${CROSS_TOOLCHAIN_PKGCONF_PREFIX}.${TARGET_TRIPLE}"
 
 # for cross-compiling, cmake sets compiler vars by toolchain file, so keep CC/CXX here.
+export CROSS_LDFLAGS="-fuse-ld=lld --sysroot=${SYSROOT}"
+export CROSS_FLAGS="--target=${TARGET_TRIPLE} --gcc-toolchain=${SYSROOT}/usr --sysroot=${SYSROOT}"
+[ "${TARGET_ARCH}" == "armv7" ] && \
+  { export CROSS_FLAGS="${CROSS_FLAGS} -march=armv7-a -mfpu=neon-vfpv4"; }
+
 export HOSTCC="$(command -v clang)"
 export HOSTCXX="$(command -v clang++)"
-export LD="$(command -v ld.lld)";
-export NM="$(command -v llvm-nm)";
-export AR="$(command -v llvm-ar)";
-export AS="$(command -v llvm-as)";
-export RANLIB="$(command -v llvm-ranlib)";
-export STRIP="$(command -v llvm-strip)";
-export READELF="$(command -v llvm-readelf)";
+export HOSTCPP="$(command -v clang-cpp)"
+export CC=" ${CCACHE_SRC} ${HOSTCC}  ${CROSS_FLAGS}"
+export CXX="${CCACHE_SRC} ${HOSTCXX} ${CROSS_FLAGS}"
+export CPP="${HOSTCPP} ${CROSS_FLAGS}"
 
-export CROSS_FLAGS="--target=${TARGET_TRIPLE} --gcc-toolchain=${SYSROOT}/usr --sysroot=${SYSROOT}"
-if [ "${TARGET_ARCH}" == "armv7" ]; then
-  export CROSS_FLAGS="${CROSS_FLAGS} -march=armv7-a -mfpu=neon-vfpv4"
-fi
-export CROSS_LDFLAGS="-fuse-ld=${LD} --sysroot=${SYSROOT}"
-export CC="$(command -v clang) ${CROSS_FLAGS}";
-export CXX="$(command -v clang++) ${CROSS_FLAGS}";
-export CPP="$(command -v clang-cpp) ${CROSS_FLAGS}";
+export LD="$(command -v ld.lld)"
+export NM="$(command -v llvm-nm)"
+export AR="$(command -v llvm-ar)"
+export AS="$(command -v llvm-as)"
+export RANLIB="$(command -v llvm-ranlib)"
+export STRIP="$(command -v llvm-strip)"
+export READELF="$(command -v llvm-readelf)"

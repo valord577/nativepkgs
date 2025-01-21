@@ -6,7 +6,10 @@ set -e
 # ----------------------------
 source "${PROJ_ROOT}/pkg-conf.sh"
 dl_pkgc mbedtls  '107ea89'   static '' '--enable-mbedtls'
-dl_pkgc sdl2     '9c821dc'   static '' ''
+
+if [ "${PKG_PLATFORM}" == "macosx" ]; then
+  dl_pkgc sdl2   '9c821dc'   static
+fi
 
 printf "\e[1m\e[35m%s\e[0m\n" "${PKG_CONFIG_PATH}"
 # ----------------------------
@@ -50,8 +53,8 @@ fi
 CONFIGURE_COMMAND=$(cat <<- EOF
 ${SUBPROJ_SRC}/configure     \
   --prefix='${PKG_INST_DIR}' \
-  --cc='${CCACHE_SRC} ${CC}'   \
-  --cxx='${CCACHE_SRC} ${CXX}' \
+  --cc='${CC}'   \
+  --cxx='${CXX}' \
   ${PKG_TYPE_FLAG}  \
   ${PKG_BULD_TYPE}  \
   ${PKG_INST_STRIP} \
