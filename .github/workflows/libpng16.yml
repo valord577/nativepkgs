@@ -1,0 +1,31 @@
+name: libpng16
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/libpng16.yml'
+      - 'deps/libpng16'
+      - 'patches/libpng16/**'
+      - 'scripts/libpng16.sh'
+      - 'build.sh'
+      - 'env-*.sh'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/libpng16.yml'
+      - 'deps/libpng16'
+      - 'patches/libpng16/**'
+      - 'scripts/libpng16.sh'
+      - 'build.sh'
+      - 'env-*.sh'
+
+jobs:
+  build:
+    secrets: inherit
+    uses: ./.github/workflows/_matrix.yml

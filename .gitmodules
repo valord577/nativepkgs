@@ -13,3 +13,9 @@
 [submodule "deps/zlib-ng"]
 	path = deps/zlib-ng
 	url = https://github.com/zlib-ng/zlib-ng.git
+[submodule "deps/wxWidgets"]
+	path = deps/wxWidgets
+	url = https://github.com/wxWidgets/wxWidgets.git
+[submodule "deps/libpng16"]
+	path = deps/libpng16
+	url = https://github.com/pnggroup/libpng.git

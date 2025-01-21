@@ -1,0 +1,10 @@
+diff --git a/libpng.pc.in b/libpng.pc.in
+index de127d4f8..1eb3e4d38 100644
+--- a/libpng.pc.in
++++ b/libpng.pc.in
+@@ -1,4 +1,4 @@
+-prefix=@prefix@
++prefix=${pcfiledir}/../..
+ exec_prefix=@exec_prefix@
+ libdir=@libdir@
+ includedir=@includedir@/libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@
