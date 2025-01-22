@@ -35,4 +35,4 @@ jobs:
     with:
       disable_commit: true
       allow_failure: true
-      host_executable: true
+      select_platforms: "macosx, linux"

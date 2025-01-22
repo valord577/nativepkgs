@@ -5,6 +5,7 @@ TARGET_ARCH=${1}
 TARGET_LIBC=${2}
 
 export PARALLEL_JOBS="$(nproc)"
+export PLATFORM_LINUX="1"
 
 if command -v ccache >/dev/null 2>&1 ; then
   export CCACHE_SRC="$(command -v ccache)"

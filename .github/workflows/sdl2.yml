@@ -30,4 +30,4 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
-      win_mac_gui_dep: true
+      select_platforms: "macosx"

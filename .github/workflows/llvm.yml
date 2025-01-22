@@ -35,5 +35,5 @@ jobs:
     with:
       disable_commit: true
       allow_failure: true
-      host_executable: true
       container_linux: "linux310-gcc7"
+      select_platforms: "macosx, linux"

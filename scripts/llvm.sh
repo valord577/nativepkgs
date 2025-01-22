@@ -89,8 +89,8 @@ case ${PKG_PLATFORM} in
   "macosx")
     [ "${PKG_ARCH}" == "x86_64" ] && { LLVM_ARCH="X86"; }
     [ "${PKG_ARCH}" == "arm64"  ] && { LLVM_ARCH="AArch64"; }
-      CMAKE_COMMAND="${CMAKE_COMMAND} -D LLVM_HOST_TRIPLE=${PKG_ARCH}-apple-darwin -D LLVM_TARGET_ARCH=${LLVM_ARCH} \
-        -D CMAKE_C_HOST_COMPILER='${HOSTCC}' -D CMAKE_CXX_HOST_COMPILER='${HOSTCXX}'"
+    CMAKE_COMMAND="${CMAKE_COMMAND} -D LLVM_HOST_TRIPLE=${PKG_ARCH}-apple-darwin -D LLVM_TARGET_ARCH=${LLVM_ARCH} \
+      -D CMAKE_C_HOST_COMPILER='${HOSTCC}' -D CMAKE_CXX_HOST_COMPILER='${HOSTCXX}'"
     ;;
   "linux")
     if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
@@ -101,6 +101,12 @@ case ${PKG_PLATFORM} in
         -D CMAKE_C_HOST_COMPILER='${HOSTCC}' -D CMAKE_CXX_HOST_COMPILER='${HOSTCXX}'"
     fi
     ;;
+  "win-mingw")
+    [ "${PKG_ARCH}" == "x86_64"  ] && { LLVM_ARCH="X86"; }
+    [ "${PKG_ARCH}" == "aarch64" ] && { LLVM_ARCH="AArch64"; }
+    CMAKE_COMMAND="${CMAKE_COMMAND} -D LLVM_HOST_TRIPLE=${PKG_ARCH}-w64-windows-gnu -D LLVM_TARGET_ARCH=${LLVM_ARCH} \
+      -D CMAKE_C_HOST_COMPILER='${HOSTCC}' -D CMAKE_CXX_HOST_COMPILER='${HOSTCXX}'"
+    ;;
   *)
     ;;
 esac
@@ -108,9 +114,10 @@ printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}"; eval ${CMAKE_COMMAND}
 
 # build & install
 _BULD_TARGET_="clangd;llvm-symbolizer;lldb;lldb-dap;lldb-instr"
-if [ "${PKG_PLATFORM}" != "macosx" ]; then
-  _BULD_TARGET_="${_BULD_TARGET_};lldb-server;lldbIntelFeatures"
-fi
+[ "${PLATFORM_LINUX}" == "1" ] && \
+  { _BULD_TARGET_="${_BULD_TARGET_};lldbIntelFeatures"; }
+[ "${PLATFORM_APPLE}" != "1" ] && \
+  { _BULD_TARGET_="${_BULD_TARGET_};lldb-server"; }
 cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS} --target "${_BULD_TARGET_}"
 
 
@@ -124,9 +131,8 @@ cmake --install "${PKG_BULD_DIR}/tools/lldb"  ${PKG_INST_STRIP} --component libl
 cmake --install "${PKG_BULD_DIR}/tools/clang" ${PKG_INST_STRIP} --component clangd
 cmake --install "${PKG_BULD_DIR}/tools/clang" ${PKG_INST_STRIP} --component clang-resource-headers
 
-if [ "${PKG_PLATFORM}" != "macosx" ]; then
-  cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-server
-  cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldbIntelFeatures
-else
-  ln -sfn "/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Versions/A/Resources/debugserver" "${PKG_INST_DIR}/bin/lldb-server"
-fi
+[ "${PLATFORM_LINUX}" == "1" ] \
+  && { cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldbIntelFeatures; }
+[ "${PLATFORM_APPLE}" != "1" ] \
+  && { cmake --install "${PKG_BULD_DIR}/tools/lldb/tools" ${PKG_INST_STRIP} --component lldb-server; } \
+  || { ln -sfn "/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Versions/A/Resources/debugserver" "${PKG_INST_DIR}/bin/lldb-server"; }
