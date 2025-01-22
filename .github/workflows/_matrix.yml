@@ -90,7 +90,7 @@ jobs:
           matrix=$(echo ${matrix} | jq -c -M "map(if ${host_macos} then . + {os: \"macos-15\"} else . end)")
 
           ${{ inputs.skip_platform_apple }} && \
-            { matrix=$(echo ${matrix} | jq -c -M "map(if ${host_macos} then empty else . end)"; }
+            { matrix=$(echo ${matrix} | jq -c -M "map(if ${host_macos} then empty else . end)"); }
 
           ${{ inputs.host_executable }} && \
             { matrix=$(echo ${matrix} | jq -c -M 'map(. | select((.platform=="macosx")) )'); }
