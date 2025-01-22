@@ -22,7 +22,7 @@ python3 -m pip install ${PYPI_MIRROR} --upgrade ninja
 source "${PROJ_ROOT}/pkg-conf.sh"
 [ "${PLATFORM_APPLE}" != "1" ] && \
   {
-    dl_pkgc zlib-ng  'c939498'   static
+    dl_pkgc zlib-ng  'cbb6ec1'   static
   }
 
 printf "\e[1m\e[35m%s\e[0m\n" "${PKG_CONFIG_PATH}"
