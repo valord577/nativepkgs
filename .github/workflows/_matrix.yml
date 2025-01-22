@@ -14,14 +14,6 @@ on:
         default: false
         required: false
         type: boolean
-      host_executable:
-        default: false
-        required: false
-        type: boolean
-      win_mac_gui_dep:
-        default: false
-        required: false
-        type: boolean
       container_linux:
         default: "linux310-gcc4"
         required: false
@@ -31,6 +23,20 @@ on:
         required: false
         type: string
       allow_failure:
+        default: false
+        required: false
+        type: boolean
+
+      skip_platform_apple:
+        default: false
+        required: false
+        type: boolean
+
+      host_executable:
+        default: false
+        required: false
+        type: boolean
+      win_mac_gui_dep:
         default: false
         required: false
         type: boolean
@@ -82,6 +88,9 @@ jobs:
 
           matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr) )")
           matrix=$(echo ${matrix} | jq -c -M "map(if ${host_macos} then . + {os: \"macos-15\"} else . end)")
+
+          ${{ inputs.skip_platform_apple }} && \
+            { matrix=$(echo ${matrix} | jq -c -M "map(if ${host_macos} then empty else . end)"); }
 
           ${{ inputs.host_executable }} && \
             { matrix=$(echo ${matrix} | jq -c -M 'map(. | select((.platform=="macosx")) )'); }
