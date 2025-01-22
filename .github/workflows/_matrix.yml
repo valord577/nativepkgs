@@ -126,7 +126,7 @@ jobs:
         id: set-matrix-container
         run: |
           container_linux="valord577/${{ inputs.container_linux }}-cross:${{ inputs.container_linux_vers }}"
-          container_mingw="valord577/${{ inputs.container_mingw }}-cross:${{ inputs.container_mingw_vers }}"
+          container_mingw="valord577/${{ inputs.container_mingw }}:${{ inputs.container_mingw_vers }}"
 
           matrix=$(cat .github/matrix_container.json | jq -c -M "map(. | select($jq_expr_type) )")
           matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\"     then . + {image: \"${container_linux}\"} else . end)")
