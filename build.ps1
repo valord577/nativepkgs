@@ -29,7 +29,7 @@ $TARGET_ARCH = $triplet.Substring($prefix.Length)
 
 switch ($TARGET_PLATFORM) {
   'win-msvc' {
-    . "${PROJ_ROOT}\env-msvc.ps1" ${TARGET_PLATFORM} ${TARGET_ARCH}
+    . "${PROJ_ROOT}\env-msvc.ps1" ${TARGET_ARCH}
     if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) {
       exit $LASTEXITCODE
     }

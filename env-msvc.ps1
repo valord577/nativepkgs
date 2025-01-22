@@ -1,5 +1,4 @@
 param (
-  [Parameter(Mandatory=$true)][string]$TARGET_PLATFORM,
   [Parameter(Mandatory=$true)][string]$TARGET_ARCH
 )
 

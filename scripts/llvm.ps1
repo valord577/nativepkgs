@@ -63,7 +63,7 @@ Remove-Item "${env:PKG_BULD_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path "${env:PKG_BULD_DIR}" *> $null
 
 ${env:CFLAGS} = "/utf-8"
-${env:CXXFLAGS} = "/utf-8"
+${env:CXXFLAGS} = "${env:CFLAGS}"
 
 $CMAKE_COMMAND = @"
 cmake -G Ninja ``
@@ -71,9 +71,7 @@ cmake -G Ninja ``
   -D CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON ``
   -D CMAKE_INSTALL_PREFIX="${env:PKG_INST_DIR}" ``
   -D CMAKE_INSTALL_LIBDIR:PATH=lib ``
-  ${PKG_BULD_TYPE} ``
-  ${PKG_TYPE_FLAG} ``
-  ${env:CMAKE_EXTRA} ``
+  ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} ${env:CMAKE_EXTRA} ``
   -D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lldb" ``
   -D CLANG_PLUGIN_SUPPORT:BOOL=0 ``
   -D LLVM_APPEND_VC_REV:BOOL=0 ``
