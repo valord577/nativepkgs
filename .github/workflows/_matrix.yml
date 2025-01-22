@@ -241,9 +241,9 @@ jobs:
       - name: buildx library - ${{ github.workflow }}
         run: |
           SCRIPT_NAME='build_${{ matrix.platform }}_${{ matrix.arch }}.sh'
-          if [[ ${{ matrix.platform == 'linux' }} ]]; then
-            SCRIPT_NAME='crossbuild_${{ matrix.platform }}_${{ matrix.lib_impl }}_${{ matrix.arch }}.sh'
-          fi
+          ${{ matrix.platform == 'linux' }} && \
+            { SCRIPT_NAME='crossbuild_${{ matrix.platform }}_${{ matrix.lib_impl }}_${{ matrix.arch }}.sh'; }
+
           ./${SCRIPT_NAME} ${{ github.workflow }} ${{ matrix.pkg_type }}
 
           # keep file permissions and case sensitivity
