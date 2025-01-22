@@ -27,11 +27,11 @@ on:
         default: "07dcb8281c82686f54791e993f5f894360dfa5c9"
         required: false
         type: string
-      container_win-mingw:
+      container_mingw:
         default: "mingw-cross-native"
         required: false
         type: string
-      container_win-mingw_vers:
+      container_mingw_vers:
         default: "919e10ce6cc9b46ddf10e7fbd9030e6ed4fa8095"
         required: false
         type: string
@@ -126,11 +126,11 @@ jobs:
         id: set-matrix-container
         run: |
           container_linux="valord577/${{ inputs.container_linux }}-cross:${{ inputs.container_linux_vers }}"
-          container_win-mingw="valord577/${{ inputs.container_win-mingw }}-cross:${{ inputs.container_win-mingw_vers }}"
+          container_mingw="valord577/${{ inputs.container_mingw }}-cross:${{ inputs.container_mingw_vers }}"
 
           matrix=$(cat .github/matrix_container.json | jq -c -M "map(. | select($jq_expr_type) )")
-          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\" then . + {image: \"${container_linux}\"} else . end)")
-          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"win-mingw\" then . + {image: \"${container_win-mingw}\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\"     then . + {image: \"${container_linux}\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"win-mingw\" then . + {image: \"${container_mingw}\"} else . end)")
 
           [ -n "${jq_expr_plat}" ] && \
             { matrix=$(echo ${matrix} | jq -c -M "map(. | select($jq_expr_plat) )"); }
