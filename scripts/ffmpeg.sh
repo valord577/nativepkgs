@@ -78,15 +78,16 @@ fi
 case ${PKG_PLATFORM} in
   "macosx" | "iphoneos" | "iphonesimulator")
     CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
-      --enable-cross-compile --sysroot='${SYSROOT}' --target-os=darwin --arch=${PKG_ARCH} --disable-coreimage \
-      --extra-cflags='${CROSS_FLAGS}' --extra-cxxflags='${CROSS_FLAGS}' --extra-ldflags='${CROSS_FLAGS}'"
-    if [ "${PKG_PLATFORM}" != "macosx" ]; then { CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --disable-programs"; } fi
+      --enable-cross-compile --target-os=darwin --arch=${PKG_ARCH} \
+      --disable-coreimage --extra-ldflags='${CROSS_FLAGS}'"
+    [ "${PKG_PLATFORM}" != "macosx" ] && { CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --disable-programs"; }
     ;;
   "linux")
     if [ "${CROSS_BUILD_ENABLED}" == "1" ]; then
       CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
-        --enable-cross-compile --target-os=linux --arch=${PKG_ARCH} --host-cc='${HOSTCC}' \
-        --extra-ldflags='${CROSS_LDFLAGS}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
+        --enable-cross-compile --target-os=linux --arch=${PKG_ARCH} \
+        --host-cc='${HOSTCC}' --extra-ldflags='${CROSS_LDFLAGS}' \
+        --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
     fi
     ;;
   "win-mingw")
@@ -118,7 +119,3 @@ if command -v bear >/dev/null 2>&1 ; then
 fi
 printf "\e[1m\e[36m%s\e[0m\n" "${MAKE_COMMAND}"
 pushd -- "${PKG_BULD_DIR}"; eval ${MAKE_COMMAND}; popd
-
-if [ "${PKG_PLATFORM}" == "macosx" ]; then
-  xattr -dr com.apple.quarantine ${PKG_INST_DIR}/bin/*
-fi

@@ -18,6 +18,10 @@ on:
         default: false
         required: false
         type: boolean
+      win_mac_gui_dep:
+        default: false
+        required: false
+        type: boolean
       container_linux:
         default: "linux310-gcc4"
         required: false
@@ -81,6 +85,8 @@ jobs:
 
           ${{ inputs.host_executable }} && \
             { matrix=$(echo ${matrix} | jq -c -M 'map(. | select((.platform=="macosx")) )'); }
+          ${{ inputs.win_mac_gui_dep }} && \
+            { matrix=$(echo ${matrix} | jq -c -M 'map(. | select((.platform=="macosx")) )'); }
 
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
@@ -91,6 +97,10 @@ jobs:
 
           matrix=$(cat .github/matrix_container.json | jq -c -M "map(. | select($jq_expr) )")
           matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\" then . + {image: \"${container_linux}\"} else . end)")
+
+          ${{ inputs.win_mac_gui_dep }} && \
+            { matrix=$(echo ${matrix} | jq -c -M 'map(. | select((.platform=="win-mingw")) )'); }
+
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix-container={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
 
