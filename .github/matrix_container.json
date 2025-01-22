@@ -28,5 +28,15 @@
     "arch": "arm64",
     "pkg_type": "static",
     "lib_impl": "musl"
+  },
+  {
+    "platform": "win-mingw",
+    "arch": "x86_64",
+    "pkg_type": "static"
+  },
+  {
+    "platform": "win-mingw",
+    "arch": "aarch64",
+    "pkg_type": "static"
   }
 ]
