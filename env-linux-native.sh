@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -e
 
+export PARALLEL_JOBS="$(nproc)"
+export PLATFORM_LINUX="1"
+
+if command -v ccache >/dev/null 2>&1 ; then
+  export CCACHE_SRC="$(command -v ccache)"
+
+  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=ccache"
+  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+fi
+
 case "$(uname -m)" in
   "aarch64")
     export TARGET_ARCH="arm64"
@@ -28,15 +38,6 @@ else
   else
     export TARGET_LIBC="gnu"
   fi
-fi
-
-
-export PARALLEL_JOBS="$(nproc)"
-if command -v ccache >/dev/null 2>&1 ; then
-  export CCACHE_SRC="$(command -v ccache)"
-
-  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=ccache"
-  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
 fi
 
 function chk_compiler() {

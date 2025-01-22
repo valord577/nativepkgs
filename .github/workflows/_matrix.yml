@@ -14,6 +14,11 @@ on:
         default: false
         required: false
         type: boolean
+      allow_failure:
+        default: true
+        required: false
+        type: boolean
+
       container_linux:
         default: "linux310-gcc4"
         required: false
@@ -22,24 +27,32 @@ on:
         default: "07dcb8281c82686f54791e993f5f894360dfa5c9"
         required: false
         type: string
-      allow_failure:
-        default: false
+      container_mingw:
+        default: "mingw-cross-native"
         required: false
-        type: boolean
+        type: string
+      container_mingw_vers:
+        default: "919e10ce6cc9b46ddf10e7fbd9030e6ed4fa8095"
+        required: false
+        type: string
 
       skip_platform_apple:
         default: false
         required: false
         type: boolean
+      skip_platform_win32:
+        default: false
+        required: false
+        type: boolean
+      skip_platform_linux:
+        default: false
+        required: false
+        type: boolean
+      select_platforms:
+        default: ""
+        required: false
+        type: string
 
-      host_executable:
-        default: false
-        required: false
-        type: boolean
-      win_mac_gui_dep:
-        default: false
-        required: false
-        type: boolean
 
 env:
   GH_TOKEN: ${{ github.token }}
@@ -76,26 +89,36 @@ jobs:
           echo "pkgver=$pkgver" >> "$GITHUB_OUTPUT"
       - name: jq filters
         run: |
-          if [[ ${{ (! inputs.disable_shared) }} ]]; then { jq_expr='(.pkg_type=="shared")'; } fi
+          if [[ ${{ (! inputs.disable_shared) }} ]]; then { jq_expr_type='(.pkg_type=="shared")'; } fi
           if [[ ${{ (! inputs.disable_static) }} ]]; then
-            if [ -z "${jq_expr}" ]; then { jq_expr='(.pkg_type=="static")'; } else { jq_expr="$jq_expr or (.pkg_type==\"static\")"; } fi
+            if [ -z "${jq_expr_type}" ];
+              then { jq_expr_type="(.pkg_type==\"static\")"; }
+              else { jq_expr_type="$jq_expr_type or (.pkg_type==\"static\")"; }
+            fi
           fi
-          printf "\e[1m\e[33m%s\e[0m\n" "jq_expr: $jq_expr"; echo "jq_expr=$jq_expr" >> "$GITHUB_ENV"
+          printf "\e[1m\e[33m%s\e[0m\n" "jq_expr_type: $jq_expr_type"; echo "jq_expr_type=$jq_expr_type" >> "$GITHUB_ENV"
+
+          _platforms_="${{ inputs.select_platforms }}"; _platforms_triplet_=(${_platforms_//,/ })
+          for _platform_ in ${_platforms_triplet_[@]}; do
+            if [ -z "${jq_expr_plat}" ];
+              then { jq_expr_plat="(.platform==\"${_platform_}\")"; }
+              else { jq_expr_plat="$jq_expr_plat or (.platform==\"${_platform_}\")"; }
+            fi
+          done
+          printf "\e[1m\e[33m%s\e[0m\n" "jq_expr_plat: $jq_expr_plat"; echo "jq_expr_plat=$jq_expr_plat" >> "$GITHUB_ENV"
       - name: set matrix
         id: set-matrix
         run: |
-          host_macos='.platform == "iphoneos" or .platform == "iphonesimulator" or .platform == "macosx"'
+          _is_apple_='.platform == "iphoneos" or .platform == "iphonesimulator" or .platform == "macosx"'
 
-          matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr) )")
-          matrix=$(echo ${matrix} | jq -c -M "map(if ${host_macos} then . + {os: \"macos-15\"} else . end)")
+          matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr_type) )")
+          matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_apple_} then . + {os: \"macos-15\"} else . end)")
+
+          [ -n "${jq_expr_plat}" ] && \
+            { matrix=$(echo ${matrix} | jq -c -M "map(. | select($jq_expr_plat) )"); }
 
           ${{ inputs.skip_platform_apple }} && \
-            { matrix=$(echo ${matrix} | jq -c -M "map(if ${host_macos} then empty else . end)"); }
-
-          ${{ inputs.host_executable }} && \
-            { matrix=$(echo ${matrix} | jq -c -M 'map(. | select((.platform=="macosx")) )'); }
-          ${{ inputs.win_mac_gui_dep }} && \
-            { matrix=$(echo ${matrix} | jq -c -M 'map(. | select((.platform=="macosx")) )'); }
+            { matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_apple_} then empty else . end)"); }
 
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
@@ -103,12 +126,14 @@ jobs:
         id: set-matrix-container
         run: |
           container_linux="valord577/${{ inputs.container_linux }}-cross:${{ inputs.container_linux_vers }}"
+          container_mingw="valord577/${{ inputs.container_mingw }}:${{ inputs.container_mingw_vers }}"
 
-          matrix=$(cat .github/matrix_container.json | jq -c -M "map(. | select($jq_expr) )")
-          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\" then . + {image: \"${container_linux}\"} else . end)")
+          matrix=$(cat .github/matrix_container.json | jq -c -M "map(. | select($jq_expr_type) )")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\"     then . + {image: \"${container_linux}\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"win-mingw\" then . + {image: \"${container_mingw}\"} else . end)")
 
-          ${{ inputs.win_mac_gui_dep }} && \
-            { matrix=$(echo ${matrix} | jq -c -M 'map(. | select((.platform=="win-mingw")) )'); }
+          [ -n "${jq_expr_plat}" ] && \
+            { matrix=$(echo ${matrix} | jq -c -M "map(. | select($jq_expr_plat) )"); }
 
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix-container={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
@@ -216,9 +241,9 @@ jobs:
       - name: buildx library - ${{ github.workflow }}
         run: |
           SCRIPT_NAME='build_${{ matrix.platform }}_${{ matrix.arch }}.sh'
-          if [[ ${{ matrix.platform == 'linux' }} ]]; then
-            SCRIPT_NAME='crossbuild_${{ matrix.platform }}_${{ matrix.lib_impl }}_${{ matrix.arch }}.sh'
-          fi
+          ${{ matrix.platform == 'linux' }} && \
+            { SCRIPT_NAME='crossbuild_${{ matrix.platform }}_${{ matrix.lib_impl }}_${{ matrix.arch }}.sh'; }
+
           ./${SCRIPT_NAME} ${{ github.workflow }} ${{ matrix.pkg_type }}
 
           # keep file permissions and case sensitivity

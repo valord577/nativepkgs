@@ -92,8 +92,9 @@ case ${PKG_PLATFORM} in
     ;;
   "win-mingw")
     CONFIGURE_COMMAND="${CONFIGURE_COMMAND} \
-      --enable-cross-compile --sysroot='${SYSROOT}' --target-os=mingw64 --arch=${PKG_ARCH} --host-cc='${CC}' \
-      --windres='${WINDRES}' --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
+      --enable-cross-compile --target-os=mingw64 --arch=${PKG_ARCH} \
+      --host-cc='${HOSTCC}' --windres='${WINDRES}' \
+      --nm='${NM}' --ar='${AR}' --ranlib='${RANLIB}' --strip='${STRIP}'"
     ;;
   *)
     ;;
