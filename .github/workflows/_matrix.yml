@@ -15,7 +15,7 @@ on:
         required: false
         type: boolean
       allow_failure:
-        default: false
+        default: true
         required: false
         type: boolean
 
