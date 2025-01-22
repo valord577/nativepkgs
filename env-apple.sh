@@ -4,6 +4,18 @@ set -e
 TARGET_PLATFORM=${1}
 TARGET_ARCH=${2}
 
+export PARALLEL_JOBS="$(sysctl -n hw.ncpu)"
+export PLATFORM_APPLE="1"
+
+if command -v ccache >/dev/null 2>&1 ; then
+  export CCACHE_SRC="$(command -v ccache)"
+
+  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=ccache"
+  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_OBJC_COMPILER_LAUNCHER=ccache"
+  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_OBJCXX_COMPILER_LAUNCHER=ccache"
+fi
+
 case ${TARGET_PLATFORM} in
   "macosx")
     TARGET_FLAG="macosx"
@@ -23,27 +35,23 @@ case ${TARGET_PLATFORM} in
     ;;
 esac
 
-TARGET_DEPLOYMENT="10"
-if [ "${TARGET_PLATFORM}" == "macosx" ]; then
-  TARGET_DEPLOYMENT="10.15"
-fi
+[ "${TARGET_PLATFORM}" == "macosx" ] \
+  && { TARGET_DEPLOYMENT="10.15"; } || { TARGET_DEPLOYMENT="12"; }
 export SYSROOT="$(xcrun --sdk ${TARGET_PLATFORM} --show-sdk-path)"
 export CROSS_FLAGS="-arch ${TARGET_ARCH} -m${TARGET_FLAG}-version-min=${TARGET_DEPLOYMENT}"
 
-export CC="clang"; export CXX="clang++"; export OBJC="clang"; export OBJCXX="clang++";
-export HOSTCC="clang"; export HOSTCXX="clang++"
-export PARALLEL_JOBS="$(sysctl -n hw.ncpu)"
-if command -v ccache >/dev/null 2>&1 ; then
-  export CCACHE_SRC="$(command -v ccache)"
+export HOSTCC="$(xcrun -f clang)"; export HOSTCXX="$(xcrun -f clang++)"
+export CC=" ${CCACHE_SRC} ${HOSTCC}  ${CROSS_FLAGS} --sysroot=${SYSROOT}"
+export CXX="${CCACHE_SRC} ${HOSTCXX} ${CROSS_FLAGS} --sysroot=${SYSROOT}"
+export OBJC="${CC}"; export OBJCXX="${CXX}";
 
-  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=ccache"
-  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache"
-  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_OBJC_COMPILER_LAUNCHER=ccache"
-  export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_OBJCXX_COMPILER_LAUNCHER=ccache"
-fi
 
 export CMAKE_EXTRA=$(cat <<- EOF
--D CMAKE_CROSSCOMPILING:BOOL=TRUE \
+-D CMAKE_C_COMPILER=${HOSTCC}       \
+-D CMAKE_CXX_COMPILER=${HOSTCXX}    \
+-D CMAKE_OBJC_COMPILER=${HOSTCC}    \
+-D CMAKE_OBJCXX_COMPILER=${HOSTCXX} \
+-D CMAKE_CROSSCOMPILING:BOOL=TRUE   \
 -D CMAKE_SYSTEM_PROCESSOR=${TARGET_ARCH}  \
 -D CMAKE_OSX_ARCHITECTURES=${TARGET_ARCH} \
 -D CMAKE_OSX_SYSROOT=${TARGET_PLATFORM} \

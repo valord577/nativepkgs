@@ -48,7 +48,7 @@ function chk_compiler() {
     return 1
   fi
 
-  eval export "${c_key}='${c_value}'"
+  eval export "${c_key}='${CCACHE_SRC} ${c_value}'"
   printf "\e[4m\e[32m%s\e[0m\n" "Using ${c_value} for ${c_key} (export ${c_key}=${c_value})"
   return 0
 }

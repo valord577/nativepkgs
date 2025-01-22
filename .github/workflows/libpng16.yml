@@ -1,4 +1,4 @@
-name: sdl2
+name: libpng16
 on:
   push:
     branches:
@@ -6,10 +6,10 @@ on:
     paths:
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
-      - '.github/workflows/sdl2.yml'
-      - 'deps/sdl2'
-      - 'patches/sdl2/**'
-      - 'scripts/sdl2.sh'
+      - '.github/workflows/libpng16.yml'
+      - 'deps/libpng16'
+      - 'patches/libpng16/**'
+      - 'scripts/libpng16.sh'
       - 'build.sh'
       - 'env-*.sh'
   pull_request:
@@ -18,10 +18,10 @@ on:
     paths:
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
-      - '.github/workflows/sdl2.yml'
-      - 'deps/sdl2'
-      - 'patches/sdl2/**'
-      - 'scripts/sdl2.sh'
+      - '.github/workflows/libpng16.yml'
+      - 'deps/libpng16'
+      - 'patches/libpng16/**'
+      - 'scripts/libpng16.sh'
       - 'build.sh'
       - 'env-*.sh'
 
@@ -29,6 +29,3 @@ jobs:
   build:
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
-    with:
-      win_mac_gui_dep: true
-      allow_failure: true

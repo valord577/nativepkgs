@@ -10,35 +10,33 @@ if [ ! -e "${dep_libs_dir}" ]; then { mkdir -p "${dep_libs_dir}"; } fi
 
 function dl_pkgc() {
   _this_lib_dir_="${dep_libs_dir}/${1}"
-  if [ ! -e "${_this_lib_dir_}" ]; then
-    (
-      pkg_name="${1}"
-      pkg_version="${2}"
-      pkg_type="${3}"
-      pkg_extra="${4}"
+  (
+    pkg_name="${1}"
+    pkg_version="${2}"
+    pkg_type="${3}"
+    pkg_extra="${4}"
 
-      pushd -- "${dep_libs_dir}"
-      {
-        if [ "${GITHUB_ACTIONS}" == "true" ]; then
-          (
-            dl_filename="${pkg_name}_${PKG_PLATFORM}_${PKG_ARCH_LIBC}_${pkg_version}_${pkg_type}"
-            if [ -n "${pkg_extra}" ]; then { dl_filename="${dl_filename}_${pkg_extra}"; } fi
-            printf "\e[1m\e[36m%s\e[0m\n" "dl_filename='${dl_filename}.zip'"
+    pushd -- "${dep_libs_dir}"
+    {
+      if [ "${GITHUB_ACTIONS}" == "true" ]; then
+        (
+          dl_filename="${pkg_name}_${PKG_PLATFORM}_${PKG_ARCH_LIBC}_${pkg_version}_${pkg_type}"
+          if [ -n "${pkg_extra}" ]; then { dl_filename="${dl_filename}_${pkg_extra}"; } fi
+          printf "\e[1m\e[36m%s\e[0m\n" "dl_filename='${dl_filename}.zip'"
 
-            ${PROJ_ROOT}/.github/oss_v4.py pull "${pkg_name}/${pkg_version}/${dl_filename}.zip" "${pkg_name}.zip"
-            unzip -q "${pkg_name}.zip"
-          )
-        else
-          (
-            set -x
-            ln -sfn ../out/${pkg_name}/${PKG_PLATFORM}/${PKG_ARCH_LIBC} ${pkg_name}
-            set +x
-          )
-        fi
-      }
-      popd
-    )
-  fi
+          ${PROJ_ROOT}/.github/oss_v4.py pull "${pkg_name}/${pkg_version}/${dl_filename}.zip" "${pkg_name}.zip"
+          unzip -q "${pkg_name}.zip"
+        )
+      else
+        (
+          set -x
+          ln -sfn ../out/${pkg_name}/${PKG_PLATFORM}/${PKG_ARCH_LIBC} ${pkg_name}
+          set +x
+        )
+      fi
+    }
+    popd
+  )
 
   export PKG_DEPS_ARGS="${PKG_DEPS_ARGS} ${5}"
   export PKG_CONFIG_PATH="${_this_lib_dir_}/lib/pkgconfig:${PKG_CONFIG_PATH}"
