@@ -73,7 +73,7 @@ $compile = {
     git reset --hard HEAD
 
     foreach ($patch in (Get-ChildItem -Path "${PROJ_ROOT}/patches/${PKG_NAME}" -File)) {
-      git apply ${patch}.FullName
+      git apply --verbose ${patch}.FullName
     }
     Pop-Location
   }
