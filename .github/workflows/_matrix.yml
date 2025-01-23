@@ -110,15 +110,19 @@ jobs:
         id: set-matrix
         run: |
           _is_apple_='.platform == "iphoneos" or .platform == "iphonesimulator" or .platform == "macosx"'
+          _is_win32_='.platform == "win-msvc"'
 
           matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr_type) )")
           matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_apple_} then . + {os: \"macos-15\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_win32_} then . + {os: \"windows-2025\"} else . end)")
 
           [ -n "${jq_expr_plat}" ] && \
             { matrix=$(echo ${matrix} | jq -c -M "map(. | select($jq_expr_plat) )"); }
 
           ${{ inputs.skip_platform_apple }} && \
             { matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_apple_} then empty else . end)"); }
+          ${{ inputs.skip_platform_win32 }} && \
+            { matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_win32_} then empty else . end)"); }
 
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
@@ -134,6 +138,11 @@ jobs:
 
           [ -n "${jq_expr_plat}" ] && \
             { matrix=$(echo ${matrix} | jq -c -M "map(. | select($jq_expr_plat) )"); }
+
+          ${{ inputs.skip_platform_linux }} && \
+            { matrix=$(echo ${matrix} | jq -c -M 'map(if .platform == "linux"     then empty else . end)'); }
+          ${{ inputs.skip_platform_win32 }} && \
+            { matrix=$(echo ${matrix} | jq -c -M 'map(if .platform == "win-mingw" then empty else . end)'); }
 
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix-container={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
@@ -171,7 +180,10 @@ jobs:
             ${{ env.CCACHE_GHA_KEY_RESTORE }}
       - name: buildx library - ${{ github.workflow }}
         run: |
-          ./build_${{ matrix.platform }}_${{ matrix.arch }}.sh ${{ github.workflow }} ${{ matrix.pkg_type }}
+          ${{ startsWith(matrix.os, 'macos')   }} && { SCRIPT_EXT='sh';  }
+          ${{ startsWith(matrix.os, 'windows') }} && { SCRIPT_EXT='ps1'; }
+
+          ./build_${{ matrix.platform }}_${{ matrix.arch }}.${SCRIPT_EXT} ${{ github.workflow }} ${{ matrix.pkg_type }}
 
           # keep file permissions and case sensitivity
           tar -cvf ${{ env.PKG_ZIP_NAME }}.tar ${{ github.workflow }}

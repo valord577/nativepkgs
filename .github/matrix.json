@@ -23,5 +23,15 @@
     "platform": "macosx",
     "arch": "x86_64",
     "pkg_type": "static"
+  },
+  {
+    "platform": "win-msvc",
+    "arch": "arm64",
+    "pkg_type": "static"
+  },
+  {
+    "platform": "win-msvc",
+    "arch": "amd64",
+    "pkg_type": "static"
   }
 ]
