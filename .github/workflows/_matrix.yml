@@ -191,12 +191,12 @@ jobs:
       - name: buildx library - ${{ github.workflow }} - windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
-          pwsh.exe -File ".\build_${{ matrix.platform }}_${{ matrix.arch }}.ps1" ${{ github.workflow }} ${{ matrix.pkg_type }}
+          & ".\build_${{ matrix.platform }}_${{ matrix.arch }}.ps1" ${{ github.workflow }} ${{ matrix.pkg_type }}
 
           # keep file permissions and case sensitivity
           C:/msys64/usr/bin/bash.exe -lc 'pacman --noconfirm -S zip;'
           C:/msys64/usr/bin/bash.exe -lc `
-            'cd $(cygpath -u ${{ github.workspace }}); ls -alh; zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}'
+            'cd $(cygpath -u "${{ github.workspace }}"); ls -alh; zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}'
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
