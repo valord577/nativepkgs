@@ -166,11 +166,14 @@ jobs:
         run: |
           gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
-      - name: install required software(s)
+      - name: install required software(s) - macos
+        if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
-          if [[ ${{ startsWith(matrix.os, 'macos') }} ]]; then
-            brew list -l; brew install ccache nasm tree
-          fi
+          brew list -l; brew install ccache nasm tree
+      - name: install required software(s) - windows
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: |
+          choco list -h; choco list --local; choco install ccache nasm
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:
