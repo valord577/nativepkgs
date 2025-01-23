@@ -57,7 +57,7 @@ $compile = {
 
   ${env:PKG_BULD_DIR} = "${PROJ_ROOT}\tmp\${PKG_NAME}\${PKG_PLATFORM}\${PKG_ARCH}"
   ${env:PKG_INST_DIR} = "${PROJ_ROOT}\out\${PKG_NAME}\${PKG_PLATFORM}\${PKG_ARCH}"
-  if ($GITHUB_ACTIONS -ieq "true") {
+  if (${env:GITHUB_ACTIONS} -ieq "true") {
     if (${env:BULD_DIR} -ne $null) { ${env:PKG_BULD_DIR} = "${env:BULD_DIR}" }
     if (${env:INST_DIR} -ne $null) { ${env:PKG_INST_DIR} = "${env:INST_DIR}" }
   }
