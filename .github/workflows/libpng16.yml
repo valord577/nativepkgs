@@ -10,8 +10,13 @@ on:
       - 'deps/libpng16'
       - 'patches/libpng16/**'
       - 'scripts/libpng16.sh'
+      - 'scripts/libpng16.ps1'
       - 'build.sh'
+      - 'build.ps1'
       - 'env-*.sh'
+      - 'env-*.ps1'
+      - 'pkg-conf.sh'
+      - 'pkg-conf.ps1'
   pull_request:
     branches:
       - main
@@ -22,8 +27,13 @@ on:
       - 'deps/libpng16'
       - 'patches/libpng16/**'
       - 'scripts/libpng16.sh'
+      - 'scripts/libpng16.ps1'
       - 'build.sh'
+      - 'build.ps1'
       - 'env-*.sh'
+      - 'env-*.ps1'
+      - 'pkg-conf.sh'
+      - 'pkg-conf.ps1'
 
 jobs:
   build:

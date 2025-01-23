@@ -10,8 +10,11 @@ on:
       - 'deps/mbedtls'
       - 'patches/mbedtls/**'
       - 'scripts/mbedtls.sh'
+      - 'scripts/mbedtls.ps1'
       - 'build.sh'
+      - 'build.ps1'
       - 'env-*.sh'
+      - 'env-*.ps1'
   pull_request:
     branches:
       - main
@@ -22,8 +25,11 @@ on:
       - 'deps/mbedtls'
       - 'patches/mbedtls/**'
       - 'scripts/mbedtls.sh'
+      - 'scripts/mbedtls.ps1'
       - 'build.sh'
+      - 'build.ps1'
       - 'env-*.sh'
+      - 'env-*.ps1'
 
 jobs:
   build:
