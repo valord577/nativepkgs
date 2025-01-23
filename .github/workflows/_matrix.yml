@@ -187,14 +187,14 @@ jobs:
           ./build_${{ matrix.platform }}_${{ matrix.arch }}.sh ${{ github.workflow }} ${{ matrix.pkg_type }}
 
           # keep file permissions and case sensitivity
-          tar -cvf ${{ env.PKG_ZIP_NAME }}.tar ${{ github.workflow }}
+          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
       - name: buildx library - ${{ github.workflow }} - windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
           ./build_${{ matrix.platform }}_${{ matrix.arch }}.ps1 ${{ github.workflow }} ${{ matrix.pkg_type }}
 
           # keep file permissions and case sensitivity
-          tar -cvf ${{ env.PKG_ZIP_NAME }}.tar ${{ github.workflow }}
+          Compress-Archive -Path "${{ github.workflow }}" -DestinationPath "${{ env.PKG_ZIP_NAME }}.zip"
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
@@ -204,11 +204,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PKG_ZIP_NAME }}
-          path: ${{ env.PKG_ZIP_NAME }}.tar
+          path: ${{ env.PKG_ZIP_NAME }}.zip
+          compression-level: 0
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
-          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
           ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
 
   _buildx_on_container:
@@ -267,7 +267,7 @@ jobs:
           ./${SCRIPT_NAME} ${{ github.workflow }} ${{ matrix.pkg_type }}
 
           # keep file permissions and case sensitivity
-          tar -cvf ${{ env.PKG_ZIP_NAME }}.tar ${{ github.workflow }}
+          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
@@ -277,9 +277,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PKG_ZIP_NAME }}
-          path: ${{ env.PKG_ZIP_NAME }}.tar
+          path: ${{ env.PKG_ZIP_NAME }}.zip
+          compression-level: 0
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
-          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
           ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
