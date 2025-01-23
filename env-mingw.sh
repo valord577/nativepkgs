@@ -2,7 +2,7 @@
 set -e
 
 TARGET_ARCH=${1}
-TARGET_TRIPLE="${TARGET_ARCH}-w64-mingw32"
+export TARGET_TRIPLE="${TARGET_ARCH}-w64-mingw32"
 
 export PARALLEL_JOBS="$(nproc)"
 export PLATFORM_WIN32="1"

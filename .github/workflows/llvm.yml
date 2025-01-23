@@ -11,9 +11,13 @@ on:
       - 'deps/llvm'
       - 'patches/llvm/**'
       - 'scripts/llvm.sh'
+      - 'scripts/llvm.ps1'
       - 'build.sh'
+      - 'build.ps1'
       - 'env-*.sh'
+      - 'env-*.ps1'
       - 'pkg-conf.sh'
+      - 'pkg-conf.ps1'
   pull_request:
     branches:
       - main
@@ -24,12 +28,17 @@ on:
       - 'deps/llvm'
       - 'patches/llvm/**'
       - 'scripts/llvm.sh'
+      - 'scripts/llvm.ps1'
       - 'build.sh'
+      - 'build.ps1'
       - 'env-*.sh'
+      - 'env-*.ps1'
       - 'pkg-conf.sh'
+      - 'pkg-conf.ps1'
 
 jobs:
   build:
+    # if: ${{ false }}
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:

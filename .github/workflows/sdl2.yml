@@ -10,8 +10,11 @@ on:
       - 'deps/sdl2'
       - 'patches/sdl2/**'
       - 'scripts/sdl2.sh'
+      - 'scripts/sdl2.ps1'
       - 'build.sh'
+      - 'build.ps1'
       - 'env-*.sh'
+      - 'env-*.ps1'
   pull_request:
     branches:
       - main
@@ -22,12 +25,16 @@ on:
       - 'deps/sdl2'
       - 'patches/sdl2/**'
       - 'scripts/sdl2.sh'
+      - 'scripts/sdl2.ps1'
       - 'build.sh'
+      - 'build.ps1'
       - 'env-*.sh'
+      - 'env-*.ps1'
 
 jobs:
   build:
+    # if: ${{ false }}
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
-      select_platforms: "macosx"
+      select_platforms: "macosx, win-mingw, win-msvc"

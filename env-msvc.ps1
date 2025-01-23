@@ -1,5 +1,4 @@
 param (
-  [Parameter(Mandatory=$true)][string]$TARGET_PLATFORM,
   [Parameter(Mandatory=$true)][string]$TARGET_ARCH
 )
 
@@ -8,11 +7,11 @@ ${env:PARALLEL_JOBS} = ${env:NUMBER_OF_PROCESSORS}
 ${env:CCACHE_SRC} = ""
 $ccache = Get-Command -Name ccache.exe -CommandType Application -ErrorAction SilentlyContinue
 if ($ccache -ne $null) {
-  ${env:CCACHE_SRC} = "$($ccache.Source)"
+  ${env:CCACHE_SRC} = "ccache.exe"
 
   # https://github.com/ccache/ccache/discussions/978
-  ${env:CMAKE_EXTRA} = "${env:CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=`"${env:CCACHE_SRC}`""
-  ${env:CMAKE_EXTRA} = "${env:CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=`"${env:CCACHE_SRC}`""
+  ${env:CMAKE_EXTRA} = "${env:CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=ccache.exe"
+  ${env:CMAKE_EXTRA} = "${env:CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache.exe"
 }
 
 # >>> VS DevShell >>>
@@ -48,30 +47,35 @@ function vsdevsh {
 }
 
 # Set VS search path
-$MSVC_INSTALL_DIR = ${env:MSVC_INSTALL_DIR}
-if ($MSVC_INSTALL_DIR -eq $null) {
-  $MSVC_INSTALL_DIR = "C:\Program Files (x86)\Microsoft Visual Studio"
-  if (-not (Test-Path -PathType Container -Path "${MSVC_INSTALL_DIR}")) {
-    $MSVC_INSTALL_DIR = "C:\Program Files\Microsoft Visual Studio"
-  }
-}
+$MSVC_INSTALL_DIR_64BIT="C:\Program Files\Microsoft Visual Studio"
+$MSVC_INSTALL_DIR_32BIT="C:\Program Files (x86)\Microsoft Visual Studio"
+
 $MSVC_SKIP_AUTO_SEARCH = ${env:MSVC_SKIP_AUTO_SEARCH}
 if ($MSVC_SKIP_AUTO_SEARCH -eq $null) {
   $MSVC_SKIP_AUTO_SEARCH = "0"
 }
 if ($MSVC_SKIP_AUTO_SEARCH -ieq "0") {
   $VS_SEARCH_PATH = @(
-    "${MSVC_INSTALL_DIR}\2022\BuildTools",
-    "${MSVC_INSTALL_DIR}\2022\Community",
-    "${MSVC_INSTALL_DIR}\2022\Professional",
-    "${MSVC_INSTALL_DIR}\2022\Enterprise",
-    "${MSVC_INSTALL_DIR}\2019\BuildTools",
-    "${MSVC_INSTALL_DIR}\2019\Community",
-    "${MSVC_INSTALL_DIR}\2019\Professional",
-    "${MSVC_INSTALL_DIR}\2019\Enterprise"
+    "${MSVC_INSTALL_DIR_64BIT}\2022\BuildTools",
+    "${MSVC_INSTALL_DIR_64BIT}\2022\Community",
+    "${MSVC_INSTALL_DIR_64BIT}\2022\Professional",
+    "${MSVC_INSTALL_DIR_64BIT}\2022\Enterprise",
+    "${MSVC_INSTALL_DIR_64BIT}\2019\BuildTools",
+    "${MSVC_INSTALL_DIR_64BIT}\2019\Community",
+    "${MSVC_INSTALL_DIR_64BIT}\2019\Professional",
+    "${MSVC_INSTALL_DIR_64BIT}\2019\Enterprise",
+
+    "${MSVC_INSTALL_DIR_32BIT}\2022\BuildTools",
+    "${MSVC_INSTALL_DIR_32BIT}\2022\Community",
+    "${MSVC_INSTALL_DIR_32BIT}\2022\Professional",
+    "${MSVC_INSTALL_DIR_32BIT}\2022\Enterprise",
+    "${MSVC_INSTALL_DIR_32BIT}\2019\BuildTools",
+    "${MSVC_INSTALL_DIR_32BIT}\2019\Community",
+    "${MSVC_INSTALL_DIR_32BIT}\2019\Professional",
+    "${MSVC_INSTALL_DIR_32BIT}\2019\Enterprise"
   )
 } else {
-  $VS_SEARCH_PATH = @( "${MSVC_INSTALL_DIR}" )
+  $VS_SEARCH_PATH = @( "${env:MSVC_INSTALL_DIR}" )
 }
 
 $vs_devshell_ok = $false
@@ -79,5 +83,8 @@ foreach ($VS_PATH in $VS_SEARCH_PATH) {
   $vs_devshell_ok = vsdevsh "$VS_PATH"
   if ($vs_devshell_ok) { break }
 }
-if (-not $vs_devshell_ok) { exit 1 }
+if (-not $vs_devshell_ok) {
+  Write-Host -ForegroundColor Red "Failed to search MSVC environment."
+  exit 1
+}
 # <<< VS DevShell <<<

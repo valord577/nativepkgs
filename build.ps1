@@ -5,7 +5,7 @@ param (
 
 # Powershell windows runner always succeeding
 #  - https://gitlab.com/gitlab-org/gitlab-runner/-/issues/1514
-$ErrorActionPreference = 'Stop'
+${env:ErrorActionPreference} = 'Stop'
 
 $PWSH_VERSION = ${Host}.Version
 if (($PWSH_VERSION.Major -ge 6) -and (-not $IsWindows)) {
@@ -29,7 +29,7 @@ $TARGET_ARCH = $triplet.Substring($prefix.Length)
 
 switch ($TARGET_PLATFORM) {
   'win-msvc' {
-    . "${PROJ_ROOT}\env-msvc.ps1" ${TARGET_PLATFORM} ${TARGET_ARCH}
+    . "${PROJ_ROOT}\env-msvc.ps1" ${TARGET_ARCH}
     if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) {
       exit $LASTEXITCODE
     }
@@ -57,7 +57,7 @@ $compile = {
 
   ${env:PKG_BULD_DIR} = "${PROJ_ROOT}\tmp\${PKG_NAME}\${PKG_PLATFORM}\${PKG_ARCH}"
   ${env:PKG_INST_DIR} = "${PROJ_ROOT}\out\${PKG_NAME}\${PKG_PLATFORM}\${PKG_ARCH}"
-  if ($GITHUB_ACTIONS -ieq "true") {
+  if (${env:GITHUB_ACTIONS} -ieq "true") {
     if (${env:BULD_DIR} -ne $null) { ${env:PKG_BULD_DIR} = "${env:BULD_DIR}" }
     if (${env:INST_DIR} -ne $null) { ${env:PKG_INST_DIR} = "${env:INST_DIR}" }
   }
@@ -73,7 +73,7 @@ $compile = {
     git reset --hard HEAD
 
     foreach ($patch in (Get-ChildItem -Path "${PROJ_ROOT}/patches/${PKG_NAME}" -File)) {
-      git apply ${patch}.FullName
+      git apply --verbose --ignore-space-change --ignore-whitespace ${patch}.FullName
     }
     Pop-Location
   }
