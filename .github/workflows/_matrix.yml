@@ -200,7 +200,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
           Set-PSDebug -Trace 2 -Step
-          & ".\build_${{ matrix.platform }}_${{ matrix.arch }}.ps1" ${{ github.workflow }} ${{ matrix.pkg_type }}
+          pwsh.exe -File ".\build_${{ matrix.platform }}_${{ matrix.arch }}.ps1" ${{ github.workflow }} ${{ matrix.pkg_type }}
           Set-PSDebug -Off
 
           # keep file permissions and case sensitivity
