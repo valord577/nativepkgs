@@ -3,6 +3,8 @@ param (
   [Parameter(Mandatory=$false)][string]$PKG_TYPE = "static"
 )
 
+Write-Host -ForegroundColor Red "asdasdsadsa >>>>>> 1"
+
 # Powershell windows runner always succeeding
 #  - https://gitlab.com/gitlab-org/gitlab-runner/-/issues/1514
 $ErrorActionPreference = 'Stop'
@@ -26,6 +28,8 @@ if ($triplet_length -lt 3) {
 $TARGET_PLATFORM = $triplet_values[1]
 $prefix = $triplet_values[0] + "_" + $triplet_values[1] + "_"
 $TARGET_ARCH = $triplet.Substring($prefix.Length)
+
+Write-Host -ForegroundColor Red "asdasdsadsa >>>>>> 2"
 
 switch ($TARGET_PLATFORM) {
   'win-msvc' {
