@@ -5,7 +5,7 @@ param (
 
 # Powershell windows runner always succeeding
 #  - https://gitlab.com/gitlab-org/gitlab-runner/-/issues/1514
-$ErrorActionPreference = 'Stop'
+${env:ErrorActionPreference} = 'Stop'
 
 $PWSH_VERSION = ${Host}.Version
 if (($PWSH_VERSION.Major -ge 6) -and (-not $IsWindows)) {
