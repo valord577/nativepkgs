@@ -169,11 +169,11 @@ jobs:
       - name: install required software(s) - macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
-          brew list -l; brew install ccache nasm tree
+          brew install ccache nasm tree; brew list -l
       - name: install required software(s) - windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
-          choco list -h; choco list --local; choco install ccache nasm
+          choco install ccache nasm; choco list
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:
@@ -181,12 +181,17 @@ jobs:
           key: ${{ env.CCACHE_GHA_KEY }}
           restore-keys: |
             ${{ env.CCACHE_GHA_KEY_RESTORE }}
-      - name: buildx library - ${{ github.workflow }}
+      - name: buildx library - ${{ github.workflow }} - macos
+        if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
-          ${{ startsWith(matrix.os, 'macos')   }} && { SCRIPT_EXT='sh';  }
-          ${{ startsWith(matrix.os, 'windows') }} && { SCRIPT_EXT='ps1'; }
+          ./build_${{ matrix.platform }}_${{ matrix.arch }}.sh ${{ github.workflow }} ${{ matrix.pkg_type }}
 
-          ./build_${{ matrix.platform }}_${{ matrix.arch }}.${SCRIPT_EXT} ${{ github.workflow }} ${{ matrix.pkg_type }}
+          # keep file permissions and case sensitivity
+          tar -cvf ${{ env.PKG_ZIP_NAME }}.tar ${{ github.workflow }}
+      - name: buildx library - ${{ github.workflow }} - windows
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: |
+          ./build_${{ matrix.platform }}_${{ matrix.arch }}.ps1 ${{ github.workflow }} ${{ matrix.pkg_type }}
 
           # keep file permissions and case sensitivity
           tar -cvf ${{ env.PKG_ZIP_NAME }}.tar ${{ github.workflow }}
