@@ -77,7 +77,7 @@ function compile() {
       git reset --hard HEAD
 
       for patch in $(ls -- "${PROJ_ROOT}/patches/${PKG_NAME}"); do
-        git apply --verbose "${PROJ_ROOT}/patches/${PKG_NAME}/${patch}"
+        git apply --verbose --ignore-space-change --ignore-whitespace "${PROJ_ROOT}/patches/${PKG_NAME}/${patch}"
       done
       popd
     fi
