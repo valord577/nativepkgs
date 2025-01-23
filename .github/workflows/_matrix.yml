@@ -195,7 +195,7 @@ jobs:
 
           # keep file permissions and case sensitivity
           C:/msys64/usr/bin/bash.exe --noprofile --norc -c `
-            'zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}'
+            'pacman --noconfirm -S zip; zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}'
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
