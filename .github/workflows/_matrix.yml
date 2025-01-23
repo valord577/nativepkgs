@@ -162,6 +162,14 @@ jobs:
       CCACHE_GHA_KEY_RESTORE: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
       PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
     steps:
+      - name: disable macos spotlight - macos
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          sudo mdutil -a -i off
+      - name: disable windows defender - windows
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: |
+          Set-MpPreference -DisableRealtimeMonitoring $true
       - name: clone with gh
         run: |
           gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1

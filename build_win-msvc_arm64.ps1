@@ -1,1 +1,1 @@
-./build.ps1
+build.ps1
