@@ -37,8 +37,6 @@ switch ($TARGET_PLATFORM) {
   }
 }
 
-Write-Host -ForegroundColor Red "asdasdsadsa >>>>>> 2"
-
 $compile = {
   param (
     [Parameter(Mandatory=$true)][string]$PKG_NAME,
@@ -93,7 +91,5 @@ if (($PKG_NAME -eq $null) -or ($PKG_NAME -eq "")) {
   Write-Host -ForegroundColor Red "Please declare the module to be compiled."
   exit 1
 }
-Write-Host -ForegroundColor Red "asdasdsadsa >>>>>> 3"
 Invoke-Command -ScriptBlock ${compile} `
   -ArgumentList ${PKG_NAME}, ${PKG_TYPE}, ${TARGET_PLATFORM}, ${TARGET_ARCH}
-Write-Host -ForegroundColor Red "asdasdsadsa >>>>>> 4"

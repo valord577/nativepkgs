@@ -47,30 +47,35 @@ function vsdevsh {
 }
 
 # Set VS search path
-$MSVC_INSTALL_DIR = ${env:MSVC_INSTALL_DIR}
-if ($MSVC_INSTALL_DIR -eq $null) {
-  $MSVC_INSTALL_DIR = "C:\Program Files (x86)\Microsoft Visual Studio"
-  if (-not (Test-Path -PathType Container -Path "${MSVC_INSTALL_DIR}")) {
-    $MSVC_INSTALL_DIR = "C:\Program Files\Microsoft Visual Studio"
-  }
-}
+$MSVC_INSTALL_DIR_64BIT="C:\Program Files\Microsoft Visual Studio"
+$MSVC_INSTALL_DIR_32BIT="C:\Program Files (x86)\Microsoft Visual Studio"
+
 $MSVC_SKIP_AUTO_SEARCH = ${env:MSVC_SKIP_AUTO_SEARCH}
 if ($MSVC_SKIP_AUTO_SEARCH -eq $null) {
   $MSVC_SKIP_AUTO_SEARCH = "0"
 }
 if ($MSVC_SKIP_AUTO_SEARCH -ieq "0") {
   $VS_SEARCH_PATH = @(
-    "${MSVC_INSTALL_DIR}\2022\BuildTools",
-    "${MSVC_INSTALL_DIR}\2022\Community",
-    "${MSVC_INSTALL_DIR}\2022\Professional",
-    "${MSVC_INSTALL_DIR}\2022\Enterprise",
-    "${MSVC_INSTALL_DIR}\2019\BuildTools",
-    "${MSVC_INSTALL_DIR}\2019\Community",
-    "${MSVC_INSTALL_DIR}\2019\Professional",
-    "${MSVC_INSTALL_DIR}\2019\Enterprise"
+    "${MSVC_INSTALL_DIR_64BIT}\2022\BuildTools",
+    "${MSVC_INSTALL_DIR_64BIT}\2022\Community",
+    "${MSVC_INSTALL_DIR_64BIT}\2022\Professional",
+    "${MSVC_INSTALL_DIR_64BIT}\2022\Enterprise",
+    "${MSVC_INSTALL_DIR_64BIT}\2019\BuildTools",
+    "${MSVC_INSTALL_DIR_64BIT}\2019\Community",
+    "${MSVC_INSTALL_DIR_64BIT}\2019\Professional",
+    "${MSVC_INSTALL_DIR_64BIT}\2019\Enterprise",
+
+    "${MSVC_INSTALL_DIR_32BIT}\2022\BuildTools",
+    "${MSVC_INSTALL_DIR_32BIT}\2022\Community",
+    "${MSVC_INSTALL_DIR_32BIT}\2022\Professional",
+    "${MSVC_INSTALL_DIR_32BIT}\2022\Enterprise",
+    "${MSVC_INSTALL_DIR_32BIT}\2019\BuildTools",
+    "${MSVC_INSTALL_DIR_32BIT}\2019\Community",
+    "${MSVC_INSTALL_DIR_32BIT}\2019\Professional",
+    "${MSVC_INSTALL_DIR_32BIT}\2019\Enterprise"
   )
 } else {
-  $VS_SEARCH_PATH = @( "${MSVC_INSTALL_DIR}" )
+  $VS_SEARCH_PATH = @( "${env:MSVC_INSTALL_DIR}" )
 }
 
 $vs_devshell_ok = $false
