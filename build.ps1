@@ -3,8 +3,6 @@ param (
   [Parameter(Mandatory=$false)][string]$PKG_TYPE = "static"
 )
 
-Write-Host -ForegroundColor Red "asdasdsadsa >>>>>> 1"
-
 # Powershell windows runner always succeeding
 #  - https://gitlab.com/gitlab-org/gitlab-runner/-/issues/1514
 $ErrorActionPreference = 'Stop'
@@ -29,8 +27,6 @@ $TARGET_PLATFORM = $triplet_values[1]
 $prefix = $triplet_values[0] + "_" + $triplet_values[1] + "_"
 $TARGET_ARCH = $triplet.Substring($prefix.Length)
 
-Write-Host -ForegroundColor Red "asdasdsadsa >>>>>> 2"
-
 switch ($TARGET_PLATFORM) {
   'win-msvc' {
     . "${PROJ_ROOT}\env-msvc.ps1" ${TARGET_ARCH}
@@ -40,6 +36,8 @@ switch ($TARGET_PLATFORM) {
     break
   }
 }
+
+Write-Host -ForegroundColor Red "asdasdsadsa >>>>>> 2"
 
 $compile = {
   param (
@@ -95,5 +93,7 @@ if (($PKG_NAME -eq $null) -or ($PKG_NAME -eq "")) {
   Write-Host -ForegroundColor Red "Please declare the module to be compiled."
   exit 1
 }
+Write-Host -ForegroundColor Red "asdasdsadsa >>>>>> 3"
 Invoke-Command -ScriptBlock ${compile} `
   -ArgumentList ${PKG_NAME}, ${PKG_TYPE}, ${TARGET_PLATFORM}, ${TARGET_ARCH}
+Write-Host -ForegroundColor Red "asdasdsadsa >>>>>> 4"
