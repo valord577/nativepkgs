@@ -217,9 +217,9 @@ jobs:
           path: ${{ env.PKG_ZIP_NAME }}.zip
           compression-level: 0
       - name: commit to pre-compiled storage
-        if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
+        # if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
-          ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
+          python3 ./.github/oss_v4.py -v push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
 
   _buildx_on_container:
     needs: _preset
