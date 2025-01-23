@@ -194,7 +194,8 @@ jobs:
           ./build_${{ matrix.platform }}_${{ matrix.arch }}.ps1 ${{ github.workflow }} ${{ matrix.pkg_type }}
 
           # keep file permissions and case sensitivity
-          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
+          C:/msys64/usr/bin/bash.exe --noprofile --norc -c `
+            'zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}'
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
