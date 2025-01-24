@@ -2,16 +2,16 @@ param (
   [Parameter(Mandatory=$true)][string]$TARGET_ARCH
 )
 
-${env:PARALLEL_JOBS} = ${env:NUMBER_OF_PROCESSORS}
+${global:PARALLEL_JOBS} = ${env:NUMBER_OF_PROCESSORS}
 
-${env:CCACHE_SRC} = ""
+${global:CCACHE_SRC} = ""
 $ccache = Get-Command -Name ccache.exe -CommandType Application -ErrorAction SilentlyContinue
 if ($ccache -ne $null) {
-  ${env:CCACHE_SRC} = "ccache.exe"
+  ${global:CCACHE_SRC} = "ccache.exe"
 
   # https://github.com/ccache/ccache/discussions/978
-  ${env:CMAKE_EXTRA} = "${env:CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=ccache.exe"
-  ${env:CMAKE_EXTRA} = "${env:CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache.exe"
+  ${global:CMAKE_EXTRA} = "${global:CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=ccache.exe"
+  ${global:CMAKE_EXTRA} = "${global:CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache.exe"
 }
 
 # >>> VS DevShell >>>
