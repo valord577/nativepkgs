@@ -60,10 +60,15 @@ $compile = {
     if (${env:INST_DIR} -ne $null) { ${global:PKG_INST_DIR} = "${env:INST_DIR}" }
   }
 
-  # msys2
+  # MSYS2
+  ${global:MSYS2_BASH_CMD} = "C:/msys64/usr/bin/bash.exe"
+  if (${env:MSYS2_BASH_CMD} -ne $null) {
+    ${global:MSYS2_BASH_CMD} = ${env:MSYS2_BASH_CMD}
+  }
+
   ${env:MSYS2_PATH_TYPE} = "inherit"
-  ${global:MSYS2_CALL_BASH} = @"
-set -ex
+  ${global:MSYS2_BASH_TXT} = @"
+set -e
 
 export PROJ_ROOT=`$(cygpath -u "${global:PROJ_ROOT}")
 export PYPI_MIRROR="${global:PYPI_MIRROR}"
@@ -74,9 +79,15 @@ export SUBPROJ_SRC=`$(cygpath -u "${global:SUBPROJ_SRC}")
 export PKG_TYPE="${PKG_TYPE}"
 export PKG_PLATFORM="${PKG_PLATFORM}"
 export PKG_ARCH="${PKG_ARCH}"
+export PKG_ARCH_LIBC="${PKG_ARCH}"
 
 export PKG_BULD_DIR=`$(cygpath -u "${global:PKG_BULD_DIR}")
 export PKG_INST_DIR=`$(cygpath -u "${global:PKG_INST_DIR}")
+
+export PARALLEL_JOBS="${global:PARALLEL_JOBS}"
+export CCACHE_SRC="${global:CCACHE_SRC}"
+export TARGET_TRIPLE="${PKG_ARCH}-pc-windows-msvc"
+export PKG_CONFIG_EXEC="pkgconf.exe"
 
 cd `${PROJ_ROOT}; bash `${PROJ_ROOT}/scripts/${PKG_NAME}.sh
 "@

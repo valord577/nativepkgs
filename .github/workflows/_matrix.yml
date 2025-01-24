@@ -199,8 +199,8 @@ jobs:
           & ".\build_${{ matrix.platform }}_${{ matrix.arch }}.ps1" ${{ github.workflow }} ${{ matrix.pkg_type }}
 
           # keep file permissions and case sensitivity
-          msys2bash.cmd	-lc 'pacman --noconfirm -S zip;'
-          msys2bash.cmd	-lc `
+          C:/msys64/usr/bin/bash.exe -lc 'pacman --noconfirm -S zip;'
+          C:/msys64/usr/bin/bash.exe -lc `
             'cd $(cygpath -u "${{ github.workspace }}"); zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}'
       - name: gh action ccache save
         uses: actions/cache/save@v4
