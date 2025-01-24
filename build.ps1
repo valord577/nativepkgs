@@ -111,6 +111,7 @@ cd `${PROJ_ROOT}; bash `${PROJ_ROOT}/scripts/${PKG_NAME}.sh
     Pop-Location
   }
   & "${global:PROJ_ROOT}\scripts\${PKG_NAME}.ps1"
+  if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 
 
   if (${env:CLANGD_CODE_COMPLETION} -ne "1") {
