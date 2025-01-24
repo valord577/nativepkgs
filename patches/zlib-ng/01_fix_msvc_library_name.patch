@@ -1,0 +1,30 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b97c202..ce5f719 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1201,17 +1201,17 @@ if(WIN32)
+     endif()
+     # Static library
+     if(NOT DEFINED BUILD_SHARED_LIBS)
+-        if(MSVC)
+-            set_target_properties(zlibstatic PROPERTIES OUTPUT_NAME zlibstatic${SUFFIX})
+-        else()
++        #if(MSVC)
++        #    set_target_properties(zlibstatic PROPERTIES OUTPUT_NAME zlibstatic${SUFFIX})
++        #else()
+             set_target_properties(zlibstatic PROPERTIES OUTPUT_NAME z${SUFFIX})
+-        endif()
++        #endif()
+     elseif(NOT BUILD_SHARED_LIBS)
+-        if(MSVC)
+-            set_target_properties(zlib PROPERTIES OUTPUT_NAME zlibstatic${SUFFIX})
+-        else()
++        #if(MSVC)
++        #    set_target_properties(zlib PROPERTIES OUTPUT_NAME zlibstatic${SUFFIX})
++        #else()
+             set_target_properties(zlib PROPERTIES OUTPUT_NAME z${SUFFIX})
+-        endif()
++        #endif()
+     endif()
+ else()
+     # On unix-like platforms the library is almost always called libz

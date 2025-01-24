@@ -54,7 +54,7 @@ case ${PKG_PLATFORM} in
   "macosx" | "iphoneos" | "iphonesimulator")
     CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --host=${PKG_ARCH}"
     ;;
-  "linux" | "win-mingw")
+  "linux" | "win-mingw" | "win-msvc")
     export CPPFLAGS="$(${PKG_CONFIG_EXEC} --cflags zlib)"
     export LDFLAGS="${CROSS_LDFLAGS} $(${PKG_CONFIG_EXEC} --libs-only-L zlib)"
     CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --host='${TARGET_TRIPLE}'"
