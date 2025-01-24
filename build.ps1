@@ -89,6 +89,9 @@ export CCACHE_SRC="${global:CCACHE_SRC}"
 export TARGET_TRIPLE="${PKG_ARCH}-pc-windows-msvc"
 export PKG_CONFIG_EXEC="pkgconf.exe"
 
+export CC="cl.exe"; export CXX="cl.exe"
+export LD="`$(dirname "`$(command -v cl.exe)")/link.exe"
+
 cd `${PROJ_ROOT}; bash `${PROJ_ROOT}/scripts/${PKG_NAME}.sh
 "@
 
