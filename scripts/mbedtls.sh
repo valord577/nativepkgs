@@ -54,8 +54,6 @@ esac
 case ${PKG_TYPE} in
   "static")
     PKG_TYPE_FLAG="-D USE_STATIC_MBEDTLS_LIBRARY:BOOL=1 -D USE_SHARED_MBEDTLS_LIBRARY:BOOL=0"
-    PKG_LIBRARY_DEPS="-lmbedtls -lmbedx509 -lmbedcrypto -lp256m -leverest"
-    if [ "${PKG_PLATFORM}" == "win-mingw" ]; then { PKG_LIBRARY_DEPS="${PKG_LIBRARY_DEPS} -lws2_32 -lbcrypt"; } fi
     ;;
   *)
     printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TYPE: '${PKG_TYPE}'."
@@ -88,7 +86,7 @@ cmake -S "${SUBPROJ_SRC}" -B "${PKG_BULD_DIR}" \
   -D CMAKE_INSTALL_PREFIX="${PKG_INST_DIR}" \
   -D CMAKE_INSTALL_LIBDIR:PATH=lib \
   ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} \
-  -D MBEDTLS_AS_SUBPROJECT:BOOL=1 ${CMAKE_EXTRA} \
+  -D MBEDTLS_AS_SUBPROJECT:BOOL=0 ${CMAKE_EXTRA} \
   -D ENABLE_PROGRAMS:BOOL=0 -D ENABLE_TESTING:BOOL=0
 EOF
 )
@@ -97,17 +95,3 @@ printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}"; eval ${CMAKE_COMMAND}
 # build & install
 cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS}
 cmake --install "${PKG_BULD_DIR}" ${PKG_INST_STRIP}
-
-PKG_CONFIG_FILE="${PKG_INST_DIR}/lib/pkgconfig/mbedtls.pc"
-mkdir -p -- "$(dirname ${PKG_CONFIG_FILE})"
-cat > "${PKG_CONFIG_FILE}" <<- EOF
-prefix=\${pcfiledir}/../..
-libdir=\${prefix}/lib
-includedir=\${prefix}/include
-
-Name: mbedtls
-Description: An open source, portable, easy to use, readable and flexible TLS library
-Version:
-Libs: -L\${libdir} ${PKG_LIBRARY_DEPS}
-Cflags: -I\${includedir}
-EOF
