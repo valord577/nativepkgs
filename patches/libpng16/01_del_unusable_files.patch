@@ -1,0 +1,92 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 99d028a13..62f39ef45 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -954,10 +954,10 @@ if(NOT WIN32 OR CYGWIN OR MINGW)
+                  ${CMAKE_CURRENT_BINARY_DIR}/libpng${PNGLIB_ABI_VERSION}.pc
+                  @ONLY)
+   create_symlink(libpng.pc FILE libpng${PNGLIB_ABI_VERSION}.pc)
+-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libpng-config.in
+-                 ${CMAKE_CURRENT_BINARY_DIR}/libpng${PNGLIB_ABI_VERSION}-config
+-                 @ONLY)
+-  create_symlink(libpng-config FILE libpng${PNGLIB_ABI_VERSION}-config)
++  #configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libpng-config.in
++  #               ${CMAKE_CURRENT_BINARY_DIR}/libpng${PNGLIB_ABI_VERSION}-config
++  #               @ONLY)
++  #create_symlink(libpng-config FILE libpng${PNGLIB_ABI_VERSION}-config)
+ endif()
+ 
+ # Install.
+@@ -988,19 +988,19 @@ if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
+ endif()
+ 
+ if(NOT SKIP_INSTALL_HEADERS AND NOT SKIP_INSTALL_ALL)
+-  install(FILES ${libpng_public_hdrs}
+-          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
++  #install(FILES ${libpng_public_hdrs}
++  #        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+   install(FILES ${libpng_public_hdrs}
+           DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libpng${PNGLIB_ABI_VERSION})
+ endif()
+-if(NOT SKIP_INSTALL_EXECUTABLES AND NOT SKIP_INSTALL_ALL)
+-  if(NOT WIN32 OR CYGWIN OR MINGW)
+-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/libpng-config
+-            DESTINATION ${CMAKE_INSTALL_BINDIR})
+-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/libpng${PNGLIB_ABI_VERSION}-config
+-            DESTINATION ${CMAKE_INSTALL_BINDIR})
+-  endif()
+-endif()
++#if(NOT SKIP_INSTALL_EXECUTABLES AND NOT SKIP_INSTALL_ALL)
++#  if(NOT WIN32 OR CYGWIN OR MINGW)
++#    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/libpng-config
++#            DESTINATION ${CMAKE_INSTALL_BINDIR})
++#    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/libpng${PNGLIB_ABI_VERSION}-config
++#            DESTINATION ${CMAKE_INSTALL_BINDIR})
++#  endif()
++#endif()
+ 
+ if(NOT SKIP_INSTALL_PROGRAMS AND NOT SKIP_INSTALL_ALL)
+   install(TARGETS ${PNG_BIN_TARGETS}
+@@ -1009,29 +1009,29 @@ endif()
+ 
+ if(NOT SKIP_INSTALL_FILES AND NOT SKIP_INSTALL_ALL)
+   # Install the man pages.
+-  install(FILES libpng.3 libpngpf.3
+-          DESTINATION ${CMAKE_INSTALL_MANDIR}/man3)
+-  install(FILES png.5
+-          DESTINATION ${CMAKE_INSTALL_MANDIR}/man5)
++  #install(FILES libpng.3 libpngpf.3
++  #        DESTINATION ${CMAKE_INSTALL_MANDIR}/man3)
++  #install(FILES png.5
++  #        DESTINATION ${CMAKE_INSTALL_MANDIR}/man5)
+   # Install the pkg-config files.
+   if(NOT CMAKE_HOST_WIN32 OR CYGWIN OR MINGW)
+     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libpng.pc
+             DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/libpng-config
+-            DESTINATION ${CMAKE_INSTALL_BINDIR})
++    #install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/libpng-config
++    #        DESTINATION ${CMAKE_INSTALL_BINDIR})
+     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libpng${PNGLIB_ABI_VERSION}.pc
+             DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/libpng${PNGLIB_ABI_VERSION}-config
+-            DESTINATION ${CMAKE_INSTALL_BINDIR})
++    #install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/libpng${PNGLIB_ABI_VERSION}-config
++    #        DESTINATION ${CMAKE_INSTALL_BINDIR})
+   endif()
+ endif()
+ 
+ # Create an export file that CMake users can include() to import our targets.
+-if(NOT SKIP_INSTALL_EXPORT AND NOT SKIP_INSTALL_ALL)
+-  install(EXPORT libpng
+-          DESTINATION ${CMAKE_INSTALL_LIBDIR}/libpng
+-          FILE libpng${PNGLIB_ABI_VERSION}.cmake)
+-endif()
++#if(NOT SKIP_INSTALL_EXPORT AND NOT SKIP_INSTALL_ALL)
++#  install(EXPORT libpng
++#          DESTINATION ${CMAKE_INSTALL_LIBDIR}/libpng
++#          FILE libpng${PNGLIB_ABI_VERSION}.cmake)
++#endif()
+ 
+ # Create a CMake Config File that can be used via find_package(PNG CONFIG)
+ if(NOT SKIP_INSTALL_CONFIG_FILE AND NOT SKIP_INSTALL_ALL)

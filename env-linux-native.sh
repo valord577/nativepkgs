@@ -49,7 +49,7 @@ function chk_compiler() {
     return 1
   fi
 
-  eval export "${c_key}='${CCACHE_SRC} ${c_value}'"
+  eval export "${c_key}='${c_value}'"
   printf "\e[4m\e[32m%s\e[0m\n" "Using ${c_value} for ${c_key} (export ${c_key}=${c_value})"
   return 0
 }
@@ -69,3 +69,8 @@ for c in "${compilers[@]}"; do
   done
 done
 set -e
+
+
+export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_C_COMPILER=${CC}"
+export CMAKE_EXTRA="${CMAKE_EXTRA} -D CMAKE_CXX_COMPILER=${CXX}"
+export CC="${CCACHE_SRC} ${CC}"; export CXX="${CCACHE_SRC} ${CXX}";

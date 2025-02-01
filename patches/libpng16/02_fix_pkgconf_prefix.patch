@@ -1,0 +1,16 @@
+diff --git a/libpng.pc.in b/libpng.pc.in
+index de127d4f8..92d0365ad 100644
+--- a/libpng.pc.in
++++ b/libpng.pc.in
+@@ -1,7 +1,7 @@
+-prefix=@prefix@
+-exec_prefix=@exec_prefix@
+-libdir=@libdir@
+-includedir=@includedir@/libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@
++prefix=${pcfiledir}/../..
++exec_prefix=${prefix}
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include/libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@
+ 
+ Name: libpng
+ Description: Loads and saves PNG files

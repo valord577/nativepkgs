@@ -16,7 +16,10 @@ printf "\e[1m\e[35m%s\e[0m\n" "${PKG_CONFIG_PATH}"
 # ----------------------------
 case ${PKG_TYPE} in
   "static")
-    PKG_TYPE_FLAG="--enable-shared=no"
+    PKG_TYPE_FLAG="-D PNG_SHARED:BOOL=0 -D PNG_STATIC:BOOL=1"
+    ;;
+  "shared")
+    PKG_TYPE_FLAG="-D PNG_SHARED:BOOL=1 -D PNG_STATIC:BOOL=0"
     ;;
   *)
     printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TYPE: '${PKG_TYPE}'."
@@ -24,62 +27,39 @@ case ${PKG_TYPE} in
     ;;
 esac
 # ----------------------------
+# optimize
+#  - 0 DEBUG
+#  - 1 RELEASE (default)
+# ----------------------------
+LIB_RELEASE=${LIB_RELEASE:-"1"}
+if [ "${LIB_RELEASE}" == "1" ]; then
+  PKG_BUILD_TYPE="-D CMAKE_BUILD_TYPE=Release"
+  PKG_INSTALL_STRIP="--strip"
+else
+  PKG_BUILD_TYPE="-D CMAKE_BUILD_TYPE=Debug -D PNG_DEBUG:BOOL=1"
+  PKG_INSTALL_STRIP=""
+fi
+# ----------------------------
 # compile :p
 # ----------------------------
-if [ "${CLANGD_CODE_COMPLETION}" == "1" ]; then
-  PKG_BULD_DIR="${PROJ_ROOT}"
-else
-  { rm -rf ${PKG_BULD_DIR}; mkdir -p "${PKG_BULD_DIR}"; }
-  { rm -rf ${PKG_INST_DIR}; mkdir -p "${PKG_INST_DIR}"; }
-fi
+{ rm -rf ${PKG_BULD_DIR}; mkdir -p "${PKG_BULD_DIR}"; }
+{ rm -rf ${PKG_INST_DIR}; mkdir -p "${PKG_INST_DIR}"; }
 
-CONFIGURE_COMMAND=$(cat <<- EOF
-${SUBPROJ_SRC}/configure     \
-  --prefix='${PKG_INST_DIR}' \
-  ${PKG_TYPE_FLAG}  \
-  ${PKG_BULD_TYPE}  \
-  ${PKG_INST_STRIP} \
-  --enable-pic=yes \
-  --disable-tests  \
-  --disable-tools  \
-  --enable-werror  \
-  --without-binconfigs \
-  --disable-dependency-tracking \
-  --enable-hardware-optimizations=yes \
-  ${PKG_DEPS_ARGS}
+CMAKE_COMMAND=$(cat <<- EOF
+cmake -S "${SUBPROJ_SRC}" -B "${PKG_BULD_DIR}" \
+  -D CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON   \
+  -D CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON \
+  -D CMAKE_INSTALL_PREFIX="${PKG_INST_DIR}"  \
+  -D CMAKE_INSTALL_LIBDIR:PATH=lib \
+  -D CMAKE_PREFIX_PATH="${PKG_DEPS_CMAKE}" \
+  -D CMAKE_FIND_ROOT_PATH="${SYSROOT};${PKG_DEPS_CMAKE}" \
+  -D PNG_FRAMEWORK:BOOL=0  \
+  -D PNG_TESTS:BOOL=0 -D PNG_TOOLS:BOOL=0 \
+  ${PKG_BUILD_TYPE} ${PKG_TYPE_FLAG} ${CMAKE_EXTRA}
 EOF
 )
-
-case ${PKG_PLATFORM} in
-  "macosx" | "iphoneos" | "iphonesimulator")
-    CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --host=${PKG_ARCH}"
-    ;;
-  "linux" | "win-mingw" | "win-msvc")
-    export CPPFLAGS="$(${PKG_CONFIG_EXEC} --cflags zlib)"
-    export LDFLAGS="${CROSS_LDFLAGS} $(${PKG_CONFIG_EXEC} --libs-only-L zlib)"
-    CONFIGURE_COMMAND="${CONFIGURE_COMMAND} --host='${TARGET_TRIPLE}'"
-    ;;
-  *)
-    ;;
-esac
-
-printf "\e[1m\e[36m%s\e[0m\n" "${CONFIGURE_COMMAND}"
-pushd -- "${PKG_BULD_DIR}"; eval ${CONFIGURE_COMMAND}; popd
+printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}"; eval ${CMAKE_COMMAND}
 
 # build & install
-MAKE_COMMAND="make -j ${PARALLEL_JOBS}"
-MAKE_COMMAND="${MAKE_COMMAND}; make install-libLTLIBRARIES"
-MAKE_COMMAND="${MAKE_COMMAND}; make install-pkgconfigDATA"
-MAKE_COMMAND="${MAKE_COMMAND}; make install-nodist_pkgincludeHEADERS"
-MAKE_COMMAND="${MAKE_COMMAND}; make install-pkgincludeHEADERS"
-MAKE_COMMAND="${MAKE_COMMAND}; make install-header-links"
-MAKE_COMMAND="${MAKE_COMMAND}; make install-libpng-pc"
-MAKE_COMMAND="${MAKE_COMMAND}; make install-library-links"
-
-if command -v bear >/dev/null 2>&1 ; then
-  MAKE_COMMAND="bear -- ${MAKE_COMMAND}"
-fi
-printf "\e[1m\e[36m%s\e[0m\n" "${MAKE_COMMAND}"
-pushd -- "${PKG_BULD_DIR}"; eval ${MAKE_COMMAND}; popd
-
-rm -rf ${PKG_INST_DIR}/lib/*.la
+cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS}
+cmake --install "${PKG_BULD_DIR}" ${PKG_INSTALL_STRIP}
