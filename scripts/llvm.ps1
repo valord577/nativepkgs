@@ -102,6 +102,17 @@ cmake -G Ninja ``
   -D LLVM_TARGETS_TO_BUILD="AArch64;ARM;RISCV;WebAssembly;X86" ``
   -D LLDB_USE_SYSTEM_DEBUGSERVER:BOOL=1
 "@
+
+switch ($global:PKG_PLATFORM) {
+  'win-msvc' {
+    if (${global:PKG_ARCH} -ieq "amd64") { ${script:LLVM_ARCH} = "X86" }
+    if (${global:PKG_ARCH} -ieq "arm64") { ${script:LLVM_ARCH} = "AArch64" }
+    $CMAKE_COMMAND = "${CMAKE_COMMAND} -D LLVM_HOST_TRIPLE=${global:TARGET_TRIPLE} -D LLVM_TARGET_ARCH=${script:LLVM_ARCH}"
+    break
+  }
+  default {}
+}
+
 Write-Host -ForegroundColor Cyan "${CMAKE_COMMAND}"
 Invoke-Expression -Command "${CMAKE_COMMAND}"
 if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }

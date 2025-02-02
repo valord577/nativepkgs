@@ -4,6 +4,24 @@ param (
 
 ${global:PARALLEL_JOBS} = ${env:NUMBER_OF_PROCESSORS}
 
+# >>> VS DevShell >>>
+# Only supports access to the VS DevShell from PowerShell
+# see https://learn.microsoft.com/visualstudio/ide/reference/command-prompt-powershell#developer-powershell
+$HOST_ARCH = ${env:PROCESSOR_ARCHITECTURE}.ToLower()
+
+# Alreay accessed the VS DevShell
+${script:VSCMD_ARG_TGT_ARCH} = ${env:VSCMD_ARG_TGT_ARCH}
+if (${script:VSCMD_ARG_TGT_ARCH} -ne $null) {
+  if (${script:VSCMD_ARG_TGT_ARCH} -ieq "x64") {
+    ${script:VSCMD_ARG_TGT_ARCH} = "amd64"
+  }
+  if (${script:VSCMD_ARG_TGT_ARCH} -ieq $TARGET_ARCH) {
+    exit 0
+  }
+}
+$VS_DEVCMD_ARGS = "-host_arch=${HOST_ARCH} -arch=${TARGET_ARCH}"
+
+
 ${global:CCACHE_SRC} = ""
 $ccache = Get-Command -Name ccache.exe -CommandType Application -ErrorAction SilentlyContinue
 if ($ccache -ne $null) {
@@ -14,22 +32,6 @@ if ($ccache -ne $null) {
   ${global:CMAKE_EXTRA} = "${global:CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache.exe"
 }
 
-# >>> VS DevShell >>>
-# Only supports access to the VS DevShell from PowerShell
-# see https://learn.microsoft.com/visualstudio/ide/reference/command-prompt-powershell#developer-powershell
-$HOST_ARCH = ${env:PROCESSOR_ARCHITECTURE}.ToLower()
-
-# Alreay accessed the VS DevShell
-$VSCMD_ARG_TGT_ARCH = ${env:VSCMD_ARG_TGT_ARCH}
-if ($VSCMD_ARG_TGT_ARCH -ne $null) {
-  if ($VSCMD_ARG_TGT_ARCH -ieq "x64") {
-    $VSCMD_ARG_TGT_ARCH = "amd64"
-  }
-  if ($VSCMD_ARG_TGT_ARCH -ieq $TARGET_ARCH) {
-    exit 0
-  }
-}
-$VS_DEVCMD_ARGS = "-host_arch=${HOST_ARCH} -arch=${TARGET_ARCH}"
 
 function vsdevsh {
   param (
@@ -87,4 +89,16 @@ if (-not $vs_devshell_ok) {
   Write-Error -Message "Failed to search MSVC environment."
   exit 1
 }
+
+if (${HOST_ARCH} -ieq "amd64") { ${global:TARGET_TRIPLE} = "x86_64-pc-windows-msvc" }
+if (${HOST_ARCH} -ieq "arm64") { ${global:TARGET_TRIPLE} = "aarch64-pc-windows-msvc" }
+
+${script:HOSTCC} = Join-Path -Path "${env:VCToolsInstallDir}" `
+  "bin/host${env:VSCMD_ARG_HOST_ARCH}" "${env:VSCMD_ARG_HOST_ARCH}" "cl.exe"
+${global:CMAKE_EXTRA} = @"
+${global:CMAKE_EXTRA} ``
+-D CMAKE_CROSSCOMPILING:BOOL=TRUE ``
+-D CMAKE_C_HOST_COMPILER='${script:HOSTCC}' ``
+-D CMAKE_CXX_HOST_COMPILER='${script:HOSTCC}'
+"@
 # <<< VS DevShell <<<
