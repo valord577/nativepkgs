@@ -97,7 +97,7 @@ ${script:HOSTCC} = Join-Path -Path "${env:VCToolsInstallDir}" `
   "bin/host${env:VSCMD_ARG_HOST_ARCH}" "${env:VSCMD_ARG_HOST_ARCH}" "cl.exe"
 ${global:CMAKE_EXTRA} = @"
 ${global:CMAKE_EXTRA} ``
--D CMAKE_CROSSCOMPILING:BOOL=TRUE ``
+-D CMAKE_CROSSCOMPILING:BOOL=TRUE -D CMAKE_SYSTEM_NAME=Windows ``
 -D CMAKE_C_HOST_COMPILER='${script:HOSTCC}' ``
 -D CMAKE_CXX_HOST_COMPILER='${script:HOSTCC}'
 "@
