@@ -93,12 +93,6 @@ if (-not $vs_devshell_ok) {
 if (${HOST_ARCH} -ieq "amd64") { ${global:TARGET_TRIPLE} = "x86_64-pc-windows-msvc" }
 if (${HOST_ARCH} -ieq "arm64") { ${global:TARGET_TRIPLE} = "aarch64-pc-windows-msvc" }
 
-${script:HOSTCC} = Join-Path -Path "${env:VCToolsInstallDir}" `
+${global:HOSTCC} = Join-Path -Path "${env:VCToolsInstallDir}" `
   "bin/host${env:VSCMD_ARG_HOST_ARCH}" "${env:VSCMD_ARG_HOST_ARCH}" "cl.exe"
-${global:CMAKE_EXTRA} = @"
-${global:CMAKE_EXTRA} ``
--D CMAKE_CROSSCOMPILING:BOOL=TRUE -D CMAKE_SYSTEM_NAME=Windows ``
--D CMAKE_C_HOST_COMPILER='${script:HOSTCC}' ``
--D CMAKE_CXX_HOST_COMPILER='${script:HOSTCC}'
-"@
 # <<< VS DevShell <<<

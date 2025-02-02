@@ -99,6 +99,7 @@ cmake -G Ninja ``
   -D LLVM_INCLUDE_UTILS:BOOL=0 ``
   -D LLVM_ENABLE_ZLIB="FORCE_ON" ``
   -D LLVM_ENABLE_ZSTD="OFF"      ``
+  -D LLDB_ENABLE_PYTHON:BOOL=0   ``
   -D LLVM_TARGETS_TO_BUILD="AArch64;ARM;RISCV;WebAssembly;X86" ``
   -D LLDB_USE_SYSTEM_DEBUGSERVER:BOOL=1
 "@
@@ -107,7 +108,11 @@ switch ($global:PKG_PLATFORM) {
   'win-msvc' {
     if (${global:PKG_ARCH} -ieq "amd64") { ${script:LLVM_ARCH} = "X86" }
     if (${global:PKG_ARCH} -ieq "arm64") { ${script:LLVM_ARCH} = "AArch64" }
-    $CMAKE_COMMAND = "${CMAKE_COMMAND} -D LLVM_HOST_TRIPLE=${global:TARGET_TRIPLE} -D LLVM_TARGET_ARCH=${script:LLVM_ARCH}"
+    $CMAKE_COMMAND = "${CMAKE_COMMAND} ``
+      -D LLVM_HOST_TRIPLE=${global:TARGET_TRIPLE} -D LLVM_TARGET_ARCH=${script:LLVM_ARCH} ``
+      -D CMAKE_CROSSCOMPILING:BOOL=TRUE -D CMAKE_SYSTEM_NAME=Windows ``
+      -D CMAKE_C_FLAGS='${env:CFLAGS}' -D CMAKE_CXX_FLAGS='${env:CXXFLAGS}' ``
+      -D CMAKE_C_HOST_COMPILER='${global:HOSTCC}' -D CMAKE_CXX_HOST_COMPILER='${global:HOSTCC}'"
     break
   }
   default {}
