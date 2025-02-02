@@ -1,10 +1,24 @@
+<#
+
 # ----------------------------
-# if (-not (Test-Path -PathType Container -Path "${global:PROJ_ROOT}\.env")) {
-#   Push-Location "${global:PROJ_ROOT}"; python -m venv .env; Pop-Location
-# }
-# & ${global:PROJ_ROOT}\.env\Scripts\activate.ps1
-# python -m pip install ${global:PYPI_MIRROR} --upgrade pip
-# python -m pip install ${global:PYPI_MIRROR} --upgrade ninja
+if (-not (Test-Path -PathType Container -Path "${global:PROJ_ROOT}\.env")) {
+  Push-Location "${global:PROJ_ROOT}"; python -m venv .env; Pop-Location
+}
+& ${global:PROJ_ROOT}\.env\Scripts\activate.ps1
+python -m pip install ${global:PYPI_MIRROR} --upgrade pip
+python -m pip install ${global:PYPI_MIRROR} --upgrade ninja
+
+#>
+
+
+
+# ----------------------------
+# packages
+# ----------------------------
+. "${PROJ_ROOT}/pkg-conf.ps1"
+
+Invoke-Command -ScriptBlock ${global:dl_pkgc} `
+  -ArgumentList 'zlib-ng', 'cbb6ec1', 'static'
 # ----------------------------
 # static or shared
 # ----------------------------

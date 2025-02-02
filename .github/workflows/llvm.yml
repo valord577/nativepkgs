@@ -44,4 +44,4 @@ jobs:
     with:
       disable_commit: true
       container_linux: "linux310-gcc7"
-      select_platforms: "macosx, linux"
+      select_platforms: "macosx, linux, win-msvc"
