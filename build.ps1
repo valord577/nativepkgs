@@ -5,11 +5,11 @@ param (
 
 # Powershell windows runner always succeeding
 #  - https://gitlab.com/gitlab-org/gitlab-runner/-/issues/1514
-${env:ErrorActionPreference} = 'Stop'
+$ErrorActionPreference = 'Stop'
 
 ${script:PWSH_VERSION} = ${Host}.Version
 if ((${script:PWSH_VERSION}.Major -ge 6) -and (-not $IsWindows)) {
-  Write-Host -ForegroundColor Red "'${PSCommandPath}' is only supported on Windows."
+  Write-Error -Message "'${PSCommandPath}' is only supported on Windows."
   exit 1
 }
 
@@ -20,7 +20,7 @@ $triplet = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
 $triplet_values = $triplet -split '_'
 $triplet_length = $triplet_values.Length
 if ($triplet_length -lt 3) {
-  Write-Host -ForegroundColor Red `
+  Write-Error -Message `
     "Please use wrapper to build the project, such as 'build_`${platform}_`${arch}.ps1'."
   exit 1
 }
@@ -38,7 +38,7 @@ switch ($TARGET_PLATFORM) {
   }
 }
 
-$compile = {
+${script:compile} = {
   param (
     [Parameter(Mandatory=$true)][string]$PKG_NAME,
     [Parameter(Mandatory=$true)][string]$PKG_TYPE,
@@ -122,8 +122,8 @@ cd `${PROJ_ROOT}; bash `${PROJ_ROOT}/scripts/${PKG_NAME}.sh
 }
 
 if (($PKG_NAME -eq $null) -or ($PKG_NAME -eq "")) {
-  Write-Host -ForegroundColor Red "Please declare the module to be compiled."
+  Write-Error -Message "Please declare the module to be compiled."
   exit 1
 }
-Invoke-Command -ScriptBlock ${compile} `
+Invoke-Command -ScriptBlock ${script:compile} `
   -ArgumentList ${PKG_NAME}, ${PKG_TYPE}, ${TARGET_PLATFORM}, ${TARGET_ARCH}

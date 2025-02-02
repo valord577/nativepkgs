@@ -5,7 +5,7 @@ set -e
 # packages
 # ----------------------------
 source "${PROJ_ROOT}/pkg-conf.sh"
-dl_pkgc libpng16  'c939498'   static '' '' '' 'PNG'
+dl_pkgc libpng16  '0024abd'   static '' '' '' 'PNG'
 
 printf "\e[1m\e[35m%s\e[0m\n" "${PKG_CONFIG_PATH}"
 # ----------------------------

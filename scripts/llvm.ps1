@@ -18,7 +18,7 @@ switch ($global:PKG_TYPE) {
     break
   }
   default {
-    Write-Host -ForegroundColor Red "Invalid PKG TYPE: '${global:PKG_TYPE}'."
+    Write-Error -Message "Invalid PKG TYPE: '${global:PKG_TYPE}'."
     exit 1
   }
 }
@@ -50,7 +50,7 @@ if ($LIB_RELEASE -ieq "1") {
 "@
   $PKG_INST_STRIP = ""
   #>
-  Write-Host -ForegroundColor Red "Unsupported LIB_RELEASE: '${LIB_RELEASE}'."
+  Write-Error -Message "Unsupported LIB_RELEASE: '${LIB_RELEASE}'."
   exit 1
 }
 # ----------------------------
