@@ -75,7 +75,10 @@ cmake -G Ninja ``
 "@
 Write-Host -ForegroundColor Cyan "${CMAKE_COMMAND}"
 Invoke-Expression -Command "${CMAKE_COMMAND}"
+if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 
 # build & install
 cmake --build "${global:PKG_BULD_DIR}" -j ${global:PARALLEL_JOBS}
+if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
+
 cmake --install "${global:PKG_BULD_DIR}" ${PKG_INST_STRIP}

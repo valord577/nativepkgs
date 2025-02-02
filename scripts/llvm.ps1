@@ -86,10 +86,13 @@ cmake -G Ninja ``
 "@
 Write-Host -ForegroundColor Cyan "${CMAKE_COMMAND}"
 Invoke-Expression -Command "${CMAKE_COMMAND}"
+if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 
 # build & install
 cmake --build "${global:PKG_BULD_DIR}" -j ${global:PARALLEL_JOBS} `
   --target 'clangd;lldb;lldb-dap;lldb-server;lldb-instr;llvm-symbolizer'
+if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
+
 cmake --install "${global:PKG_BULD_DIR}\tools" ${PKG_INST_STRIP} --component llvm-symbolizer
 cmake --install "${global:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb
 cmake --install "${global:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-argdumper
