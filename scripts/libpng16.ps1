@@ -1,9 +1,20 @@
 # ----------------------------
+# packages
+# ----------------------------
+. "${PROJ_ROOT}/pkg-conf.ps1"
+
+Invoke-Command -ScriptBlock ${global:dl_pkgc} `
+  -ArgumentList 'zlib-ng', 'cbb6ec1', 'static'
+# ----------------------------
 # static or shared
 # ----------------------------
 switch ($global:PKG_TYPE) {
   'static' {
-    $PKG_TYPE_FLAG = "-D BUILD_SHARED_LIBS:BOOL=0"
+    $PKG_TYPE_FLAG = "-D PNG_SHARED:BOOL=0 -D PNG_STATIC:BOOL=1"
+    break
+  }
+  'shared' {
+    $PKG_TYPE_FLAG = "-D PNG_SHARED:BOOL=1 -D PNG_STATIC:BOOL=0"
     break
   }
   default {
@@ -24,7 +35,6 @@ if ($LIB_RELEASE -ieq "1") {
   $PKG_BULD_TYPE = @"
 ``
   -D CMAKE_BUILD_TYPE=Release ``
-  -D WITH_OPTIM:BOOL=1 ``
   -D CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
 "@
   $PKG_INST_STRIP = "--strip"
@@ -62,9 +72,11 @@ cmake -G Ninja ``
   -D CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON ``
   -D CMAKE_INSTALL_PREFIX="${global:PKG_INST_DIR}" ``
   -D CMAKE_INSTALL_LIBDIR:PATH=lib ``
-  ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} ${global:CMAKE_EXTRA} ``
-  -D SDL_CCACHE:BOOL=0 -D SDL_TEST:BOOL=0 ``
-  -D SDL2_DISABLE_SDL2MAIN:BOOL=1
+  -D CMAKE_PREFIX_PATH="${global:PKG_DEPS_CMAKE}" ``
+  -D CMAKE_FIND_ROOT_PATH="${global:SYSROOT};${global:PKG_DEPS_CMAKE}" ``
+  -D PNG_FRAMEWORK:BOOL=0  ``
+  -D PNG_TESTS:BOOL=0 -D PNG_TOOLS:BOOL=0 ``
+  ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} ${global:CMAKE_EXTRA}
 "@
 Write-Host -ForegroundColor Cyan "${CMAKE_COMMAND}"
 Invoke-Expression -Command "${CMAKE_COMMAND}"

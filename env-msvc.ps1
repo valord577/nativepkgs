@@ -84,7 +84,7 @@ foreach ($VS_PATH in $VS_SEARCH_PATH) {
   if ($vs_devshell_ok) { break }
 }
 if (-not $vs_devshell_ok) {
-  Write-Host -ForegroundColor Red "Failed to search MSVC environment."
+  Write-Error -Message "Failed to search MSVC environment."
   exit 1
 }
 # <<< VS DevShell <<<
