@@ -85,6 +85,8 @@ cmake -G Ninja ``
   -D CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON ``
   -D CMAKE_INSTALL_PREFIX="${global:PKG_INST_DIR}" ``
   -D CMAKE_INSTALL_LIBDIR:PATH=lib ``
+  -D CMAKE_PREFIX_PATH="${global:PKG_DEPS_CMAKE}" ``
+  -D CMAKE_FIND_ROOT_PATH="${global:SYSROOT};${global:PKG_DEPS_CMAKE}" ``
   ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} ${global:CMAKE_EXTRA} ``
   -D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lldb" ``
   -D CLANG_PLUGIN_SUPPORT:BOOL=0 ``
