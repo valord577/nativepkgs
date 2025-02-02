@@ -95,6 +95,6 @@ if (${HOST_ARCH} -ieq "arm64") { ${global:TARGET_TRIPLE} = "aarch64-pc-windows-m
 
 ${global:HOSTCC} = Join-Path -Path "${env:VCToolsInstallDir}" `
   "bin/host${env:VSCMD_ARG_HOST_ARCH}" "${env:VSCMD_ARG_HOST_ARCH}" "cl.exe"
-${global:HOST_LLVM_BIN} = Join-Path -Path "${env:VCINSTALLDIR}" `
+${global:HOST_LLVM} = Join-Path -Path "${env:VCINSTALLDIR}" `
   "tools/llvm/${env:VSCMD_ARG_HOST_ARCH}/bin"
 # <<< VS DevShell <<<

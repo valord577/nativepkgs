@@ -118,7 +118,7 @@ switch ($global:PKG_PLATFORM) {
     $CMAKE_COMMAND = "${CMAKE_COMMAND} ``
       -D LLVM_HOST_TRIPLE=${global:TARGET_TRIPLE} -D LLVM_TARGET_ARCH=${script:LLVM_ARCH} ``
       -D CMAKE_CROSSCOMPILING:BOOL=TRUE -D CMAKE_SYSTEM_NAME=Windows ``
-      -D CMAKE_C_HOST_COMPILER='${global:HOST_LLVM_BIN}/clang-cl.exe' -D CMAKE_CXX_HOST_COMPILER='${global:HOST_LLVM_BIN}/clang-cl.exe'"
+      -D CMAKE_C_HOST_COMPILER='${global:HOSTCC}' -D CMAKE_CXX_HOST_COMPILER='${global:HOSTCC}'"
     break
   }
   default {}
