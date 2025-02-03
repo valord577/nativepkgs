@@ -62,7 +62,6 @@ function compile() {
     export PKG_BULD_DIR="${PROJ_ROOT}/tmp/${PKG_NAME}/${PKG_PLATFORM}/${PKG_ARCH_LIBC}"
     export PKG_INST_DIR="${PROJ_ROOT}/out/${PKG_NAME}/${PKG_PLATFORM}/${PKG_ARCH_LIBC}"
     if [ "${GITHUB_ACTIONS}" == "true" ]; then
-      if [ -n "${BULD_DIR}" ]; then { export PKG_BULD_DIR="${BULD_DIR}"; } fi
       if [ -n "${INST_DIR}" ]; then { export PKG_INST_DIR="${INST_DIR}"; } fi
     fi
 
