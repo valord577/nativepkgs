@@ -18,17 +18,13 @@ python -m pip install ${PYPI_MIRROR} --upgrade ninja
 ${private:_tblgen_dir} = "${PROJ_ROOT}\tmp\${PKG_NAME}\${PKG_PLATFORM}\.NATIVE"
 ${private:_build_tblgen} = (${env:BUILD_LLVM_NATIVE_TABLEGEN} -ne $null) -and (${env:BUILD_LLVM_NATIVE_TABLEGEN} -ieq "1")
 
-if ($HOST_ARCH -ieq $PKG_ARCH) {
-  $_build_tblgen = $false
+if (-not $_build_tblgen) {
+  Start-Process -FilePath "pwsh.exe" -WorkingDirectory "${PROJ_ROOT}" `
+    -ArgumentList "${PROJ_ROOT}\build_win-msvc_${HOST_ARCH}.ps1", "${PKG_NAME}", "${PKG_TYPE}" `
+    -NoNewWindow -LoadUserProfile -Wait -Environment @{ BUILD_LLVM_NATIVE_TABLEGEN = "1" }
+  if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 } else {
-  if (-not $_build_tblgen) {
-    Start-Process -FilePath "pwsh.exe" -WorkingDirectory "${PROJ_ROOT}" `
-      -ArgumentList "${PROJ_ROOT}\build_win-msvc_${HOST_ARCH}.ps1", "${PKG_NAME}", "${PKG_TYPE}" `
-      -NoNewWindow -LoadUserProfile -Wait -Environment @{ BUILD_LLVM_NATIVE_TABLEGEN = "1" }
-    if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
-  } else {
-    ${PKG_BULD_DIR} = "${_tblgen_dir}"
-  }
+  ${PKG_BULD_DIR} = "${_tblgen_dir}"
 }
 # ----------------------------
 # packages
