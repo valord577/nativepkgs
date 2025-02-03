@@ -57,10 +57,7 @@ if ($LIB_RELEASE -ieq "1") {
 # compile :p
 # ----------------------------
 Remove-Item "${PKG_INST_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path "${PKG_INST_DIR}" *> $null
-
 Remove-Item "${PKG_BULD_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path "${PKG_BULD_DIR}" *> $null
 
 ${env:CFLAGS} = "/utf-8"
 ${env:CXXFLAGS} = "${env:CFLAGS}"
