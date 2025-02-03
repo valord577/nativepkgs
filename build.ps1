@@ -51,9 +51,11 @@ ${private:compile} = {
   ${PKG_BULD_DIR} = "${PROJ_ROOT}\tmp\${PKG_NAME}\${PKG_PLATFORM}\${PKG_ARCH}"
   ${PKG_INST_DIR} = "${PROJ_ROOT}\out\${PKG_NAME}\${PKG_PLATFORM}\${PKG_ARCH}"
   if (${env:GITHUB_ACTIONS} -ieq "true") {
-    if (${env:BULD_DIR} -ne $null) { ${PKG_BULD_DIR} = "${env:BULD_DIR}" }
     if (${env:INST_DIR} -ne $null) { ${PKG_INST_DIR} = "${env:INST_DIR}" }
   }
+
+  if (${PKG_ARCH} -ieq "amd64") { ${TARGET_TRIPLE} = "x86_64-pc-windows-msvc" }
+  if (${PKG_ARCH} -ieq "arm64") { ${TARGET_TRIPLE} = "aarch64-pc-windows-msvc" }
 
   # MSYS2
   ${MSYS2_BASH_CMD} = "C:/msys64/usr/bin/bash.exe"

@@ -51,6 +51,7 @@ function vsdevsh {
 ${private:MSVC_INSTALL_DIR_64BIT}="C:\Program Files\Microsoft Visual Studio"
 ${private:MSVC_INSTALL_DIR_32BIT}="C:\Program Files (x86)\Microsoft Visual Studio"
 
+${private:VS_SEARCH_PATH} = @( "${env:MSVC_INSTALL_DIR}" )
 if ((${env:MSVC_SKIP_AUTO_SEARCH} -eq $null) -or (${env:MSVC_SKIP_AUTO_SEARCH} -ieq "0")) {
   $VS_SEARCH_PATH = @(
     "${MSVC_INSTALL_DIR_64BIT}\2022\BuildTools",
@@ -71,8 +72,6 @@ if ((${env:MSVC_SKIP_AUTO_SEARCH} -eq $null) -or (${env:MSVC_SKIP_AUTO_SEARCH} -
     "${MSVC_INSTALL_DIR_32BIT}\2019\Professional",
     "${MSVC_INSTALL_DIR_32BIT}\2019\Enterprise"
   )
-} else {
-  $VS_SEARCH_PATH = @( "${env:MSVC_INSTALL_DIR}" )
 }
 
 $vs_devshell_ok = $false
@@ -84,13 +83,4 @@ if (-not $vs_devshell_ok) {
   Write-Error -Message "Failed to search MSVC environment."
   exit 1
 }
-
-
-if (${HOST_ARCH} -ieq "amd64") { ${global:TARGET_TRIPLE} = "x86_64-pc-windows-msvc" }
-if (${HOST_ARCH} -ieq "arm64") { ${global:TARGET_TRIPLE} = "aarch64-pc-windows-msvc" }
-
-${global:HOSTCC} = Join-Path -Path "${env:VCToolsInstallDir}" `
-  "bin/host${env:VSCMD_ARG_HOST_ARCH}" "${env:VSCMD_ARG_HOST_ARCH}" "cl.exe"
-${global:HOST_LLVM} = Join-Path -Path "${env:VCINSTALLDIR}" `
-  "tools/llvm/${env:VSCMD_ARG_HOST_ARCH}/bin"
 # <<< VS DevShell <<<

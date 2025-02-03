@@ -13,12 +13,27 @@ python -m pip install ${PYPI_MIRROR} --upgrade ninja
 
 
 # ----------------------------
+# native tblgen
+# ----------------------------
+${private:_tblgen_dir} = "${PROJ_ROOT}\tmp\${PKG_NAME}\${PKG_PLATFORM}\.NATIVE"
+${private:_build_tblgen} = (${env:BUILD_LLVM_NATIVE_TABLEGEN} -ne $null) -and (${env:BUILD_LLVM_NATIVE_TABLEGEN} -ieq "1")
+
+if (-not $_build_tblgen) {
+  Start-Process -FilePath "pwsh.exe" -WorkingDirectory "${PROJ_ROOT}" `
+    -ArgumentList "${PROJ_ROOT}\build_win-msvc_${HOST_ARCH}.ps1", "${PKG_NAME}", "${PKG_TYPE}" `
+    -NoNewWindow -LoadUserProfile -Wait -Environment @{ BUILD_LLVM_NATIVE_TABLEGEN = "1" }
+} else {
+  ${PKG_BULD_DIR} = "${_tblgen_dir}"
+}
+# ----------------------------
 # packages
 # ----------------------------
-. "${PROJ_ROOT}/pkg-conf.ps1"
+if (-not $_build_tblgen) {
+  . "${PROJ_ROOT}/pkg-conf.ps1"
 
-Invoke-Command -ScriptBlock ${dl_pkgc} `
-  -ArgumentList 'zlib-ng', 'cbb6ec1', 'static'
+  Invoke-Command -ScriptBlock ${dl_pkgc} `
+    -ArgumentList 'zlib-ng', 'cbb6ec1', 'static'
+}
 # ----------------------------
 # static or shared
 # ----------------------------
@@ -71,13 +86,14 @@ if ($LIB_RELEASE -ieq "1") {
 # compile :p
 # ----------------------------
 Remove-Item "${PKG_INST_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path "${PKG_INST_DIR}" *> $null
-
 Remove-Item "${PKG_BULD_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path "${PKG_BULD_DIR}" *> $null
 
 ${env:CFLAGS} = "/utf-8"
 ${env:CXXFLAGS} = "${env:CFLAGS}"
+
+
+${private:_llvm_zlib} = "FORCE_ON"
+if ($_build_tblgen) { ${_llvm_zlib} = "OFF" }
 
 $CMAKE_COMMAND = @"
 cmake -G Ninja ``
@@ -97,7 +113,7 @@ cmake -G Ninja ``
   -D LLVM_INCLUDE_TESTS:BOOL=0 ``
   -D LLVM_INCLUDE_DOCS:BOOL=0  ``
   -D LLVM_INCLUDE_UTILS:BOOL=0 ``
-  -D LLVM_ENABLE_ZLIB="FORCE_ON" ``
+  -D LLVM_ENABLE_ZLIB="${_llvm_zlib}" ``
   -D LLVM_ENABLE_ZSTD="OFF"      ``
   -D LLDB_ENABLE_SWIG:BOOL=0     ``
   -D LLDB_ENABLE_LIBEDIT:BOOL=0  ``
@@ -108,22 +124,22 @@ cmake -G Ninja ``
   -D LLDB_ENABLE_FBSDVMCORE:BOOL=0  ``
   -D LLVM_TARGETS_TO_BUILD="AArch64;ARM;RISCV;WebAssembly;X86" ``
   -D LLDB_USE_SYSTEM_DEBUGSERVER:BOOL=1 ``
-  -D LLVM_NATIVE_TOOL_DIR=${HOST_LLVM_BIN}
+  -D LLVM_NATIVE_TOOL_DIR="${_tblgen_dir}\bin"
 "@
 
-switch ($PKG_PLATFORM) {
-  'win-msvc' {
-    if ($PKG_ARCH -ieq "amd64") { $LLVM_ARCH = "X86" }
-    if ($PKG_ARCH -ieq "arm64") { $LLVM_ARCH = "AArch64" }
-    $CMAKE_COMMAND = "${CMAKE_COMMAND} ``
-      -D LLVM_HOST_TRIPLE=${TARGET_TRIPLE} ``
-      -D LLVM_TARGET_ARCH=${LLVM_ARCH} ``
-      -D CMAKE_CROSSCOMPILING:BOOL=TRUE -D CMAKE_SYSTEM_NAME=Windows ``
-      -D CMAKE_C_HOST_COMPILER='${HOSTCC}' ``
-      -D CMAKE_CXX_HOST_COMPILER='${HOSTCC}'"
-    break
+if (-not $_build_tblgen) {
+  switch ($PKG_PLATFORM) {
+    'win-msvc' {
+      if ($PKG_ARCH -ieq "amd64") { $LLVM_ARCH = "X86" }
+      if ($PKG_ARCH -ieq "arm64") { $LLVM_ARCH = "AArch64" }
+      $CMAKE_COMMAND = "${CMAKE_COMMAND} ``
+        -D LLVM_HOST_TRIPLE=${TARGET_TRIPLE} ``
+        -D LLVM_TARGET_ARCH=${LLVM_ARCH} ``
+        -D CMAKE_CROSSCOMPILING:BOOL=TRUE -D CMAKE_SYSTEM_NAME=Windows"
+      break
+    }
+    default {}
   }
-  default {}
 }
 
 Write-Host -ForegroundColor Cyan "${CMAKE_COMMAND}"
@@ -131,16 +147,19 @@ Invoke-Expression -Command "${CMAKE_COMMAND}"
 if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 
 # build & install
-cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS} `
-  --target 'clangd;lldb;lldb-dap;lldb-server;lldb-instr;llvm-symbolizer'
+${private:_BULD_TARGET_} = "clangd;lldb;lldb-dap;lldb-server;lldb-instr;llvm-symbolizer"
+if ($_build_tblgen) { ${_BULD_TARGET_} = "llvm-tblgen;clang-tblgen;lldb-tblgen" }
+cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS} --target "${_BULD_TARGET_}"
 if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 
-cmake --install "${PKG_BULD_DIR}\tools" ${PKG_INST_STRIP} --component llvm-symbolizer
-cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb
-cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-argdumper
-cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-dap
-cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-instr
-cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-server
-cmake --install "${PKG_BULD_DIR}\tools\lldb"  ${PKG_INST_STRIP} --component liblldb
-cmake --install "${PKG_BULD_DIR}\tools\clang" ${PKG_INST_STRIP} --component clangd
-cmake --install "${PKG_BULD_DIR}\tools\clang" ${PKG_INST_STRIP} --component clang-resource-headers
+if (-not $_build_tblgen) {
+  cmake --install "${PKG_BULD_DIR}\tools" ${PKG_INST_STRIP} --component llvm-symbolizer
+  cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb
+  cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-argdumper
+  cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-dap
+  cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-instr
+  cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-server
+  cmake --install "${PKG_BULD_DIR}\tools\lldb"  ${PKG_INST_STRIP} --component liblldb
+  cmake --install "${PKG_BULD_DIR}\tools\clang" ${PKG_INST_STRIP} --component clangd
+  cmake --install "${PKG_BULD_DIR}\tools\clang" ${PKG_INST_STRIP} --component clang-resource-headers
+}
