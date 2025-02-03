@@ -1,12 +1,12 @@
 <#
 
 # ----------------------------
-if (-not (Test-Path -PathType Container -Path "${global:PROJ_ROOT}\.env")) {
-  Push-Location "${global:PROJ_ROOT}"; python -m venv .env; Pop-Location
+if (-not (Test-Path -PathType Container -Path "${PROJ_ROOT}\.env")) {
+  Push-Location "${PROJ_ROOT}"; python -m venv .env; Pop-Location
 }
-& ${global:PROJ_ROOT}\.env\Scripts\activate.ps1
-python -m pip install ${global:PYPI_MIRROR} --upgrade pip
-python -m pip install ${global:PYPI_MIRROR} --upgrade ninja
+& ${PROJ_ROOT}\.env\Scripts\activate.ps1
+python -m pip install ${PYPI_MIRROR} --upgrade pip
+python -m pip install ${PYPI_MIRROR} --upgrade ninja
 
 #>
 
@@ -17,12 +17,12 @@ python -m pip install ${global:PYPI_MIRROR} --upgrade ninja
 # ----------------------------
 . "${PROJ_ROOT}/pkg-conf.ps1"
 
-Invoke-Command -ScriptBlock ${global:dl_pkgc} `
+Invoke-Command -ScriptBlock ${dl_pkgc} `
   -ArgumentList 'zlib-ng', 'cbb6ec1', 'static'
 # ----------------------------
 # static or shared
 # ----------------------------
-switch ($global:PKG_TYPE) {
+switch ($PKG_TYPE) {
   'static' {
     $PKG_TYPE_FLAG = "-D LLVM_BUILD_LLVM_DYLIB:BOOL=0"
     break
@@ -32,7 +32,7 @@ switch ($global:PKG_TYPE) {
     break
   }
   default {
-    Write-Error -Message "Invalid PKG TYPE: '${global:PKG_TYPE}'."
+    Write-Error -Message "Invalid PKG TYPE: '${PKG_TYPE}'."
     exit 1
   }
 }
@@ -70,24 +70,24 @@ if ($LIB_RELEASE -ieq "1") {
 # ----------------------------
 # compile :p
 # ----------------------------
-Remove-Item "${global:PKG_INST_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path "${global:PKG_INST_DIR}" *> $null
+Remove-Item "${PKG_INST_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path "${PKG_INST_DIR}" *> $null
 
-Remove-Item "${global:PKG_BULD_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path "${global:PKG_BULD_DIR}" *> $null
+Remove-Item "${PKG_BULD_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path "${PKG_BULD_DIR}" *> $null
 
 ${env:CFLAGS} = "/utf-8"
 ${env:CXXFLAGS} = "${env:CFLAGS}"
 
 $CMAKE_COMMAND = @"
 cmake -G Ninja ``
-  -S "${global:SUBPROJ_SRC}\llvm" -B "${global:PKG_BULD_DIR}" ``
+  -S "${SUBPROJ_SRC}\llvm" -B "${PKG_BULD_DIR}" ``
   -D CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON ``
-  -D CMAKE_INSTALL_PREFIX="${global:PKG_INST_DIR}" ``
+  -D CMAKE_INSTALL_PREFIX="${PKG_INST_DIR}" ``
   -D CMAKE_INSTALL_LIBDIR:PATH=lib ``
-  -D CMAKE_PREFIX_PATH="${global:PKG_DEPS_CMAKE}" ``
-  -D CMAKE_FIND_ROOT_PATH="${global:SYSROOT};${global:PKG_DEPS_CMAKE}" ``
-  ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} ${global:CMAKE_EXTRA} ``
+  -D CMAKE_PREFIX_PATH="${PKG_DEPS_CMAKE}" ``
+  -D CMAKE_FIND_ROOT_PATH="${SYSROOT};${PKG_DEPS_CMAKE}" ``
+  ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} ${CMAKE_EXTRA} ``
   -D LLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lldb" ``
   -D CLANG_PLUGIN_SUPPORT:BOOL=0 ``
   -D LLVM_APPEND_VC_REV:BOOL=0   ``
@@ -108,17 +108,19 @@ cmake -G Ninja ``
   -D LLDB_ENABLE_FBSDVMCORE:BOOL=0  ``
   -D LLVM_TARGETS_TO_BUILD="AArch64;ARM;RISCV;WebAssembly;X86" ``
   -D LLDB_USE_SYSTEM_DEBUGSERVER:BOOL=1 ``
-  -D LLVM_NATIVE_TOOL_DIR=${global:HOST_LLVM_BIN}
+  -D LLVM_NATIVE_TOOL_DIR=${HOST_LLVM_BIN}
 "@
 
-switch ($global:PKG_PLATFORM) {
+switch ($PKG_PLATFORM) {
   'win-msvc' {
-    if (${global:PKG_ARCH} -ieq "amd64") { ${script:LLVM_ARCH} = "X86" }
-    if (${global:PKG_ARCH} -ieq "arm64") { ${script:LLVM_ARCH} = "AArch64" }
+    if ($PKG_ARCH -ieq "amd64") { $LLVM_ARCH = "X86" }
+    if ($PKG_ARCH -ieq "arm64") { $LLVM_ARCH = "AArch64" }
     $CMAKE_COMMAND = "${CMAKE_COMMAND} ``
-      -D LLVM_HOST_TRIPLE=${global:TARGET_TRIPLE} -D LLVM_TARGET_ARCH=${script:LLVM_ARCH} ``
+      -D LLVM_HOST_TRIPLE=${TARGET_TRIPLE} ``
+      -D LLVM_TARGET_ARCH=${LLVM_ARCH} ``
       -D CMAKE_CROSSCOMPILING:BOOL=TRUE -D CMAKE_SYSTEM_NAME=Windows ``
-      -D CMAKE_C_HOST_COMPILER='${global:HOSTCC}' -D CMAKE_CXX_HOST_COMPILER='${global:HOSTCC}'"
+      -D CMAKE_C_HOST_COMPILER='${HOSTCC}' ``
+      -D CMAKE_CXX_HOST_COMPILER='${HOSTCC}'"
     break
   }
   default {}
@@ -129,16 +131,16 @@ Invoke-Expression -Command "${CMAKE_COMMAND}"
 if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 
 # build & install
-cmake --build "${global:PKG_BULD_DIR}" -j ${global:PARALLEL_JOBS} `
+cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS} `
   --target 'clangd;lldb;lldb-dap;lldb-server;lldb-instr;llvm-symbolizer'
 if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 
-cmake --install "${global:PKG_BULD_DIR}\tools" ${PKG_INST_STRIP} --component llvm-symbolizer
-cmake --install "${global:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb
-cmake --install "${global:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-argdumper
-cmake --install "${global:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-dap
-cmake --install "${global:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-instr
-cmake --install "${global:PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-server
-cmake --install "${global:PKG_BULD_DIR}\tools\lldb"  ${PKG_INST_STRIP} --component liblldb
-cmake --install "${global:PKG_BULD_DIR}\tools\clang" ${PKG_INST_STRIP} --component clangd
-cmake --install "${global:PKG_BULD_DIR}\tools\clang" ${PKG_INST_STRIP} --component clang-resource-headers
+cmake --install "${PKG_BULD_DIR}\tools" ${PKG_INST_STRIP} --component llvm-symbolizer
+cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb
+cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-argdumper
+cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-dap
+cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-instr
+cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-server
+cmake --install "${PKG_BULD_DIR}\tools\lldb"  ${PKG_INST_STRIP} --component liblldb
+cmake --install "${PKG_BULD_DIR}\tools\clang" ${PKG_INST_STRIP} --component clangd
+cmake --install "${PKG_BULD_DIR}\tools\clang" ${PKG_INST_STRIP} --component clang-resource-headers

@@ -1,1 +1,1 @@
-Invoke-Expression -Command "${global:MSYS2_BASH_CMD} -lc '${global:MSYS2_BASH_TXT}'"
+Invoke-Expression -Command "${MSYS2_BASH_CMD} -lc '${MSYS2_BASH_TXT}'"
