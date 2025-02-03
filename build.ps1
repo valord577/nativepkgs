@@ -57,6 +57,9 @@ ${private:compile} = {
   if (${PKG_ARCH} -ieq "amd64") { ${TARGET_TRIPLE} = "x86_64-pc-windows-msvc" }
   if (${PKG_ARCH} -ieq "arm64") { ${TARGET_TRIPLE} = "aarch64-pc-windows-msvc" }
 
+  ${HOSTCC} = Join-Path -Path "${env:VCToolsInstallDir}" `
+    "bin/host${env:VSCMD_ARG_HOST_ARCH}" "${env:VSCMD_ARG_HOST_ARCH}" "cl.exe"
+
   # MSYS2
   ${MSYS2_BASH_CMD} = "C:/msys64/usr/bin/bash.exe"
   if (${env:MSYS2_BASH_CMD} -ne $null) {
