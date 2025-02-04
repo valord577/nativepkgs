@@ -152,15 +152,12 @@ if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 # build & install
 ${private:_BULD_TARGET_} = "clangd;lldb;lldb-dap;lldb-server;lldb-instr;llvm-symbolizer"
 if ($_build_tblgen) {
-  ${_BULD_TARGET_} = "llvm-tblgen;clang-tblgen;lldb-tblgen"
+  ${_BULD_TARGET_} = "llvm-tblgen;clang-tblgen;lldb-tblgen;clang-tidy-confusable-chars-gen"
 }
 cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS} --target "${_BULD_TARGET_}"
 if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 
 if (-not $_build_tblgen) {
-
-  ls "${PKG_BULD_DIR}\NATIVE\bin"
-
   cmake --install "${PKG_BULD_DIR}\tools" ${PKG_INST_STRIP} --component llvm-symbolizer
   cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb
   cmake --install "${PKG_BULD_DIR}\tools\lldb\tools" ${PKG_INST_STRIP} --component lldb-argdumper
