@@ -1,17 +1,16 @@
 param (
-  [Parameter(Mandatory=$true)][string]$TARGET_ARCH
+  [Parameter(Mandatory=$true)][string]${private:TARGET_ARCH}
 )
 
-${global:PARALLEL_JOBS} = ${env:NUMBER_OF_PROCESSORS}
+$PARALLEL_JOBS = ${env:NUMBER_OF_PROCESSORS}
 
-${global:CCACHE_SRC} = ""
-$ccache = Get-Command -Name ccache.exe -CommandType Application -ErrorAction SilentlyContinue
-if ($ccache -ne $null) {
-  ${global:CCACHE_SRC} = "ccache.exe"
+${private:ccache} = Get-Command -Name ccache.exe -CommandType Application -ErrorAction SilentlyContinue
+if (${private:ccache} -ne $null) {
+  ${CCACHE_SRC} = "ccache.exe"
 
   # https://github.com/ccache/ccache/discussions/978
-  ${global:CMAKE_EXTRA} = "${global:CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=ccache.exe"
-  ${global:CMAKE_EXTRA} = "${global:CMAKE_EXTRA} -D CMAKE_CXX_COMPILER_LAUNCHER=ccache.exe"
+  ${CMAKE_EXTRA} = "${CMAKE_EXTRA} -D CMAKE_C_COMPILER_LAUNCHER=ccache.exe ``
+    -D CMAKE_CXX_COMPILER_LAUNCHER=ccache.exe"
 }
 
 # >>> VS DevShell >>>
@@ -20,41 +19,40 @@ if ($ccache -ne $null) {
 $HOST_ARCH = ${env:PROCESSOR_ARCHITECTURE}.ToLower()
 
 # Alreay accessed the VS DevShell
-$VSCMD_ARG_TGT_ARCH = ${env:VSCMD_ARG_TGT_ARCH}
-if ($VSCMD_ARG_TGT_ARCH -ne $null) {
-  if ($VSCMD_ARG_TGT_ARCH -ieq "x64") {
-    $VSCMD_ARG_TGT_ARCH = "amd64"
+${private:_VSCMD_ARG_TGT_ARCH} = ${env:VSCMD_ARG_TGT_ARCH}
+if (${_VSCMD_ARG_TGT_ARCH} -ne $null) {
+  if (${_VSCMD_ARG_TGT_ARCH} -ieq "x64") {
+    ${_VSCMD_ARG_TGT_ARCH} = "amd64"
   }
-  if ($VSCMD_ARG_TGT_ARCH -ieq $TARGET_ARCH) {
+  if (${_VSCMD_ARG_TGT_ARCH} -ieq ${TARGET_ARCH}) {
     exit 0
   }
 }
-$VS_DEVCMD_ARGS = "-host_arch=${HOST_ARCH} -arch=${TARGET_ARCH}"
 
 function vsdevsh {
   param (
-    [Parameter(Mandatory=$true)][string]$VS_PATH
+    [Parameter(Mandatory=$true)][string]${private:VS_PATH},
+    [Parameter(Mandatory=$true)][string]${private:TARGET_ARCH}
   )
 
-  $VS_PS1 = "${VS_PATH}\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
+  ${private:VS_DEVCMD_ARGS} = "-host_arch=${HOST_ARCH} -arch=${TARGET_ARCH}"
+  ${private:VS_PS1} = "${VS_PATH}\Common7\Tools\Microsoft.VisualStudio.DevShell.dll"
   if (-not (Test-Path -PathType Leaf -Path "${VS_PS1}")) {
     return $false
   }
-  Write-Host -ForegroundColor Green "Enter VS DevShell via PS1"
+  Write-Host -ForegroundColor Green "Enter VS DevShell via PS1: `
+    `r`n  ${VS_PS1} `r`n  DevCmdArguments: '${VS_DEVCMD_ARGS}' `r`n"
   Import-Module "${VS_PS1}"
   Enter-VsDevShell -VsInstallPath "${VS_PATH}" -SkipAutomaticLocation -DevCmdArguments "${VS_DEVCMD_ARGS}"
   return $true
 }
 
 # Set VS search path
-$MSVC_INSTALL_DIR_64BIT="C:\Program Files\Microsoft Visual Studio"
-$MSVC_INSTALL_DIR_32BIT="C:\Program Files (x86)\Microsoft Visual Studio"
+${private:MSVC_INSTALL_DIR_64BIT}="C:\Program Files\Microsoft Visual Studio"
+${private:MSVC_INSTALL_DIR_32BIT}="C:\Program Files (x86)\Microsoft Visual Studio"
 
-$MSVC_SKIP_AUTO_SEARCH = ${env:MSVC_SKIP_AUTO_SEARCH}
-if ($MSVC_SKIP_AUTO_SEARCH -eq $null) {
-  $MSVC_SKIP_AUTO_SEARCH = "0"
-}
-if ($MSVC_SKIP_AUTO_SEARCH -ieq "0") {
+${private:VS_SEARCH_PATH} = @( "${env:MSVC_INSTALL_DIR}" )
+if ((${env:MSVC_SKIP_AUTO_SEARCH} -eq $null) -or (${env:MSVC_SKIP_AUTO_SEARCH} -ieq "0")) {
   $VS_SEARCH_PATH = @(
     "${MSVC_INSTALL_DIR_64BIT}\2022\BuildTools",
     "${MSVC_INSTALL_DIR_64BIT}\2022\Community",
@@ -74,13 +72,11 @@ if ($MSVC_SKIP_AUTO_SEARCH -ieq "0") {
     "${MSVC_INSTALL_DIR_32BIT}\2019\Professional",
     "${MSVC_INSTALL_DIR_32BIT}\2019\Enterprise"
   )
-} else {
-  $VS_SEARCH_PATH = @( "${env:MSVC_INSTALL_DIR}" )
 }
 
 $vs_devshell_ok = $false
 foreach ($VS_PATH in $VS_SEARCH_PATH) {
-  $vs_devshell_ok = vsdevsh "$VS_PATH"
+  $vs_devshell_ok = vsdevsh "$VS_PATH" "$TARGET_ARCH"
   if ($vs_devshell_ok) { break }
 }
 if (-not $vs_devshell_ok) {

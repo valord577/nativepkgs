@@ -3,12 +3,12 @@
 # ----------------------------
 . "${PROJ_ROOT}/pkg-conf.ps1"
 
-Invoke-Command -ScriptBlock ${global:dl_pkgc} `
+Invoke-Command -ScriptBlock ${dl_pkgc} `
   -ArgumentList 'zlib-ng', 'cbb6ec1', 'static'
 # ----------------------------
 # static or shared
 # ----------------------------
-switch ($global:PKG_TYPE) {
+switch ($PKG_TYPE) {
   'static' {
     $PKG_TYPE_FLAG = "-D PNG_SHARED:BOOL=0 -D PNG_STATIC:BOOL=1"
     break
@@ -18,7 +18,7 @@ switch ($global:PKG_TYPE) {
     break
   }
   default {
-    Write-Error -Message "Invalid PKG TYPE: '${global:PKG_TYPE}'."
+    Write-Error -Message "Invalid PKG TYPE: '${PKG_TYPE}'."
     exit 1
   }
 }
@@ -56,34 +56,31 @@ if ($LIB_RELEASE -ieq "1") {
 # ----------------------------
 # compile :p
 # ----------------------------
-Remove-Item "${global:PKG_INST_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path "${global:PKG_INST_DIR}" *> $null
-
-Remove-Item "${global:PKG_BULD_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path "${global:PKG_BULD_DIR}" *> $null
+Remove-Item "${PKG_INST_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "${PKG_BULD_DIR}" -Recurse -Force -ErrorAction SilentlyContinue
 
 ${env:CFLAGS} = "/utf-8"
 ${env:CXXFLAGS} = "${env:CFLAGS}"
 
 $CMAKE_COMMAND = @"
 cmake -G Ninja ``
-  -S "${global:SUBPROJ_SRC}" -B "${global:PKG_BULD_DIR}" ``
+  -S "${SUBPROJ_SRC}" -B "${PKG_BULD_DIR}" ``
   -D CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON   ``
   -D CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON ``
-  -D CMAKE_INSTALL_PREFIX="${global:PKG_INST_DIR}" ``
+  -D CMAKE_INSTALL_PREFIX="${PKG_INST_DIR}" ``
   -D CMAKE_INSTALL_LIBDIR:PATH=lib ``
-  -D CMAKE_PREFIX_PATH="${global:PKG_DEPS_CMAKE}" ``
-  -D CMAKE_FIND_ROOT_PATH="${global:SYSROOT};${global:PKG_DEPS_CMAKE}" ``
+  -D CMAKE_PREFIX_PATH="${PKG_DEPS_CMAKE}" ``
+  -D CMAKE_FIND_ROOT_PATH="${SYSROOT};${PKG_DEPS_CMAKE}" ``
   -D PNG_FRAMEWORK:BOOL=0  ``
   -D PNG_TESTS:BOOL=0 -D PNG_TOOLS:BOOL=0 ``
-  ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} ${global:CMAKE_EXTRA}
+  ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} ${CMAKE_EXTRA}
 "@
 Write-Host -ForegroundColor Cyan "${CMAKE_COMMAND}"
 Invoke-Expression -Command "${CMAKE_COMMAND}"
 if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 
 # build & install
-cmake --build "${global:PKG_BULD_DIR}" -j ${global:PARALLEL_JOBS}
+cmake --build "${PKG_BULD_DIR}" -j ${PARALLEL_JOBS}
 if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 
-cmake --install "${global:PKG_BULD_DIR}" ${PKG_INST_STRIP}
+cmake --install "${PKG_BULD_DIR}" ${PKG_INST_STRIP}
