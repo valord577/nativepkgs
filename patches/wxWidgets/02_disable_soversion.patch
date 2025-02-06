@@ -1,0 +1,19 @@
+diff --git a/build/cmake/functions.cmake b/build/cmake/functions.cmake
+index 72a34f0b4f..906099592f 100644
+--- a/build/cmake/functions.cmake
++++ b/build/cmake/functions.cmake
+@@ -403,10 +403,10 @@ function(wx_set_target_properties target_name)
+ 
+     set_target_properties(${target_name} PROPERTIES FOLDER Libraries)
+ 
+-    set_target_properties(${target_name} PROPERTIES
+-        SOVERSION ${wxSOVERSION_MAJOR}
+-        VERSION ${wxSOVERSION}
+-    )
++    #set_target_properties(${target_name} PROPERTIES
++    #    SOVERSION ${wxSOVERSION_MAJOR}
++    #    VERSION ${wxSOVERSION}
++    #)
+ 
+     wx_set_common_target_properties(${target_name})
+ endfunction()

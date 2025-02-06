@@ -1,0 +1,41 @@
+name: wxWidgets
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/wxWidgets.yml'
+      - 'deps/wxWidgets'
+      - 'patches/wxWidgets/**'
+      - 'scripts/wxWidgets.sh'
+      - 'scripts/wxWidgets.ps1'
+      - 'build.sh'
+      - 'build.ps1'
+      - 'env-*.sh'
+      - 'env-*.ps1'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/wxWidgets.yml'
+      - 'deps/wxWidgets'
+      - 'patches/wxWidgets/**'
+      - 'scripts/wxWidgets.sh'
+      - 'scripts/wxWidgets.ps1'
+      - 'build.sh'
+      - 'build.ps1'
+      - 'env-*.sh'
+      - 'env-*.ps1'
+
+jobs:
+  build:
+    # if: ${{ false }}
+    secrets: inherit
+    uses: ./.github/workflows/_matrix.yml
+    with:
+      disable_shared: false
+      skip_platform_linux: true
