@@ -149,7 +149,7 @@ jobs:
             { matrix_shared=$(echo ${matrix} | jq -c -M 'map(. + {"pkg_type": "shared"})'); }
           ${{ (! inputs.disable_static) }} && \
             { matrix_static=$(echo ${matrix} | jq -c -M 'map(. + {"pkg_type": "static"})'); }
-          matrix=$(echo ${matrix_shared} | jq -c -M --argjson matrix_static "${matrix_static}" '. + ${matrix_static}')
+          matrix=$(echo ${matrix_shared} | jq -c -M --argjson matrix_static "${matrix_static}" '. + $matrix_static')
 
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix-container={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
