@@ -38,4 +38,5 @@ jobs:
     uses: ./.github/workflows/_matrix.yml
     with:
       disable_shared: false
-      skip_platform_linux: true
+      disable_commit: true
+      select_platforms: "macosx, win-mingw, win-msvc"
