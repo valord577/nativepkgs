@@ -2,41 +2,34 @@
   {
     "platform": "linux",
     "arch": "amd64",
-    "pkg_type": "static",
     "lib_impl": "gnu"
   },
   {
     "platform": "linux",
     "arch": "arm64",
-    "pkg_type": "static",
     "lib_impl": "gnu"
   },
   {
     "platform": "linux",
     "arch": "armv7",
-    "pkg_type": "static",
     "lib_impl": "gnueabihf"
   },
   {
     "platform": "linux",
     "arch": "amd64",
-    "pkg_type": "static",
     "lib_impl": "musl"
   },
   {
     "platform": "linux",
     "arch": "arm64",
-    "pkg_type": "static",
     "lib_impl": "musl"
   },
   {
     "platform": "win-mingw",
-    "arch": "x86_64",
-    "pkg_type": "static"
+    "arch": "x86_64"
   },
   {
     "platform": "win-mingw",
-    "arch": "aarch64",
-    "pkg_type": "static"
+    "arch": "aarch64"
   }
 ]

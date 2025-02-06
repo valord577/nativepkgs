@@ -89,15 +89,6 @@ jobs:
           echo "pkgver=$pkgver" >> "$GITHUB_OUTPUT"
       - name: jq filters
         run: |
-          if [[ ${{ (! inputs.disable_shared) }} ]]; then { jq_expr_type='(.pkg_type=="shared")'; } fi
-          if [[ ${{ (! inputs.disable_static) }} ]]; then
-            if [ -z "${jq_expr_type}" ];
-              then { jq_expr_type="(.pkg_type==\"static\")"; }
-              else { jq_expr_type="$jq_expr_type or (.pkg_type==\"static\")"; }
-            fi
-          fi
-          printf "\e[1m\e[33m%s\e[0m\n" "jq_expr_type: $jq_expr_type"; echo "jq_expr_type=$jq_expr_type" >> "$GITHUB_ENV"
-
           _platforms_="${{ inputs.select_platforms }}"; _platforms_triplet_=(${_platforms_//,/ })
           for _platform_ in ${_platforms_triplet_[@]}; do
             if [ -z "${jq_expr_plat}" ];
@@ -112,7 +103,7 @@ jobs:
           _is_apple_='.platform == "iphoneos" or .platform == "iphonesimulator" or .platform == "macosx"'
           _is_win32_='.platform == "win-msvc"'
 
-          matrix=$(cat .github/matrix.json | jq -c -M "map(. | select($jq_expr_type) )")
+          matrix=$(cat .github/matrix.json | jq -c -M)
           matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_apple_} then . + {os: \"macos-15\"} else . end)")
           matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_win32_} then . + {os: \"windows-2025\"} else . end)")
 
@@ -124,6 +115,14 @@ jobs:
           ${{ inputs.skip_platform_win32 }} && \
             { matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_win32_} then empty else . end)"); }
 
+
+          matrix_shared='[]'; matrix_static='[]'
+          ${{ (! inputs.disable_shared) }} && \
+            { matrix_shared=$(echo ${matrix} | jq -c -M 'map(. + {"pkg_type": "shared"})'); }
+          ${{ (! inputs.disable_static) }} && \
+            { matrix_static=$(echo ${matrix} | jq -c -M 'map(. + {"pkg_type": "static"})'); }
+          matrix=$(echo ${matrix_shared} | jq -c -M --argjson matrix_static "${matrix_static}" '. + $matrix_static')
+
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
       - name: set matrix container
@@ -132,7 +131,7 @@ jobs:
           container_linux="valord577/${{ inputs.container_linux }}-cross:${{ inputs.container_linux_vers }}"
           container_mingw="valord577/${{ inputs.container_mingw }}:${{ inputs.container_mingw_vers }}"
 
-          matrix=$(cat .github/matrix_container.json | jq -c -M "map(. | select($jq_expr_type) )")
+          matrix=$(cat .github/matrix_container.json | jq -c -M)
           matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\"     then . + {image: \"${container_linux}\"} else . end)")
           matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"win-mingw\" then . + {image: \"${container_mingw}\"} else . end)")
 
@@ -143,6 +142,14 @@ jobs:
             { matrix=$(echo ${matrix} | jq -c -M 'map(if .platform == "linux"     then empty else . end)'); }
           ${{ inputs.skip_platform_win32 }} && \
             { matrix=$(echo ${matrix} | jq -c -M 'map(if .platform == "win-mingw" then empty else . end)'); }
+
+
+          matrix_shared='[]'; matrix_static='[]'
+          ${{ (! inputs.disable_shared) }} && \
+            { matrix_shared=$(echo ${matrix} | jq -c -M 'map(. + {"pkg_type": "shared"})'); }
+          ${{ (! inputs.disable_static) }} && \
+            { matrix_static=$(echo ${matrix} | jq -c -M 'map(. + {"pkg_type": "static"})'); }
+          matrix=$(echo ${matrix_shared} | jq -c -M --argjson matrix_static "${matrix_static}" '. + $matrix_static')
 
           printf "\e[1m\e[33m%s\e[0m\n" "matrix: $matrix"
           echo "matrix-container={\"include\":$(echo $matrix)}" >> "$GITHUB_OUTPUT"
