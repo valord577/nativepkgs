@@ -69,6 +69,17 @@ cmake -S "${SUBPROJ_SRC}" -B "${PKG_BULD_DIR}" \
   -D wxBUILD_COMPATIBILITY=3.1
 EOF
 )
+
+case ${PKG_PLATFORM} in
+  "win-mingw")
+    CMAKE_COMMAND="${CMAKE_COMMAND} -D wxUSE_EXPAT=OFF \
+      -D CMAKE_C_FLAGS_INIT='-Wno-unused-command-line-argument' \
+      -D CMAKE_CXX_FLAGS_INIT='-Wno-unused-command-line-argument'"
+    ;;
+  *)
+    ;;
+esac
+
 printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}"; eval ${CMAKE_COMMAND}
 
 # build & install
