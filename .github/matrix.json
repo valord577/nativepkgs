@@ -1,37 +1,30 @@
 [
   {
     "platform": "iphoneos",
-    "arch": "arm64",
-    "pkg_type": "static"
+    "arch": "arm64"
   },
   {
     "platform": "iphonesimulator",
-    "arch": "arm64",
-    "pkg_type": "static"
+    "arch": "arm64"
   },
   {
     "platform": "iphonesimulator",
-    "arch": "x86_64",
-    "pkg_type": "static"
+    "arch": "x86_64"
   },
   {
     "platform": "macosx",
-    "arch": "arm64",
-    "pkg_type": "static"
+    "arch": "arm64"
   },
   {
     "platform": "macosx",
-    "arch": "x86_64",
-    "pkg_type": "static"
+    "arch": "x86_64"
   },
   {
     "platform": "win-msvc",
-    "arch": "arm64",
-    "pkg_type": "static"
+    "arch": "arm64"
   },
   {
     "platform": "win-msvc",
-    "arch": "amd64",
-    "pkg_type": "static"
+    "arch": "amd64"
   }
 ]
