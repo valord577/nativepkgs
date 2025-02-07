@@ -9,6 +9,7 @@ dl_pkgc libpng16  '0024abd'   static
 
 [ "${PLATFORM_APPLE}" != "1" ] && \
   {
+    dl_pkgc libexpat '2691aff'   static
     dl_pkgc zlib-ng  'cbb6ec1'   static
   }
 
@@ -72,7 +73,7 @@ EOF
 
 case ${PKG_PLATFORM} in
   "win-mingw")
-    CMAKE_COMMAND="${CMAKE_COMMAND} -D wxUSE_EXPAT=OFF \
+    CMAKE_COMMAND="${CMAKE_COMMAND} \
       -D CMAKE_C_FLAGS_INIT='-Wno-unused-command-line-argument' \
       -D CMAKE_CXX_FLAGS_INIT='-Wno-unused-command-line-argument'"
     ;;
