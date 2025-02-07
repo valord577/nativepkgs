@@ -85,6 +85,7 @@ cmake -G Ninja ``
   -D wxUSE_LIBJPEG=OFF ``
   -D wxUSE_LIBTIFF=OFF ``
   -D wxUSE_NANOSVG=OFF ``
+  -D wxUSE_OPENGL=OFF  ``
   -D wxBUILD_COMPATIBILITY=3.1
 "@
 Write-Host -ForegroundColor Cyan "${CMAKE_COMMAND}"
