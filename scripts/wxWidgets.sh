@@ -9,6 +9,7 @@ dl_pkgc libpng16  '0024abd'   static
 
 [ "${PLATFORM_APPLE}" != "1" ] && \
   {
+    dl_pkgc libexpat '2691aff'   static
     dl_pkgc zlib-ng  'cbb6ec1'   static
   }
 
@@ -58,7 +59,6 @@ cmake -S "${SUBPROJ_SRC}" -B "${PKG_BULD_DIR}" \
   ${PKG_BULD_TYPE} ${PKG_TYPE_FLAG} ${CMAKE_EXTRA} \
   -D wxBUILD_CXX_STANDARD=11 \
   -D wxBUILD_MONOLITHIC=ON   \
-  -D wxBUILD_PRECOMP=OFF     \
   -D wxBUILD_USE_STATIC_RUNTIME=ON \
   -D wxUSE_UNICODE_UTF8=ON  \
   -D THIRDPARTY_DEFAULT=sys \
@@ -66,13 +66,14 @@ cmake -S "${SUBPROJ_SRC}" -B "${PKG_BULD_DIR}" \
   -D wxUSE_LIBJPEG=OFF \
   -D wxUSE_LIBTIFF=OFF \
   -D wxUSE_NANOSVG=OFF \
+  -D wxUSE_OPENGL=OFF  \
   -D wxBUILD_COMPATIBILITY=3.1
 EOF
 )
 
 case ${PKG_PLATFORM} in
   "win-mingw")
-    CMAKE_COMMAND="${CMAKE_COMMAND} -D wxUSE_EXPAT=OFF \
+    CMAKE_COMMAND="${CMAKE_COMMAND} \
       -D CMAKE_C_FLAGS_INIT='-Wno-unused-command-line-argument' \
       -D CMAKE_CXX_FLAGS_INIT='-Wno-unused-command-line-argument'"
     ;;

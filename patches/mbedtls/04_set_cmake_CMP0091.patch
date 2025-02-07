@@ -1,0 +1,15 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f061502..80ed564 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -20,6 +20,10 @@
+ # until our infrastructure catches up.
+ cmake_minimum_required(VERSION 3.5.1)
+ 
++if(POLICY CMP0091)
++    cmake_policy(SET CMP0091 NEW)
++endif()
++
+ include(CMakePackageConfigHelpers)
+ 
+ # Include convenience functions for printing properties and variables, like
