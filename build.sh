@@ -73,7 +73,7 @@ function compile() {
 
     if [ -e "${PROJ_ROOT}/patches/${PKG_NAME}" ]; then
       pushd -- "${SUBPROJ_SRC}"
-      git reset --hard HEAD
+      git reset --hard HEAD; git clean -d -f
 
       for patch in $(ls -- "${PROJ_ROOT}/patches/${PKG_NAME}"); do
         git apply --verbose --ignore-space-change --ignore-whitespace "${PROJ_ROOT}/patches/${PKG_NAME}/${patch}"

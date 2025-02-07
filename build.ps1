@@ -103,7 +103,7 @@ cd `${PROJ_ROOT}; bash `${PROJ_ROOT}/scripts/`${PKG_NAME}.sh
 
   if (Test-Path -PathType Container -Path "${PROJ_ROOT}/patches/${PKG_NAME}") {
     Push-Location "${SUBPROJ_SRC}"
-    git reset --hard HEAD
+    git reset --hard HEAD; git clean -d -f
 
     foreach ($patch in (Get-ChildItem -Path "${PROJ_ROOT}/patches/${PKG_NAME}" -File)) {
       git apply --verbose --ignore-space-change --ignore-whitespace ${patch}.FullName
