@@ -15,6 +15,8 @@ on:
       - 'build.ps1'
       - 'env-*.sh'
       - 'env-*.ps1'
+      - 'pkg-conf.sh'
+      - 'pkg-conf.ps1'
   pull_request:
     branches:
       - main
@@ -30,6 +32,8 @@ on:
       - 'build.ps1'
       - 'env-*.sh'
       - 'env-*.ps1'
+      - 'pkg-conf.sh'
+      - 'pkg-conf.ps1'
 
 jobs:
   build:
@@ -38,5 +42,6 @@ jobs:
     uses: ./.github/workflows/_matrix.yml
     with:
       disable_shared: false
+      disable_static: true
       disable_commit: true
       select_platforms: "macosx, win-mingw, win-msvc"
