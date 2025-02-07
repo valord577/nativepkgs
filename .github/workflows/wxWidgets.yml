@@ -1,5 +1,6 @@
 name: wxWidgets
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -37,7 +38,7 @@ on:
 
 jobs:
   build:
-    # if: ${{ false }}
+    if: ${{ false }}
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
