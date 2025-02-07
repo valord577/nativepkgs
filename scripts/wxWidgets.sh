@@ -5,7 +5,12 @@ set -e
 # packages
 # ----------------------------
 source "${PROJ_ROOT}/pkg-conf.sh"
-dl_pkgc libpng16  '0024abd'   static '' '' '' 'PNG'
+dl_pkgc libpng16  '0024abd'   static
+
+[ "${PLATFORM_APPLE}" != "1" ] && \
+  {
+    dl_pkgc zlib-ng  'cbb6ec1'   static
+  }
 
 printf "\e[1m\e[35m%s\e[0m\n" "${PKG_CONFIG_PATH}"
 # ----------------------------
@@ -14,6 +19,9 @@ printf "\e[1m\e[35m%s\e[0m\n" "${PKG_CONFIG_PATH}"
 case ${PKG_TYPE} in
   "static")
     PKG_TYPE_FLAG="-D BUILD_SHARED_LIBS:BOOL=0"
+    ;;
+  "shared")
+    PKG_TYPE_FLAG="-D BUILD_SHARED_LIBS:BOOL=1"
     ;;
   *)
     printf "\e[1m\e[31m%s\e[0m\n" "Invalid PKG TYPE: '${PKG_TYPE}'."
@@ -57,9 +65,21 @@ cmake -S "${SUBPROJ_SRC}" -B "${PKG_BULD_DIR}" \
   -D wxUSE_REGEX=OFF   \
   -D wxUSE_LIBJPEG=OFF \
   -D wxUSE_LIBTIFF=OFF \
-  -D wxUSE_NANOSVG=OFF
+  -D wxUSE_NANOSVG=OFF \
+  -D wxBUILD_COMPATIBILITY=3.1
 EOF
 )
+
+case ${PKG_PLATFORM} in
+  "win-mingw")
+    CMAKE_COMMAND="${CMAKE_COMMAND} -D wxUSE_EXPAT=OFF \
+      -D CMAKE_C_FLAGS_INIT='-Wno-unused-command-line-argument' \
+      -D CMAKE_CXX_FLAGS_INIT='-Wno-unused-command-line-argument'"
+    ;;
+  *)
+    ;;
+esac
+
 printf "\e[1m\e[36m%s\e[0m\n" "${CMAKE_COMMAND}"; eval ${CMAKE_COMMAND}
 
 # build & install

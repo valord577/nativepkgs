@@ -1,0 +1,40 @@
+name: libexpat
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/libexpat.yml'
+      - 'deps/libexpat'
+      - 'patches/libexpat/**'
+      - 'scripts/libexpat.sh'
+      - 'scripts/libexpat.ps1'
+      - 'build.sh'
+      - 'build.ps1'
+      - 'env-*.sh'
+      - 'env-*.ps1'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/libexpat.yml'
+      - 'deps/libexpat'
+      - 'patches/libexpat/**'
+      - 'scripts/libexpat.sh'
+      - 'scripts/libexpat.ps1'
+      - 'build.sh'
+      - 'build.ps1'
+      - 'env-*.sh'
+      - 'env-*.ps1'
+
+jobs:
+  build:
+    # if: ${{ false }}
+    secrets: inherit
+    uses: ./.github/workflows/_matrix.yml
+    with:
+      skip_platform_apple: true

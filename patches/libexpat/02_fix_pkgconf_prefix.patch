@@ -1,0 +1,63 @@
+diff --git a/expat/CMakeLists.txt b/expat/CMakeLists.txt
+index 1f650339..582ca1b5 100644
+--- a/expat/CMakeLists.txt
++++ b/expat/CMakeLists.txt
+@@ -541,7 +541,7 @@ if(EXPAT_BUILD_PKGCONFIG)
+     endif()
+ 
+     set_target_properties(expat PROPERTIES
+-        pkgconfig_prefix "${CMAKE_INSTALL_PREFIX}"
++        pkgconfig_prefix "\${pcfiledir}/../.."
+         pkgconfig_exec_prefix "\${prefix}"
+         pkgconfig_libdir "${_expat_pkgconfig_libdir}"
+         pkgconfig_includedir "${_expat_pkgconfig_includedir}"
+@@ -559,9 +559,14 @@ if(EXPAT_BUILD_PKGCONFIG)
+         endif()
+     endforeach()
+ 
++    set(_PKGCONFIG_IN_SUFFIX "static")
++    if(EXPAT_SHARED_LIBS)
++        set(_PKGCONFIG_IN_SUFFIX "shared")
++    endif()
++
+     file(GENERATE
+         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/expat.pc
+-        INPUT ${PROJECT_SOURCE_DIR}/expat.pc.cmake)
++        INPUT ${PROJECT_SOURCE_DIR}/expat.pc.cmake.${_PKGCONFIG_IN_SUFFIX})
+ 
+     expat_install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/expat.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+ endif()
+diff --git a/expat/expat.pc.cmake.shared b/expat/expat.pc.cmake.shared
+new file mode 100644
+index 00000000..71213bb5
+--- /dev/null
++++ b/expat/expat.pc.cmake.shared
+@@ -0,0 +1,11 @@
++prefix=$<TARGET_PROPERTY:expat,pkgconfig_prefix>
++exec_prefix=$<TARGET_PROPERTY:expat,pkgconfig_exec_prefix>
++libdir=$<TARGET_PROPERTY:expat,pkgconfig_libdir>
++includedir=$<TARGET_PROPERTY:expat,pkgconfig_includedir>
++
++Name: $<TARGET_PROPERTY:expat,pkgconfig_$<LOWER_CASE:$<CONFIG>>_name>
++Version: $<TARGET_PROPERTY:expat,pkgconfig_version>
++Description: expat XML parser
++URL: https://libexpat.github.io/
++Libs: -L${libdir} -l$<TARGET_PROPERTY:expat,pkgconfig_$<LOWER_CASE:$<CONFIG>>_output_name>
++Cflags: -I${includedir}
+diff --git a/expat/expat.pc.cmake.static b/expat/expat.pc.cmake.static
+new file mode 100644
+index 00000000..13676991
+--- /dev/null
++++ b/expat/expat.pc.cmake.static
+@@ -0,0 +1,11 @@
++prefix=$<TARGET_PROPERTY:expat,pkgconfig_prefix>
++exec_prefix=$<TARGET_PROPERTY:expat,pkgconfig_exec_prefix>
++libdir=$<TARGET_PROPERTY:expat,pkgconfig_libdir>
++includedir=$<TARGET_PROPERTY:expat,pkgconfig_includedir>
++
++Name: $<TARGET_PROPERTY:expat,pkgconfig_$<LOWER_CASE:$<CONFIG>>_name>
++Version: $<TARGET_PROPERTY:expat,pkgconfig_version>
++Description: expat XML parser
++URL: https://libexpat.github.io/
++Libs: -L${libdir} -l$<TARGET_PROPERTY:expat,pkgconfig_$<LOWER_CASE:$<CONFIG>>_output_name> $<TARGET_PROPERTY:expat,pkgconfig_libm>
++Cflags: -DXML_STATIC -I${includedir}

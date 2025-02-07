@@ -1,0 +1,29 @@
+diff --git a/include/wx/defs.h b/include/wx/defs.h
+index 39ce129..73fe904 100644
+--- a/include/wx/defs.h
++++ b/include/wx/defs.h
+@@ -1163,14 +1163,22 @@ typedef double wxDouble;
+     #define wxWCHAR_T_IS_WXCHAR16
+     typedef wchar_t wxChar16;
+ #else
+-    typedef wxUint16 wxChar16;
++    #if defined(__cplusplus) && __clang_major__ >= 19
++        typedef char16_t wxChar16;
++    #else
++        typedef wxUint16 wxChar16;
++    #endif /* defined(__cplusplus) && __clang_major__ >= 19 */
+ #endif
+ 
+ #if SIZEOF_WCHAR_T == 4
+     #define wxWCHAR_T_IS_WXCHAR32
+     typedef wchar_t wxChar32;
+ #else
+-    typedef wxUint32 wxChar32;
++    #if defined(__cplusplus) && __clang_major__ >= 19
++        typedef char32_t wxChar32;
++    #else
++        typedef wxUint32 wxChar32;
++    #endif /* defined(__cplusplus) && __clang_major__ >= 19 */
+ #endif
+ 
+ 
