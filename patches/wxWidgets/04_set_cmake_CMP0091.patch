@@ -1,0 +1,15 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f6ae7f6..231ca99 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -9,6 +9,10 @@
+ 
+ cmake_minimum_required(VERSION 3.0)
+ 
++if(POLICY CMP0091)
++    cmake_policy(SET CMP0091 NEW)
++endif()
++
+ if(NOT CMAKE_CONFIGURATION_TYPES)
+     get_property(HAVE_MULTI_CONFIG_GENERATOR GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+     # Set default configuration types for multi-config generators

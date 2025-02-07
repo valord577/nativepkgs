@@ -1,12 +1,18 @@
 # ----------------------------
+# init submodules
+# ----------------------------
+Push-Location "${SUBPROJ_SRC}"
+
+git submodule update --init --depth=1 --single-branch -f  -- src/expat
+
+Pop-Location
+# ----------------------------
 # packages
 # ----------------------------
 . "${PROJ_ROOT}/pkg-conf.ps1"
 
 Invoke-Command -ScriptBlock ${dl_pkgc} `
   -ArgumentList 'libpng16', '0024abd', 'static'
-Invoke-Command -ScriptBlock ${dl_pkgc} `
-  -ArgumentList 'libexpat', '2691aff', 'static'
 Invoke-Command -ScriptBlock ${dl_pkgc} `
   -ArgumentList 'zlib-ng',  'cbb6ec1', 'static'
 # ----------------------------
@@ -91,6 +97,16 @@ cmake -G Ninja ``
   -D wxUSE_OPENGL=OFF  ``
   -D wxBUILD_COMPATIBILITY=3.1
 "@
+
+switch ($PKG_PLATFORM) {
+  'win-msvc' {
+    $CMAKE_COMMAND = "${CMAKE_COMMAND} ``
+      -D wxUSE_EXPAT=builtin"
+    break
+  }
+  default {}
+}
+
 Write-Host -ForegroundColor Cyan "${CMAKE_COMMAND}"
 Invoke-Expression -Command "${CMAKE_COMMAND}"
 if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }

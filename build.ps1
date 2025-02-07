@@ -95,6 +95,7 @@ export LD="`$(dirname "`$(command -v cl.exe)")/link.exe"
 cd `${PROJ_ROOT}; bash `${PROJ_ROOT}/scripts/`${PKG_NAME}.sh
 "@
 
+  # <#
   if (-not (Test-Path -PathType Any -Path "${SUBPROJ_SRC}/.git")) {
     Push-Location "${PROJ_ROOT}"
     git submodule update --init --depth=1 --single-branch -f -- "deps/${PKG_NAME}"
@@ -110,6 +111,8 @@ cd `${PROJ_ROOT}; bash `${PROJ_ROOT}/scripts/`${PKG_NAME}.sh
     }
     Pop-Location
   }
+  #>
+
   & "${PROJ_ROOT}\scripts\${PKG_NAME}.ps1"
   if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 
