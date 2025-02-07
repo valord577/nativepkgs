@@ -1,4 +1,4 @@
-name: mbedtls
+name: libexpat
 on:
   push:
     branches:
@@ -6,11 +6,11 @@ on:
     paths:
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
-      - '.github/workflows/mbedtls.yml'
-      - 'deps/mbedtls'
-      - 'patches/mbedtls/**'
-      - 'scripts/mbedtls.sh'
-      - 'scripts/mbedtls.ps1'
+      - '.github/workflows/libexpat.yml'
+      - 'deps/libexpat'
+      - 'patches/libexpat/**'
+      - 'scripts/libexpat.sh'
+      - 'scripts/libexpat.ps1'
       - 'build.sh'
       - 'build.ps1'
       - 'env-*.sh'
@@ -21,11 +21,11 @@ on:
     paths:
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
-      - '.github/workflows/mbedtls.yml'
-      - 'deps/mbedtls'
-      - 'patches/mbedtls/**'
-      - 'scripts/mbedtls.sh'
-      - 'scripts/mbedtls.ps1'
+      - '.github/workflows/libexpat.yml'
+      - 'deps/libexpat'
+      - 'patches/libexpat/**'
+      - 'scripts/libexpat.sh'
+      - 'scripts/libexpat.ps1'
       - 'build.sh'
       - 'build.ps1'
       - 'env-*.sh'
