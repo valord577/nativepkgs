@@ -67,13 +67,23 @@ cmake -S "${SUBPROJ_SRC}" -B "${PKG_BULD_DIR}" \
   -D wxUSE_LIBTIFF=OFF \
   -D wxUSE_NANOSVG=OFF \
   -D wxUSE_OPENGL=OFF  \
+  -D wxUSE_STC=OFF     \
+  -D wxUSE_WEBVIEW=OFF \
+  -D wxUSE_ACTIVEX=OFF \
+  -D wxUSE_WEBVIEW_WEBKIT=OFF \
+  -D wxUSE_WEBVIEW_IE=OFF     \
+  -D wxUSE_WEBVIEW_EDGE=OFF   \
   -D wxBUILD_COMPATIBILITY=3.1
 EOF
 )
 
 case ${PKG_PLATFORM} in
   "win-mingw")
+    [ "${PKG_ARCH}" == "x86_64"  ] && { WIN32_ARCH="x64"; }
+    [ "${PKG_ARCH}" == "aarch64" ] && { WIN32_ARCH="arm64"; }
     CMAKE_COMMAND="${CMAKE_COMMAND} \
+      -D wxUSE_WINRT=OFF -D wxUSE_ACCESSIBILITY=OFF \
+      -D CMAKE_VS_PLATFORM_NAME='${WIN32_ARCH}' -D wxUSE_WINSOCK2=ON \
       -D CMAKE_C_FLAGS_INIT='-Wno-unused-command-line-argument' \
       -D CMAKE_CXX_FLAGS_INIT='-Wno-unused-command-line-argument'"
     ;;
