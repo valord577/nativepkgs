@@ -95,13 +95,22 @@ cmake -G Ninja ``
   -D wxUSE_LIBTIFF=OFF ``
   -D wxUSE_NANOSVG=OFF ``
   -D wxUSE_OPENGL=OFF  ``
+  -D wxUSE_STC=OFF     ``
+  -D wxUSE_WEBVIEW=OFF ``
+  -D wxUSE_ACTIVEX=OFF ``
+  -D wxUSE_WEBVIEW_WEBKIT=OFF ``
+  -D wxUSE_WEBVIEW_IE=OFF     ``
+  -D wxUSE_WEBVIEW_EDGE=OFF   ``
   -D wxBUILD_COMPATIBILITY=3.1
 "@
 
 switch ($PKG_PLATFORM) {
   'win-msvc' {
-    $CMAKE_COMMAND = "${CMAKE_COMMAND} ``
-      -D wxUSE_EXPAT=builtin"
+    if ($PKG_ARCH -ieq "amd64") { $WIN32_ARCH = "x64" }
+    if ($PKG_ARCH -ieq "arm64") { $WIN32_ARCH = "arm64" }
+    $CMAKE_COMMAND = "${CMAKE_COMMAND} -D wxUSE_EXPAT=builtin ``
+      -D wxUSE_WINRT=OFF -D wxUSE_ACCESSIBILITY=OFF ``
+      -D CMAKE_VS_PLATFORM_NAME='${WIN32_ARCH}' -D wxUSE_WINSOCK2=ON"
     break
   }
   default {}
