@@ -97,7 +97,6 @@ cmake -G Ninja ``
   -D wxUSE_OPENGL=OFF  ``
   -D wxUSE_STC=OFF     ``
   -D wxUSE_WEBVIEW=OFF ``
-  -D wxUSE_ACTIVEX=OFF ``
   -D wxUSE_WEBVIEW_WEBKIT=OFF ``
   -D wxUSE_WEBVIEW_IE=OFF     ``
   -D wxUSE_WEBVIEW_EDGE=OFF   ``
