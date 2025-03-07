@@ -5,6 +5,7 @@ set -e
 # packages
 # ----------------------------
 source "${PROJ_ROOT}/pkg-conf.sh"
+dl_pkgc dav1d    '42b2b24'   static '' '--enable-libdav1d'
 dl_pkgc mbedtls  '107ea89'   static '' '--enable-mbedtls'
 
 if [ "${PKG_PLATFORM}" == "macosx" ]; then
