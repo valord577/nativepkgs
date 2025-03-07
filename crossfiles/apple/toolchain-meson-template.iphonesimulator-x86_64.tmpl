@@ -1,0 +1,30 @@
+[constants]
+prefix = ''
+sys_root = '__SYSROOT__'
+c_args = ['-arch', 'x86_64', '--sysroot=' + sys_root, __EXTRA_FLAGS__]
+cpp_args = c_args + []
+
+[host_machine]
+system = 'darwin'
+kernel = 'xnu'
+subsystem = 'ios-simulator'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+
+[properties]
+needs_exe_wrapper = true
+
+[binaries]
+c = ['ccache', prefix / 'clang'] + c_args
+cpp = ['ccache', prefix / 'clang++'] + cpp_args
+objc = ['ccache', prefix / 'clang'] + c_args
+objcpp = ['ccache', prefix / 'clang++'] + cpp_args
+ar = prefix / 'ar'
+as = prefix / 'as'
+nm = prefix / 'nm'
+objdump = prefix / 'objcopy'
+strip = prefix / 'strip'
+ranlib = prefix / 'ranlib'
+pkg-config = '@DIRNAME@/pkgconf-wrapper'
+cmake = 'cmake'
