@@ -1,0 +1,40 @@
+name: dav1d
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/dav1d.yml'
+      - 'deps/dav1d'
+      - 'patches/dav1d/**'
+      - 'scripts/dav1d.sh'
+      - 'scripts/dav1d.ps1'
+      - 'build.sh'
+      - 'build.ps1'
+      - 'env-*.sh'
+      - 'env-*.ps1'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/dav1d.yml'
+      - 'deps/dav1d'
+      - 'patches/dav1d/**'
+      - 'scripts/dav1d.sh'
+      - 'scripts/dav1d.ps1'
+      - 'build.sh'
+      - 'build.ps1'
+      - 'env-*.sh'
+      - 'env-*.ps1'
+
+jobs:
+  build:
+    # if: ${{ false }}
+    secrets: inherit
+    uses: ./.github/workflows/_matrix.yml
+    with:
+      select_platforms: "macosx, linux"

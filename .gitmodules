@@ -22,3 +22,6 @@
 [submodule "deps/libexpat"]
 	path = deps/libexpat
 	url = https://github.com/libexpat/libexpat.git
+[submodule "deps/dav1d"]
+	path = deps/dav1d
+	url = https://github.com/videolan/dav1d.git
