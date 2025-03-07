@@ -44,7 +44,11 @@ esac
 function compile() {
   (
     export PROJ_ROOT="${PROJ_ROOT}"
+
     export PYPI_MIRROR="-i https://mirrors.bfsu.edu.cn/pypi/web/simple"
+    if [ "${GITHUB_ACTIONS}" == "true" ]; then
+      export PYPI_MIRROR=""
+    fi
 
     export PKG_NAME="${1}"
     export SUBPROJ_SRC="${PROJ_ROOT}/deps/${PKG_NAME}"

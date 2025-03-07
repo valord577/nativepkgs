@@ -14,7 +14,11 @@ if ((${private:PWSH_VERSION}.Major -ge 6) -and (-not $IsWindows)) {
 }
 
 $PROJ_ROOT = $PSScriptRoot
+
 $PYPI_MIRROR = "-i https://mirrors.bfsu.edu.cn/pypi/web/simple"
+if (${env:GITHUB_ACTIONS} -ieq "true") {
+  $PYPI_MIRROR = ""
+}
 
 ${private:triplet} = [System.IO.Path]::GetFileNameWithoutExtension($PSCommandPath)
 ${private:triplet_values} = $triplet -split '_'
