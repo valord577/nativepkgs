@@ -7,6 +7,9 @@ TARGET_ARCH=${2}
 export PARALLEL_JOBS="$(sysctl -n hw.ncpu)"
 export PLATFORM_APPLE="1"
 
+crossfiles_dir="${PROJ_ROOT}/crossfiles/apple"
+
+
 if command -v ccache >/dev/null 2>&1 ; then
   export CCACHE_SRC="$(command -v ccache)"
 
@@ -59,3 +62,15 @@ export CMAKE_EXTRA=$(cat <<- EOF
 -D CMAKE_MACOSX_BUNDLE:BOOL=0 ${CMAKE_EXTRA}
 EOF
 )
+
+
+
+# pkgconf bin
+export CROSS_TOOLCHAIN_PKGCONF="${crossfiles_dir}/pkgconf-wrapper"
+# meson toolchain file
+CROSS_TOOLCHAIN_FILE_MESON="${crossfiles_dir}/toolchain-meson-template.${TARGET_PLATFORM}-${TARGET_ARCH}"
+cat "${CROSS_TOOLCHAIN_FILE_MESON}.tmpl" | \
+  sed "s@__SYSROOT__@${SYSROOT}@g" | \
+  sed "s@__EXTRA_FLAGS__@'-m${TARGET_FLAG}-version-min=${TARGET_DEPLOYMENT}'@g" \
+  > "${CROSS_TOOLCHAIN_FILE_MESON}"
+export MESON_EXTRA="${MESON_EXTRA} --cross-file ${CROSS_TOOLCHAIN_FILE_MESON}"
