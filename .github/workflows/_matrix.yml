@@ -235,11 +235,11 @@ jobs:
     container:
       image: ${{ matrix.image }}
       env:
-        GITHUB_ACTIONS: ${{ env.GITHUB_ACTIONS }}
-        GITHUB_SERVER_URL: ${{ env.GITHUB_SERVER_URL }}
-        GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}
-        GITHUB_RUN_ID: ${{ env.GITHUB_RUN_ID }}
-        GITHUB_SHA: ${{ env.GITHUB_SHA }}
+        GITHUB_ACTIONS: "true"
+        GITHUB_SERVER_URL: "${{ github.server_url	 }}"
+        GITHUB_REPOSITORY: "${{ github.repository }}"
+        GITHUB_RUN_ID: "${{ github.run_id }}"
+        GITHUB_SHA: "${{ github.sha }}"
     defaults:
       run:
         shell: bash
