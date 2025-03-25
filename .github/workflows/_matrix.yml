@@ -64,6 +64,7 @@ env:
   GH_OSSUTIL_CNAME: ${{ secrets.GH_OSSUTIL_CNAME }}
   INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
   CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CI_HIT_MESSAGE: "${{ github.server_url	}}/${{ github.repository }}/actions/runs/${{ github.run_id }} (${{ github.sha }})"
 
 jobs:
   _preset:
