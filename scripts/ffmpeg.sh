@@ -59,7 +59,6 @@ ${SUBPROJ_SRC}/configure     \
   ${PKG_TYPE_FLAG}  \
   ${PKG_BULD_TYPE}  \
   ${PKG_INST_STRIP} \
-  --enable-gpl \
   --enable-version3 \
   --fatal-warnings \
   --disable-doc \
