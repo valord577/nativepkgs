@@ -26,10 +26,10 @@
   },
   {
     "platform": "win-mingw",
-    "arch": "x86_64"
+    "arch": "amd64"
   },
   {
     "platform": "win-mingw",
-    "arch": "aarch64"
+    "arch": "arm64"
   }
 ]

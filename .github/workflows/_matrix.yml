@@ -62,9 +62,11 @@ env:
   GH_OSSUTIL_REGION: ${{ secrets.GH_OSSUTIL_REGION }}
   GH_OSSUTIL_PKGS: ${{ secrets.GH_OSSUTIL_PKGS }}
   GH_OSSUTIL_CNAME: ${{ secrets.GH_OSSUTIL_CNAME }}
+  PKG_NAME: ${{ github.workflow }}
   INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CI_HIT_MESSAGE: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} (${{ github.sha }})"
+  NATIVEPKGS_RUNTIME_VERBOSE: '1'
 
 jobs:
   _preset:
@@ -78,14 +80,18 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       matrix-container: ${{ steps.set-matrix-container.outputs.matrix-container }}
     steps:
-      - name: clone with gh
+      - name: clone source
         run: |
-          gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
-          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
+          git config --global --add safe.directory "*"
+
+          git init
+          git remote add x ${{github.server_url}}/${{ github.repository }}.git
+          git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
+          git checkout FETCH_HEAD
       - name: set pkgver
         id: set-pkgver
         run: |
-          pkgver=$(git ls-tree -d --abbrev=7 --format='%(objectname)' HEAD -- deps/${{ github.workflow }})
+          pkgver=$(git ls-tree -d --abbrev=7 --format='%(objectname)' HEAD -- deps/${{ env.PKG_NAME }})
           printf "\e[1m\e[33m%s\e[0m\n" "pkgver: $pkgver"
           echo "pkgver=$pkgver" >> "$GITHUB_OUTPUT"
       - name: jq filters
@@ -166,8 +172,8 @@ jobs:
         shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'bash' }}
         working-directory: ${{ github.workspace }}
     env:
-      CCACHE_GHA_KEY: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
-      PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
+      CCACHE_GHA_KEY: ${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
+      PKG_ZIP_NAME: ${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
     steps:
       - name: disable macos spotlight - macos
         if: ${{ startsWith(matrix.os, 'macos') }}
@@ -177,10 +183,14 @@ jobs:
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
           Set-MpPreference -DisableRealtimeMonitoring $true
-      - name: clone with gh
+      - name: clone source
         run: |
-          gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
-          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}; git checkout FETCH_HEAD
+          git config --global --add safe.directory "*"
+
+          git init
+          git remote add x ${{github.server_url}}/${{ github.repository }}.git
+          git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
+          git checkout FETCH_HEAD
       - name: install required software(s) - macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
@@ -194,29 +204,29 @@ jobs:
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-      - name: buildx library - ${{ github.workflow }} - macos
+      - name: buildx library - ${{ env.PKG_NAME }} - macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
-          ./build_${{ matrix.platform }}_${{ matrix.arch }}.sh ${{ github.workflow }} ${{ matrix.pkg_type }}
+          ./build_${{ matrix.platform }}_${{ matrix.arch }}.sh ${{ env.PKG_NAME }} ${{ matrix.pkg_type }}
 
           # keep file permissions and case sensitivity
-          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
-      - name: buildx library - ${{ github.workflow }} - windows
+          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ env.PKG_NAME }}
+      - name: buildx library - ${{ env.PKG_NAME }} - windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
-          & ".\build_${{ matrix.platform }}_${{ matrix.arch }}.ps1" ${{ github.workflow }} ${{ matrix.pkg_type }}
+          & ".\build_${{ matrix.platform }}_${{ matrix.arch }}.ps1" ${{ env.PKG_NAME }} ${{ matrix.pkg_type }}
           if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
 
           # keep file permissions and case sensitivity
           C:/msys64/usr/bin/bash.exe -lc 'pacman --noconfirm -S zip;'
           C:/msys64/usr/bin/bash.exe -lc `
-            'cd $(cygpath -u "${{ github.workspace }}"); zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}'
+            'cd $(cygpath -u "${{ github.workspace }}"); zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ env.PKG_NAME }}'
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-      - name: upload library - ${{ github.workflow }}
+      - name: upload library - ${{ env.PKG_NAME }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PKG_ZIP_NAME }}
@@ -225,7 +235,7 @@ jobs:
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
-          python3 ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
+          python3 ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ env.PKG_NAME }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
 
   _buildx_on_container:
     needs: _preset
@@ -240,31 +250,17 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
     env:
-      CCACHE_GHA_KEY: ${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
-      PKG_ZIP_NAME: ${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
+      CCACHE_GHA_KEY: ${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
+      PKG_ZIP_NAME: ${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
     steps:
       - name: set required env
         if: ${{ matrix.platform == 'linux' }}
         run: |
-          CCACHE_GHA_KEY='${{ github.workflow }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.lib_impl }}'
-          PKG_ZIP_NAME='${{ github.workflow }}_${{ matrix.platform }}_${{ matrix.arch }}-${{ matrix.lib_impl }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}'
+          CCACHE_GHA_KEY='${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.lib_impl }}'
+          PKG_ZIP_NAME='${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}-${{ matrix.lib_impl }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}'
 
           echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
           echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$GITHUB_ENV"
-      - name: clone with gh
-        if: ${{ false }}
-        run: |
-          curl --fail-with-body -sSL \
-            -o '/etc/apt/keyrings/githubcli-archive-keyring.gpg' \
-            --url 'https://cli.github.com/packages/githubcli-archive-keyring.gpg'
-          echo 'deb [signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main' \
-            >> '/etc/apt/sources.list.d/github-cli.list'; cat '/etc/apt/sources.list.d/github-cli.list'
-          apt-get update -qq; apt-get install -qqy gh
-
-          git config --global --add safe.directory "*"
-          gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
-          git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}
-          git checkout FETCH_HEAD
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -278,22 +274,25 @@ jobs:
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-      - name: buildx library - ${{ github.workflow }}
+      - name: buildx library - ${{ env.PKG_NAME }}
         run: |
-          SCRIPT_NAME='build_${{ matrix.platform }}_${{ matrix.arch }}.sh'
+          build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
           ${{ matrix.platform == 'linux' }} && \
-            { SCRIPT_NAME='crossbuild_${{ matrix.platform }}_${{ matrix.lib_impl }}_${{ matrix.arch }}.sh'; }
+            { build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.lib_impl }}'; }
 
-          ./${SCRIPT_NAME} ${{ github.workflow }} ${{ matrix.pkg_type }}
+          python3 -m venv .env
+          export PKG_TYPE=${{ matrix.pkg_type }}
+          source .env/bin/activate
+          ./build.py ${build_target_args} -m ${{ env.PKG_NAME }}
 
           # keep file permissions and case sensitivity
-          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ github.workflow }}
+          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ env.PKG_NAME }}
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-      - name: upload library - ${{ github.workflow }}
+      - name: upload library - ${{ env.PKG_NAME }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PKG_ZIP_NAME }}
@@ -302,4 +301,4 @@ jobs:
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
-          ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ github.workflow }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
+          ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ env.PKG_NAME }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
