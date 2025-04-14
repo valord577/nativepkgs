@@ -463,7 +463,6 @@ if __name__ == "__main__":
 
     argc_tgt = len(argv_tgt)
     ctx = _ctx(module=argv_mod)
-    sys.exit(0)
     if argc_tgt < 1:
         if False:
             pass
