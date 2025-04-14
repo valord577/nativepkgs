@@ -67,6 +67,11 @@ env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CI_HIT_MESSAGE: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} (${{ github.sha }})"
   NATIVEPKGS_RUNTIME_VERBOSE: '1'
+  S3_R2_ACCOUNT_ID: ${{ secrets.S3_R2_ACCOUNT_ID }}
+  S3_R2_ACCESS_KEY: ${{ secrets.S3_R2_ACCESS_KEY }}
+  S3_R2_SECRET_KEY: ${{ secrets.S3_R2_SECRET_KEY }}
+  S3_R2_STORAGE_BUCKET: ${{ secrets.S3_R2_STORAGE_BUCKET }}
+  S3_R2_STORAGE_REGION: ${{ secrets.S3_R2_STORAGE_REGION }}
 
 jobs:
   _preset:
@@ -172,21 +177,28 @@ jobs:
         shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'bash' }}
         working-directory: ${{ github.workspace }}
     steps:
-      - name: set required env
+      - name: set required env - macos
+        if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
+          sudo mdutil -a -i off
+
+
           CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}"
           PKG_ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}"
 
           echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
           echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$GITHUB_ENV"
-      - name: disable macos spotlight - macos
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: |
-          sudo mdutil -a -i off
-      - name: disable windows defender - windows
+      - name: set required env - windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
           Set-MpPreference -DisableRealtimeMonitoring $true
+
+
+          $CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}"
+          $PKG_ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}"
+
+          echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
+          echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$GITHUB_ENV"
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
