@@ -197,8 +197,8 @@ jobs:
           $CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}"
           $PKG_ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}"
 
-          echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
-          echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$GITHUB_ENV"
+          echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$env:GITHUB_ENV"
+          echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$env:GITHUB_ENV"
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
