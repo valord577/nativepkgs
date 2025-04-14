@@ -1,20 +1,27 @@
 diff --git a/pkgconfig/CMakeLists.txt b/pkgconfig/CMakeLists.txt
-index 7dfc043ce1..309f40a618 100644
+index 7dfc043..054dacc 100644
 --- a/pkgconfig/CMakeLists.txt
 +++ b/pkgconfig/CMakeLists.txt
-@@ -8,6 +8,10 @@ if(NOT DISABLE_PACKAGE_CONFIG_AND_INSTALL)
+@@ -8,6 +8,17 @@ if(NOT DISABLE_PACKAGE_CONFIG_AND_INSTALL)
    set(PKGCONFIG_PROJECT_DESCRIPTION "Mbed TLS is a C library that implements cryptographic primitives, X.509 certificate manipulation and the SSL/TLS and DTLS protocols. Its small code footprint makes it suitable for embedded systems.")
    set(PKGCONFIG_PROJECT_HOMEPAGE_URL "https://www.trustedfirmware.org/projects/mbed-tls/")
  
 +  if(USE_SHARED_MBEDTLS_LIBRARY)
 +    set(PKGCONFIG_REQUIRES_PRIVATE ".private")
 +  endif()
++  if(USE_STATIC_MBEDTLS_LIBRARY)
++    if(MinGW)
++      set(PKGCONFIG_EXTRA_LIBS_MBEDCRYPTO "-lbcrypt")
++      set(PKGCONFIG_EXTRA_LIBS_MBEDTLS    "")
++      set(PKGCONFIG_EXTRA_LIBS_MBEDX509   "-lws2_32")
++    endif()
++  endif()
 +
    configure_file(mbedcrypto.pc.in mbedcrypto.pc @ONLY)
      install(FILES
      ${CMAKE_CURRENT_BINARY_DIR}/mbedcrypto.pc
 diff --git a/pkgconfig/mbedcrypto.pc.in b/pkgconfig/mbedcrypto.pc.in
-index b35afc1b5b..617ba5d5f6 100644
+index b35afc1..c290df3 100644
 --- a/pkgconfig/mbedcrypto.pc.in
 +++ b/pkgconfig/mbedcrypto.pc.in
 @@ -1,4 +1,4 @@
@@ -28,9 +35,9 @@ index b35afc1b5b..617ba5d5f6 100644
  Version: @PROJECT_VERSION@
  Cflags: -I"${includedir}"
 -Libs: -L"${libdir}" -lmbedcrypto
-+Libs: -L"${libdir}" -lmbedcrypto -leverest -lp256m
++Libs: -L"${libdir}" -lmbedcrypto -leverest -lp256m @PKGCONFIG_EXTRA_LIBS_MBEDCRYPTO@
 diff --git a/pkgconfig/mbedtls.pc.in b/pkgconfig/mbedtls.pc.in
-index 2bfce80b69..2f9e8b29a1 100644
+index 2bfce80..d033cdf 100644
 --- a/pkgconfig/mbedtls.pc.in
 +++ b/pkgconfig/mbedtls.pc.in
 @@ -1,4 +1,4 @@
@@ -46,9 +53,10 @@ index 2bfce80b69..2f9e8b29a1 100644
 -Requires.private: mbedcrypto mbedx509
 +Requires@PKGCONFIG_REQUIRES_PRIVATE@: mbedcrypto mbedx509
  Cflags: -I"${includedir}"
- Libs: -L"${libdir}" -lmbedtls
+-Libs: -L"${libdir}" -lmbedtls
++Libs: -L"${libdir}" -lmbedtls @PKGCONFIG_EXTRA_LIBS_MBEDTLS@
 diff --git a/pkgconfig/mbedx509.pc.in b/pkgconfig/mbedx509.pc.in
-index 0ab2e31ea1..fc90e0f299 100644
+index 0ab2e31..c2edbaf 100644
 --- a/pkgconfig/mbedx509.pc.in
 +++ b/pkgconfig/mbedx509.pc.in
 @@ -1,4 +1,4 @@
@@ -64,4 +72,5 @@ index 0ab2e31ea1..fc90e0f299 100644
 -Requires.private: mbedcrypto
 +Requires@PKGCONFIG_REQUIRES_PRIVATE@: mbedcrypto
  Cflags: -I"${includedir}"
- Libs: -L"${libdir}" -lmbedx509
+-Libs: -L"${libdir}" -lmbedx509
++Libs: -L"${libdir}" -lmbedx509 @PKGCONFIG_EXTRA_LIBS_MBEDX509@

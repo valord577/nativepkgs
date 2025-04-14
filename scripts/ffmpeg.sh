@@ -45,7 +45,7 @@ fi
 # compile :p
 # ----------------------------
 if [ "${CLANGD_CODE_COMPLETION}" == "1" ]; then
-  PKG_BULD_DIR="${PROJ_ROOT}"
+  PKG_BULD_DIR="${SUBPROJ_SRC}"
 else
   { rm -rf ${PKG_BULD_DIR}; mkdir -p "${PKG_BULD_DIR}"; }
   { rm -rf ${PKG_INST_DIR}; mkdir -p "${PKG_INST_DIR}"; }

@@ -252,6 +252,7 @@ jobs:
           echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
           echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$GITHUB_ENV"
       - name: clone with gh
+        if: ${{ false }}
         run: |
           curl --fail-with-body -sSL \
             -o '/etc/apt/keyrings/githubcli-archive-keyring.gpg' \
@@ -263,6 +264,12 @@ jobs:
           git config --global --add safe.directory "*"
           gh repo clone ${{ github.repositoryUrl }} . -- --no-checkout --single-branch --depth=1
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +${{ github.sha }}
+          git checkout FETCH_HEAD
+      - name: clone source
+        run: |
+          git init
+          git remote add x ${{ github.repositoryUrl }}
+          git fetch -q --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
       - name: gh action ccache restore
         uses: actions/cache/restore@v4

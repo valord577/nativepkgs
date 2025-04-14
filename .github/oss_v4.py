@@ -6,18 +6,18 @@ import os
 import sys
 import time
 from hashlib import sha256
-from typing import Any, Callable, NoReturn
+from typing import Any, Callable
 from urllib.parse import quote as escape
 
 sign_expires_in_seconds = "60"
 environ_key_http_debug = "HTTP_DEBUG_MESSAGE"
 oss_storage_basedir = os.getenv("GH_OSSUTIL_PKGS")
 
-_ak = os.getenv("GH_OSSUTIL_AK")
-_sk = os.getenv("GH_OSSUTIL_SK")
-_cdn = os.getenv("GH_OSSUTIL_CNAME")
-_bucket = os.getenv("GH_OSSUTIL_BUCKET")
-_region = os.getenv("GH_OSSUTIL_REGION")
+_ak = os.getenv("GH_OSSUTIL_AK", '')
+_sk = os.getenv("GH_OSSUTIL_SK", '')
+_cdn = os.getenv("GH_OSSUTIL_CNAME", '')
+_bucket = os.getenv("GH_OSSUTIL_BUCKET", '')
+_region = os.getenv("GH_OSSUTIL_REGION", '')
 
 
 def tls() -> bool:
@@ -101,8 +101,8 @@ def call(
     sk: str,
     bucket: str,
     region: str,
-    cdn: str = None,
-    callback: Callable[[http.client.HTTPResponse], None] = None,
+    cdn: str = '',
+    callback: Callable[[http.client.HTTPResponse], None] | None = None,
     headers: dict[str, str] = {},
     queries: dict[str, str] = {},
 ) -> None:
@@ -130,7 +130,7 @@ def call(
 
 def put_object(
     src: str, dst: str, ak: str, sk: str, bucket: str, region: str
-) -> NoReturn:
+):
     def callback(resp: http.client.HTTPResponse) -> None:
         if resp.getcode() != 200 and resp.getcode() != 204:
             print(f"respcode: {resp.getcode()}, respbody: ->\n{resp.read().decode()}")
@@ -149,8 +149,8 @@ def put_object(
 
 
 def get_object(
-    src: str, dst: str, ak: str, sk: str, bucket: str, region: str, cdn: str = None
-) -> NoReturn:
+    src: str, dst: str, ak: str, sk: str, bucket: str, region: str, cdn: str = ''
+):
     def callback(resp: http.client.HTTPResponse) -> None:
         if resp.getcode() != 200 and resp.getcode() != 204:
             print(f"respcode: {resp.getcode()}, respbody: ->\n{resp.read().decode()}")

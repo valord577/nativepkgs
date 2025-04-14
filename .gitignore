@@ -1,6 +1,10 @@
 .cache
 .DS_Store
 .env
+__pycache__
+
+/.deps/
+/.lib.*/
 
 /tmp/
 /out/
