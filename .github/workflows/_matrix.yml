@@ -270,7 +270,7 @@ jobs:
           git config --global --add safe.directory "*"
 
           git init
-          git remote add x ${{ github.repositoryUrl }}
+          git remote add x ${{github.server_url}}/${{ github.repository }}.git
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
       - name: gh action ccache restore
