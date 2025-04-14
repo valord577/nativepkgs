@@ -171,10 +171,14 @@ jobs:
       run:
         shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'bash' }}
         working-directory: ${{ github.workspace }}
-    env:
-      CCACHE_GHA_KEY: ${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
-      PKG_ZIP_NAME: ${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
     steps:
+      - name: set required env
+        run: |
+          CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}"
+          PKG_ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}"
+
+          echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
+          echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$GITHUB_ENV"
       - name: disable macos spotlight - macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
@@ -250,14 +254,16 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
     env:
-      CCACHE_GHA_KEY: ${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}
-      PKG_ZIP_NAME: ${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}
+
     steps:
       - name: set required env
-        if: ${{ matrix.platform == 'linux' }}
         run: |
-          CCACHE_GHA_KEY='${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.lib_impl }}'
-          PKG_ZIP_NAME='${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}-${{ matrix.lib_impl }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}'
+          target_arch_libc='${{ matrix.arch }}'
+          ${{ matrix.platform == 'linux' }} && \
+            { target_arch_libc='${{ matrix.arch }}-${{ matrix.lib_impl }}'; }
+
+          CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${target_arch_libc}"
+          PKG_ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${target_arch_libc}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}"
 
           echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
           echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$GITHUB_ENV"
