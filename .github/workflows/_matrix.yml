@@ -67,8 +67,6 @@ env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CI_HIT_MESSAGE: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} (${{ github.sha }})"
   NATIVEPKGS_RUNTIME_VERBOSE: '1'
-  PYTHONUNBUFFERED: '1'
-  PYTHONDONTWRITEBYTECODE: '1'
   S3_R2_ACCOUNT_ID: ${{ secrets.S3_R2_ACCOUNT_ID }}
   S3_R2_ACCESS_KEY: ${{ secrets.S3_R2_ACCESS_KEY }}
   S3_R2_SECRET_KEY: ${{ secrets.S3_R2_SECRET_KEY }}
