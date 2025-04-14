@@ -142,9 +142,9 @@ def _self_func__tree(basepath: str, depth: int = 0):
     while _stack:
         _name, _path, _depth, _is_last, _is_symlink, _is_dir = _entry = _stack.pop()
         if _depth == -1:
-            print(_name)
+            print(_name, file=sys.stderr)
         else:
-            print(f"{'│   ' * _depth}{'└── ' if _is_last == '1' else '├── '}{_name}{f' -> {os.readlink(_path)}' if _is_symlink else ''}")
+            print(f"{'│   ' * _depth}{'└── ' if _is_last == '1' else '├── '}{_name}{f' -> {os.readlink(_path)}' if _is_symlink else ''}", file=sys.stderr)
 
         if (not _is_dir) or (depth > 0 and _depth + 1 >= depth):
             continue
@@ -191,10 +191,10 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
 def _util_func__subprocess(args: list[str],
     cwd: str | None = None, env: dict[str, str] | None = None,
 ):
-    print(f'>>>> subprocess cmdline: {args}')
+    print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
     proc = sp.run(args=args, cwd=cwd, env=env)
     if proc.returncode != 0:
-        print(f'>>>> subprocess exitcode: {proc.returncode}')
+        print(f'>>>> subprocess exitcode: {proc.returncode}', file=sys.stderr)
         sys.exit(proc.returncode)
 def _util_func__pip_install(packages: list[str]):
     args = [sys.executable, '-m', 'pip', 'install', '--upgrade']
@@ -507,4 +507,4 @@ if __name__ == "__main__":
     for func in build_steps:
         func()
     _self_func__tree(build_env['PKG_INST_DIR'], depth=3)
-    print(f'──── Build Done @{dt.datetime.now(dt.UTC).strftime("%Y-%m-%d %H:%M:%S %Z")} ────')
+    print(f'──── Build Done @{dt.datetime.now(dt.UTC).strftime("%Y-%m-%d %H:%M:%S %Z")} ────', file=sys.stderr)
