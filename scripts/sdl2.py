@@ -26,11 +26,15 @@ def module_init(env: dict) -> list:
 
 
 def _source_download():
+    _git_target = 'refs/tags/release-2.32.4'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/libsdl-org/SDL.git'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', '+refs/tags/release-2.32.4'])
+        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
+    if not (file_ver := os.getenv('DEPS_VER', '')):
+        with open(file_ver, 'w') as f:
+            f.write('v' + _git_target.split('-')[-1])
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return

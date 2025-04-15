@@ -64,9 +64,9 @@ env:
   GH_OSSUTIL_CNAME: ${{ secrets.GH_OSSUTIL_CNAME }}
   PKG_NAME: ${{ github.workflow }}
   INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
+  DEPS_VER: ${{ github.workspace }}/${{ github.workflow }}.ver
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CI_HIT_MESSAGE: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} (${{ github.sha }})"
-  NATIVEPKGS_RUNTIME_VERBOSE: '1'
   S3_R2_ACCOUNT_ID: ${{ secrets.S3_R2_ACCOUNT_ID }}
   S3_R2_ACCESS_KEY: ${{ secrets.S3_R2_ACCESS_KEY }}
   S3_R2_SECRET_KEY: ${{ secrets.S3_R2_SECRET_KEY }}
@@ -273,10 +273,7 @@ jobs:
             { target_arch_libc='${{ matrix.arch }}-${{ matrix.lib_impl }}'; }
 
           CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${target_arch_libc}"
-          PKG_ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${target_arch_libc}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}"
-
           echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
-          echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$GITHUB_ENV"
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -292,17 +289,25 @@ jobs:
           key: ${{ env.CCACHE_GHA_KEY }}
       - name: buildx library - ${{ env.PKG_NAME }}
         run: |
+          _target_arch_libc='${{ matrix.arch }}'
           build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
           ${{ matrix.platform == 'linux' }} && \
-            { build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.lib_impl }}'; }
+            {
+              _target_arch_libc='${{ matrix.arch }}-${{ matrix.lib_impl }}'
+              build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.lib_impl }}'
+            }
 
           python3 -m venv .env
           export PKG_TYPE=${{ matrix.pkg_type }}
           source .env/bin/activate
           ./build.py ${build_target_args} -m ${{ env.PKG_NAME }}
 
+          pkg_ver=$(cat ${{ env.DEPS_VER }})
+          ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${_target_arch_libc}_${pkg_ver}_${{ matrix.pkg_type }}"
+          echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
+
           # keep file permissions and case sensitivity
-          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ env.PKG_NAME }}
+          zip -ry "${{ env.ZIP_NAME }}.zip" ${{ env.PKG_NAME }}
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
@@ -311,10 +316,10 @@ jobs:
       - name: upload library - ${{ env.PKG_NAME }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.PKG_ZIP_NAME }}
-          path: ${{ env.PKG_ZIP_NAME }}.zip
+          name: ${{ env.ZIP_NAME }}
+          path: ${{ env.ZIP_NAME }}.zip
           compression-level: 0
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
-          ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ env.PKG_NAME }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
+          ./.github/oss_v4.py push "${{ env.ZIP_NAME }}.zip" "${{ env.PKG_NAME }}/${{ needs._preset.outputs.pkgver }}/${{ env.ZIP_NAME }}.zip"

@@ -28,11 +28,15 @@ def module_init(env: dict) -> list:
 
 
 def _source_download():
+    _git_target = '22098d41c6620ce07cf8a0134d37302355e1e5ef'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/Mbed-TLS/mbedtls.git'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', '+22098d41c6620ce07cf8a0134d37302355e1e5ef'])
+        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
+    if not (file_ver := os.getenv('DEPS_VER', '')):
+        with open(file_ver, 'w') as f:
+            f.write(_git_target[:7])
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
