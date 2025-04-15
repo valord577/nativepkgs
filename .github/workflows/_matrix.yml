@@ -277,12 +277,12 @@ jobs:
           CCACHE_DIR="${PWD}/.ccache"
           echo "CCACHE_DIR=${CCACHE_DIR}" >> "$GITHUB_ENV"
 
-
-          target_arch_libc='${{ matrix.arch }}'
+          TARGET_ARCH_LIBC='${{ matrix.arch }}'
           ${{ matrix.platform == 'linux' }} && \
-            { target_arch_libc='${{ matrix.arch }}-${{ matrix.lib_impl }}'; }
+            { TARGET_ARCH_LIBC='${{ matrix.arch }}-${{ matrix.lib_impl }}'; }
+          echo "TARGET_ARCH_LIBC=${TARGET_ARCH_LIBC}" >> "$GITHUB_ENV"
 
-          CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${target_arch_libc}"
+          CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${TARGET_ARCH_LIBC}"
           echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
       - name: clone source
         run: |
@@ -302,11 +302,9 @@ jobs:
           key: ${{ env.CCACHE_GHA_KEY }}
       - name: buildx library - ${{ env.PKG_NAME }}
         run: |
-          _target_arch_libc='${{ matrix.arch }}'
           build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
           ${{ matrix.platform == 'linux' }} && \
             {
-              _target_arch_libc='${{ matrix.arch }}-${{ matrix.lib_impl }}'
               build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.lib_impl }}'
             }
 
@@ -316,7 +314,7 @@ jobs:
           ./build.py ${build_target_args} -m ${{ env.PKG_NAME }}
 
           PKG_VERSION=$(cat ${{ env.DEPS_VER }})
-          ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${_target_arch_libc}_${PKG_VERSION}_${{ matrix.pkg_type }}"
+          ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ env.TARGET_ARCH_LIBC }}_${PKG_VERSION}_${{ matrix.pkg_type }}"
 
           echo "PKG_VERSION=${PKG_VERSION}" >> "$GITHUB_ENV"
           echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
