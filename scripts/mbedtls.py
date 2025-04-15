@@ -35,6 +35,7 @@ def _source_download():
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER'):
+        print(file_ver, file=sys.stderr)
         with open(file_ver, 'w') as f:
             f.write(_git_target[:7])
 def _source_apply_patches():
