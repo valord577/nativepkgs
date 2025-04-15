@@ -284,6 +284,9 @@ jobs:
 
           CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${target_arch_libc}"
           echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
+      - name: setup rclone for s3 (cloudflare r2)
+        run: |
+          ./.github/rclone.py
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -312,8 +315,10 @@ jobs:
           source .env/bin/activate
           ./build.py ${build_target_args} -m ${{ env.PKG_NAME }}
 
-          pkg_ver=$(cat ${{ env.DEPS_VER }})
-          ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${_target_arch_libc}_${pkg_ver}_${{ matrix.pkg_type }}"
+          PKG_VERSION=$(cat ${{ env.DEPS_VER }})
+          ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${_target_arch_libc}_${PKG_VERSION}_${{ matrix.pkg_type }}"
+
+          echo "PKG_VERSION=${PKG_VERSION}" >> "$GITHUB_ENV"
           echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
 
           # keep file permissions and case sensitivity
@@ -330,6 +335,6 @@ jobs:
           path: ${{ env.ZIP_NAME }}.zip
           compression-level: 0
       - name: commit to pre-compiled storage
-        if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
+        # if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
-          ./.github/oss_v4.py push "${{ env.ZIP_NAME }}.zip" "${{ env.PKG_NAME }}/${{ needs._preset.outputs.pkgver }}/${{ env.ZIP_NAME }}.zip"
+          ./.github/rclone copy "${{ env.ZIP_NAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/${{ env.ZIP_NAME }}.zip"
