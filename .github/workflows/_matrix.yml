@@ -337,4 +337,4 @@ jobs:
       - name: commit to pre-compiled storage
         # if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
-          ./.github/rclone copy "${{ env.ZIP_NAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/${{ env.ZIP_NAME }}.zip"
+          ./.github/rclone copy "${{ env.ZIP_NAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
