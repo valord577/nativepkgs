@@ -284,9 +284,6 @@ jobs:
 
           CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${target_arch_libc}"
           echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
-      - name: setup rclone for s3 (cloudflare r2)
-        run: |
-          ./.github/rclone.py
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -295,6 +292,9 @@ jobs:
           git remote add x ${{github.server_url}}/${{ github.repository }}.git
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
+      - name: setup rclone for s3 (cloudflare r2)
+        run: |
+          ./.github/rclone.py
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:
