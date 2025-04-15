@@ -317,7 +317,7 @@ jobs:
           echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
 
           # keep file permissions and case sensitivity
-          zip -ry "${{ env.ZIP_NAME }}.zip" ${{ env.PKG_NAME }}
+          zip -ry "${ZIP_NAME}.zip" ${{ env.PKG_NAME }}
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
