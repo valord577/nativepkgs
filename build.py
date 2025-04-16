@@ -63,20 +63,6 @@ class _ctx:
         else:
             self.nproc = os.cpu_count() or 2
 
-        self.s3_bucket = ''
-        self.s3_client = None
-        if ON_GITHUB_CI:
-            _util_func__pip_install(['boto3==1.23.10'])
-            import boto3
-            self.s3_bucket = os.getenv('S3_R2_STORAGE_BUCKET', '')
-            self.s3_client = boto3.client(
-                service_name = 's3',
-                region_name  = os.getenv('S3_R2_STORAGE_REGION', 'auto'),
-                endpoint_url = f'https://{os.getenv("S3_R2_ACCOUNT_ID", "")}.r2.cloudflarestorage.com',
-                aws_access_key_id = os.getenv('S3_R2_ACCESS_KEY', ''),
-                aws_secret_access_key = os.getenv('S3_R2_SECRET_KEY', ''),
-            )
-
 
     def _lazy_import(self):
         name = self.module

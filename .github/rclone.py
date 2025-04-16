@@ -9,12 +9,13 @@ import stat
 import sys
 import urllib.request
 
+
 _rclone_ver = 'v1.69.1'
 _rclone_dir = os.path.abspath(os.path.dirname(__file__))
 
-
 def _print(msg: str):
     print(msg, file=sys.stderr)
+
 
 if __name__ == "__main__":
     plat = platform.system().lower()
@@ -63,8 +64,8 @@ if __name__ == "__main__":
     with open(rclone_conf_src, 'r') as src:
         with open(rclone_conf_dst, 'w') as dst:
             while line := src.readline():
-                line = line.replace('@S3_R2_ACCOUNT_ID@', os.getenv('S3_R2_ACCOUNT_ID', 'auto'))
-                line = line.replace('@S3_R2_ACCESS_KEY@', os.getenv('S3_R2_ACCESS_KEY', ''))
-                line = line.replace('@S3_R2_SECRET_KEY@', os.getenv('S3_R2_SECRET_KEY', ''))
+                line = line.replace('@S3_R2_ACCOUNT_ID@', os.getenv('S3_R2_ACCOUNT_ID', '<mask>'))
+                line = line.replace('@S3_R2_ACCESS_KEY@', os.getenv('S3_R2_ACCESS_KEY', '<mask>'))
+                line = line.replace('@S3_R2_SECRET_KEY@', os.getenv('S3_R2_SECRET_KEY', '<mask>'))
                 line = line.replace('@S3_R2_STORAGE_REGION@', os.getenv('S3_R2_STORAGE_REGION', 'auto'))
                 dst.write(line)

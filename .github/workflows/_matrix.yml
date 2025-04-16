@@ -177,28 +177,27 @@ jobs:
         shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'bash' }}
         working-directory: ${{ github.workspace }}
     steps:
-      - name: set required env - macos
+      - name: set required software(s) - macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           sudo mdutil -a -i off
 
-
-          CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}"
-          PKG_ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}"
-
-          echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
-          echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$GITHUB_ENV"
-      - name: set required env - windows
+          brew install ccache nasm; brew list -l
+      - name: set required software(s) - windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
-          Set-MpPreference -DisableRealtimeMonitoring $true
+          Set-MpPreference `
+            -DisableBehaviorMonitoring $True `
+            -DisableIOAVProtection     $True `
+            -DisableArchiveScanning    $True `
+            -DisableScriptScanning     $True `
+            -DisableRealtimeMonitoring $True
 
-
-          $CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}"
-          $PKG_ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}"
-
-          echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$env:GITHUB_ENV"
-          echo "PKG_ZIP_NAME=${PKG_ZIP_NAME}" >> "$env:GITHUB_ENV"
+          choco install ccache nasm; choco list
+      - name: set required env
+        run: |
+          echo "CCACHE_GHA_KEY=${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}" >> "${{ github.env }}"
+          echo "PKG_ZIP_NAME=${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}" >> "${{ github.env }}"
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -210,14 +209,6 @@ jobs:
       - name: setup rclone for s3 (cloudflare r2)
         run: |
           python3 ./.github/rclone.py
-      - name: install required software(s) - macos
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: |
-          brew install ccache nasm tree; brew list -l
-      - name: install required software(s) - windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: |
-          choco install ccache nasm; choco list
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:
@@ -271,22 +262,7 @@ jobs:
     steps:
       - name: set required env
         run: |
-          INST_DIR="${PWD}/${{ env.PKG_NAME }}"
-          echo "INST_DIR=${INST_DIR}" >> "$GITHUB_ENV"
-
-          DEPS_VER="${INST_DIR}.ver"
-          echo "DEPS_VER=${DEPS_VER}" >> "$GITHUB_ENV"
-
-          CCACHE_DIR="${PWD}/.ccache"
-          echo "CCACHE_DIR=${CCACHE_DIR}" >> "$GITHUB_ENV"
-
-          TARGET_ARCH_LIBC='${{ matrix.arch }}'
-          ${{ matrix.platform == 'linux' }} && \
-            { TARGET_ARCH_LIBC='${{ matrix.arch }}-${{ matrix.lib_impl }}'; }
-          echo "TARGET_ARCH_LIBC=${TARGET_ARCH_LIBC}" >> "$GITHUB_ENV"
-
-          CCACHE_GHA_KEY="${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${TARGET_ARCH_LIBC}"
-          echo "CCACHE_GHA_KEY=${CCACHE_GHA_KEY}" >> "$GITHUB_ENV"
+          ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -308,12 +284,12 @@ jobs:
           build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
           ${{ matrix.platform == 'linux' }} && \
             {
-              build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.lib_impl }}'
+              build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.libc }}'
             }
 
           python3 -m venv .env
-          export PKG_TYPE=${{ matrix.pkg_type }}
           source .env/bin/activate
+          export PKG_TYPE=${{ matrix.pkg_type }}
           ./build.py ${build_target_args} -m ${{ env.PKG_NAME }}
 
           PKG_VERSION=$(cat ${{ env.DEPS_VER }})
