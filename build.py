@@ -175,19 +175,19 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
     if pkg_type == 'static':
         _ctx['PKG_3RD_DEPS_STATIC'].append(_this_lib_dir)
 def _util_func__subprocess_str(args: list[str],
-    cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None,
+    cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
 ) -> str:
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
-    proc = sp.run(args=args, cwd=cwd, env=env, shell=True, stdout=sp.PIPE, text=True)
+    proc = sp.run(args=args, cwd=cwd, env=env, shell=shell, stdout=sp.PIPE, text=True)
     if proc.returncode != 0:
         print(f'>>>> subprocess exitcode: {proc.returncode}', file=sys.stderr)
         sys.exit(proc.returncode)
     return proc.stdout
 def _util_func__subprocess(args: list[str],
-    cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None,
+    cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
 ):
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
-    proc = sp.run(args=args, cwd=cwd, env=env, shell=True)
+    proc = sp.run(args=args, cwd=cwd, env=env, shell=shell)
     if proc.returncode != 0:
         print(f'>>>> subprocess exitcode: {proc.returncode}', file=sys.stderr)
         sys.exit(proc.returncode)
@@ -328,10 +328,10 @@ def _setctx_apple(
     else:
         show_errmsg(f'unsupported target platform: {ctx.target_plat}')
 
-    ctx.env_passthrough['SYSROOT'] = sysroot = _util_func__subprocess_str(['xcrun', '--sdk', 'macosx', '--show-sdk-path'])[:-1]
+    ctx.env_passthrough['SYSROOT'] = sysroot = _util_func__subprocess_str([shutil.which('xcrun') or 'xcrun', '--sdk', 'macosx', '--show-sdk-path'])[:-1]
     ctx.env_passthrough['CROSS_FLAGS'] = f'-arch {_target_arch} -m{_min_version_target_flag}-version-min={_min_version_deployment}'
-    ctx.env_passthrough['HOSTCC']  = _util_func__subprocess_str(['xcrun', '-f', 'clang'])[:-1]
-    ctx.env_passthrough['HOSTCXX'] = _util_func__subprocess_str(['xcrun', '-f', 'clang++'])[:-1]
+    ctx.env_passthrough['HOSTCC']  = _util_func__subprocess_str([shutil.which('xcrun') or 'xcrun', '-f', 'clang'])[:-1]
+    ctx.env_passthrough['HOSTCXX'] = _util_func__subprocess_str([shutil.which('xcrun') or 'xcrun', '-f', 'clang++'])[:-1]
     ctx.env_passthrough['CC']  = f"{ctx.ccache} {ctx.env_passthrough['HOSTCC']}  {ctx.env_passthrough['CROSS_FLAGS']} --sysroot={sysroot}"
     ctx.env_passthrough['CXX'] = f"{ctx.ccache} {ctx.env_passthrough['HOSTCXX']} {ctx.env_passthrough['CROSS_FLAGS']} --sysroot={sysroot}"
     ctx.env_passthrough['OBJC']   = ctx.env_passthrough['CC']

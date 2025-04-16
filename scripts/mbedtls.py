@@ -12,6 +12,7 @@ _ctx: dict = {
     'PKG_INST_STRIP': '',
     'CMAKE_CMD': 'cmake',
     'BUILD_ENV': os.environ.copy(),
+    'SHELL_REQ': False,
 }
 
 def module_init(env: dict) -> list:
@@ -89,6 +90,7 @@ def _build_step_msvc():
     _ctx['BUILD_ENV'] = _env['WIN32_MSVC_ENV_TARGET']
     _ctx['BUILD_ENV']['CFLAGS']   = '/utf-8 /wd4146'
     _ctx['BUILD_ENV']['CXXFLAGS'] = _ctx['BUILD_ENV']['CFLAGS']
+    _ctx['SHELL_REQ'] = True
 
     if _env['LIB_RELEASE'] == '0':
         _env['FUNC_EXIT'](f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')  # exited
@@ -122,12 +124,12 @@ def _build_step_00():
         '-D',  'ENABLE_TESTING:BOOL=0',
     ]
     args.extend(_extra_args_cmake)
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args)
+    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
 def _build_step_01():
     args = [_ctx['CMAKE_CMD'], '--build', _env['PKG_BULD_DIR'], '-j', _env['PARALLEL_JOBS']]
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args)
+    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
 def _build_step_02():
     args = [_ctx['CMAKE_CMD'], '--install', _env['PKG_BULD_DIR']]
     if _ctx['PKG_INST_STRIP']:
         args.append( _ctx['PKG_INST_STRIP'])
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args)
+    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
