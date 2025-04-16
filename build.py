@@ -10,7 +10,7 @@ import pprint
 import shutil
 import subprocess as sp
 import sys
-from typing import NoReturn
+from typing import NoReturn, Union
 
 
 # set when only building one module
@@ -61,8 +61,7 @@ class _ctx:
         if sys.platform == 'linux':
             self.nproc = len(os.sched_getaffinity(0))
         else:
-            _nproc = os.cpu_count()
-            self.nproc = _nproc if _nproc else 0
+            self.nproc = os.cpu_count() or 2
 
         self.s3_bucket = ''
         self.s3_client = None
@@ -188,8 +187,17 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
         _ctx['PKG_3RD_DEPS_SHARED'].append(_this_lib_dir)
     if pkg_type == 'static':
         _ctx['PKG_3RD_DEPS_STATIC'].append(_this_lib_dir)
+def _util_func__subprocess_str(args: list[str],
+    cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None,
+) -> str:
+    print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
+    proc = sp.run(args=args, cwd=cwd, env=env, stdout=sp.PIPE, text=True)
+    if proc.returncode != 0:
+        print(f'>>>> subprocess exitcode: {proc.returncode}', file=sys.stderr)
+        sys.exit(proc.returncode)
+    return proc.stdout
 def _util_func__subprocess(args: list[str],
-    cwd: str | None = None, env: dict[str, str] | None = None,
+    cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None,
 ):
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
     proc = sp.run(args=args, cwd=cwd, env=env)
@@ -302,7 +310,73 @@ def _setctx_linux(
 def _setctx_apple(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
-    pass
+    if ctx.native_plat != 'darwin':
+        show_errmsg(f'unsupported host os: {ctx.native_plat}')
+    ctx.env_passthrough['PLATFORM_APPLE'] = True
+
+    if ctx.ccache:
+        ctx.extra_cmake.extend(['-D', 'CMAKE_OBJC_COMPILER_LAUNCHER=ccache'])
+        ctx.extra_cmake.extend(['-D', 'CMAKE_OBJCXX_COMPILER_LAUNCHER=ccache'])
+
+    ctx.target_plat = 'macosx' if ctx.native_plat == 'darwin' else ctx.native_plat
+    ctx.target_arch = 'amd64'  if ctx.native_arch == 'x86_64' else ctx.native_arch
+    if not _native:
+        ctx.target_plat = _tuple[0]
+        ctx.target_arch = _tuple[1]
+    _target_arch = 'x86_64' if ctx.target_arch == 'amd64' else ctx.target_arch
+
+    _min_version_deployment = '10.15' if ctx.target_plat == 'macosx' else '12'
+    _min_version_target_flag = ''
+    if False:
+        pass
+    elif ctx.target_plat == 'macosx':
+        _min_version_target_flag = 'macosx'
+        ctx.extra_cmake.extend(['-D', 'CMAKE_SYSTEM_NAME=Darwin'])
+    elif ctx.target_plat == 'iphoneos':
+        _min_version_target_flag = 'iphoneos'
+        ctx.extra_cmake.extend(['-D', 'CMAKE_SYSTEM_NAME=iOS'])
+    elif ctx.target_plat == 'iphonesimulator':
+        _min_version_target_flag = 'ios-simulator'
+        ctx.extra_cmake.extend(['-D', 'CMAKE_SYSTEM_NAME=iOS'])
+    else:
+        show_errmsg(f'unsupported target platform: {ctx.target_plat}')
+
+    ctx.env_passthrough['SYSROOT'] = sysroot = _util_func__subprocess_str(['xcrun', '--sdk', 'macosx', '--show-sdk-path'])[:-1]
+    ctx.env_passthrough['CROSS_FLAGS'] = f'-arch {_target_arch} -m{_min_version_target_flag}-version-min={_min_version_deployment}'
+    ctx.env_passthrough['HOSTCC']  = _util_func__subprocess_str(['xcrun', '-f', 'clang'])[:-1]
+    ctx.env_passthrough['HOSTCXX'] = _util_func__subprocess_str(['xcrun', '-f', 'clang++'])[:-1]
+    ctx.env_passthrough['CC']  = f"{ctx.ccache} {ctx.env_passthrough['HOSTCC']}  {ctx.env_passthrough['CROSS_FLAGS']} --sysroot={sysroot}"
+    ctx.env_passthrough['CXX'] = f"{ctx.ccache} {ctx.env_passthrough['HOSTCXX']} {ctx.env_passthrough['CROSS_FLAGS']} --sysroot={sysroot}"
+    ctx.env_passthrough['OBJC']   = ctx.env_passthrough['CC']
+    ctx.env_passthrough['OBJCXX'] = ctx.env_passthrough['CXX']
+
+
+    crossfiles_dir = os.path.abspath(os.path.join(PROJ_ROOT, 'crossfiles', 'apple'))
+    # pkgconf bin
+    ctx.cross_pkgconfig_bin = os.path.abspath(os.path.join(crossfiles_dir, 'pkgconf-wrapper'))
+    # meson toolchain file
+    CROSS_TOOLCHAIN_FILE_MESON_DST = os.path.abspath(os.path.join(crossfiles_dir, f'toolchain-meson-template.{ctx.target_plat}-{_target_arch}'))
+    CROSS_TOOLCHAIN_FILE_MESON_SRC = f'{CROSS_TOOLCHAIN_FILE_MESON_DST}.tmpl'
+    with open(CROSS_TOOLCHAIN_FILE_MESON_SRC, 'r') as src:
+        with open(CROSS_TOOLCHAIN_FILE_MESON_DST, 'w') as dst:
+            while line := src.readline():
+                line = line.replace('__SYSROOT__', sysroot)
+                line = line.replace('__EXTRA_FLAGS__', f"'-m{_min_version_target_flag}-version-min={_min_version_deployment}'")
+                dst.write(line)
+    ctx.extra_meson.extend(["--cross-file", CROSS_TOOLCHAIN_FILE_MESON_DST])
+    # cmake toolchain file
+    ctx.extra_cmake.extend(['-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE'])
+    ctx.extra_cmake.extend(['-D', f"CMAKE_C_COMPILER={ctx.env_passthrough['HOSTCC']}"])
+    ctx.extra_cmake.extend(['-D', f"CMAKE_CXX_COMPILER={ctx.env_passthrough['HOSTCXX']}"])
+    ctx.extra_cmake.extend(['-D', f"CMAKE_OBJC_COMPILER={ctx.env_passthrough['HOSTCC']}"])
+    ctx.extra_cmake.extend(['-D', f"CMAKE_OBJCXX_COMPILER={ctx.env_passthrough['HOSTCXX']}"])
+    ctx.extra_cmake.extend(['-D', f"CMAKE_SYSTEM_PROCESSOR={_target_arch}"])
+    ctx.extra_cmake.extend(['-D', f"CMAKE_OSX_ARCHITECTURES={_target_arch}"])
+    ctx.extra_cmake.extend(['-D', f"CMAKE_OSX_SYSROOT={ctx.target_plat}"])
+    ctx.extra_cmake.extend(['-D', f"CMAKE_OSX_DEPLOYMENT_TARGET={_min_version_deployment}"])
+    ctx.extra_cmake.extend(['-D',  'CMAKE_MACOSX_BUNDLE:BOOL=0'])
+    ctx.extra_cmake.extend(['-D', f"PKG_CONFIG_EXECUTABLE={ctx.cross_pkgconfig_bin}"])
+
 def _setctx_win32_mingw(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
@@ -480,14 +554,14 @@ if __name__ == "__main__":
     if not _target:
         show_errmsg(f'unsupported target platform: {ctx.target_plat}')
 
-    _tuple: tuple[str, ...] | None = None
+    _tuple: Union[tuple[str, ...], None] = None
     if argc_tgt > 1:
         # check target tuple
         _tuple = tuple(argv_tgt)
         if not (_tuple in _target['tuples']):
             show_errmsg(f'unsupported target tuple: {_tuple}')
     _is_native_build = ((argc_tgt == 1) and (_target['native']))
-    if (_is_native_build) and (not _tuple):
+    if (not _is_native_build) and (not _tuple):
         show_errmsg(f'unsupported native build: {ctx.target_plat}')
     _target['setctx'](ctx, _is_native_build, _tuple)
 
@@ -507,4 +581,4 @@ if __name__ == "__main__":
     for func in build_steps:
         func()
     _self_func__tree(build_env['PKG_INST_DIR'], depth=3)
-    print(f'──── Build Done @{dt.datetime.now(dt.UTC).strftime("%Y-%m-%d %H:%M:%S %Z")} ────', file=sys.stderr)
+    print(f'──── Build Done @{dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")} ────', file=sys.stderr)

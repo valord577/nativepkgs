@@ -99,7 +99,15 @@ def _build_step_00():
         args.append(f"--pkg-config={_pkgconf}")
 
     if _env.get('PLATFORM_APPLE', False):
-        pass
+        args.extend([
+            '--enable-cross-compile',
+            '--target-os=darwin',
+            '--disable-coreimage',
+            f'--arch={_env["PKG_ARCH"]}',
+            f'--extra-ldflags={_env["CROSS_FLAGS"]}',
+        ])
+        if _env['PKG_PLATFORM'] != 'macosx':
+            args.extend(['--disable-programs'])
     if _env['PKG_PLATFORM'] == 'linux':
         _rpath = '\\$\\$ORIGIN:\\$\\$ORIGIN/../lib'
         args.append(f"--extra-ldsoflags=-Wl,-rpath,'{_rpath}'")

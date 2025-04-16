@@ -207,6 +207,9 @@ jobs:
           git remote add x ${{github.server_url}}/${{ github.repository }}.git
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
+      - name: setup rclone for s3 (cloudflare r2)
+        run: |
+          python3 ./.github/rclone.py
       - name: install required software(s) - macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
@@ -333,6 +336,6 @@ jobs:
           path: ${{ env.ZIP_NAME }}.zip
           compression-level: 0
       - name: commit to pre-compiled storage
-        # if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
+        if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
           ./.github/rclone copy "${{ env.ZIP_NAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
