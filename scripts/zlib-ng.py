@@ -35,7 +35,7 @@ def _source_download():
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER'):
         with open(file_ver, 'w') as f:
-            f.write(_git_target[:7])
+            f.write(f'{_git_target[:7]}')
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return

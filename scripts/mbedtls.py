@@ -38,7 +38,7 @@ def _source_download():
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER'):
         with open(file_ver, 'w') as f:
-            f.write(_git_target[:7])
+            f.write(f'{_git_target[:7]}')
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
@@ -76,6 +76,8 @@ def _source_set_features():
 
     if _env['PKG_PLATFORM'] == 'win-msvc':
         _env['FUNC_PROC'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_DEPRECATED_WARNING'])
+        _env['FUNC_PROC'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT'])
+        _env['FUNC_PROC'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_SHA512_USE_A64_CRYPTO_IF_PRESENT'])
     if _env['PKG_PLATFORM'] == 'win-mingw':
         _env['FUNC_PROC'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT'])
         _env['FUNC_PROC'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_SHA512_USE_A64_CRYPTO_IF_PRESENT'])
