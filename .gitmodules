@@ -1,9 +1,6 @@
 [submodule "deps/ffmpeg"]
 	path = deps/ffmpeg
 	url = https://github.com/FFmpeg/FFmpeg.git
-[submodule "deps/sdl2"]
-	path = deps/sdl2
-	url = https://github.com/libsdl-org/SDL.git
 [submodule "deps/llvm"]
 	path = deps/llvm
 	url = https://github.com/llvm/llvm-project.git

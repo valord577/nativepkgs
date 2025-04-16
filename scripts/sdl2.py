@@ -19,6 +19,7 @@ def module_init(env: dict) -> list:
     return [
         _source_download,
         _source_apply_patches,
+        _build_step_msvc,
         _build_step_00,
         _build_step_01,
         _build_step_02,
@@ -35,7 +36,7 @@ def _source_download():
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER'):
         with open(file_ver, 'w') as f:
-            f.write(f'v{_git_target.split('-')[-1]}')
+            f.write(f'v{_git_target.split("-")[-1]}')
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
@@ -50,13 +51,25 @@ def _source_apply_patches():
                 args=[shutil.which('git'), 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
 
 
+def _build_step_msvc():
+    if _env['PKG_PLATFORM'] != 'win-msvc':
+        return
+    _ctx['BUILD_ENV'] = _env['WIN32_MSVC_ENV_TARGET']
+    _ctx['BUILD_ENV']['CFLAGS']   = '/utf-8'
+    _ctx['BUILD_ENV']['CXXFLAGS'] = _ctx['BUILD_ENV']['CFLAGS']
+    _ctx['SHELL_REQ'] = True
+
+    if _env['LIB_RELEASE'] == '0':
+        _env['FUNC_EXIT'](f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')  # exited
+    if _env['LIB_RELEASE'] == '1':
+        _env['EXTRA_CMAKE'].extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
 def _build_step_00():
     _extra_args_cmake: list[str] = _env['EXTRA_CMAKE']
 
     if _env['PKG_TYPE'] == 'static':
         _extra_args_cmake.extend(['-D', 'BUILD_SHARED_LIBS:BOOL=0'])
     if _env['PKG_TYPE'] == 'shared':
-        _extra_args_cmake.extend(['-D', 'BUILD_SHARED_LIBS:BOOL=1'])
+        _env['FUNC_EXIT'](f'unsupported pkg type: {_env["PKG_TYPE"]}')  # exited
 
     if _env['LIB_RELEASE'] == '0':
         _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Debug'])
