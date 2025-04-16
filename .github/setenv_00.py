@@ -3,11 +3,7 @@
 # fmt: off
 
 import os
-import platform
-import shutil
-import stat
 import sys
-import urllib.request
 from typing import NoReturn
 
 
@@ -22,7 +18,6 @@ def show_errmsg(errmsg: str) -> NoReturn:
 
 
 if __name__ == "__main__":
-    _print(_basedir)
     _github_env = os.getenv('GITHUB_ENV', '')
     if not _github_env:
         show_errmsg('This script should be run on Github Action')

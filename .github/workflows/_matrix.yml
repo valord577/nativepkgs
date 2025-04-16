@@ -268,18 +268,18 @@ jobs:
           git remote add x ${{github.server_url}}/${{ github.repository }}.git
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
-      - name: set required env
-        run: |
-          ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
       - name: setup rclone for s3 (cloudflare r2)
         run: |
           ./.github/rclone.py
+      - name: set required env - 00
+        run: |
+          ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-      - name: buildx library - ${{ env.PKG_NAME }}
+      - name: library buildx - ${{ env.PKG_NAME }}
         run: |
           build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
           ${{ matrix.platform == 'linux' }} && \
@@ -291,27 +291,25 @@ jobs:
           source .env/bin/activate
           export PKG_TYPE=${{ matrix.pkg_type }}
           ./build.py ${build_target_args} -m ${{ env.PKG_NAME }}
-
-          PKG_VERSION=$(cat ${{ env.DEPS_VER }})
-          ZIP_NAME="${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ env.TARGET_ARCH_LIBC }}_${PKG_VERSION}_${{ matrix.pkg_type }}"
-
-          echo "PKG_VERSION=${PKG_VERSION}" >> "$GITHUB_ENV"
-          echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
-
-          # keep file permissions and case sensitivity
-          zip -ry "${ZIP_NAME}.zip" ${{ env.PKG_NAME }}
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-      - name: upload library - ${{ env.PKG_NAME }}
+      - name: set required env - 01
+        run: |
+          ./.github/setenv_01.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.pkg_type }}'
+      - name: library packed - ${{ env.PKG_NAME }}
+        run: |
+          # keep file permissions and case sensitivity
+          zip -ry "${{ env.PKG_ZIPNAME }}.zip" ${{ env.PKG_NAME }}
+      - name: library upload - ${{ env.PKG_NAME }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ZIP_NAME }}
-          path: ${{ env.ZIP_NAME }}.zip
+          name: ${{ env.PKG_ZIPNAME }}
+          path: ${{ env.PKG_ZIPNAME }}.zip
           compression-level: 0
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
-          ./.github/rclone copy "${{ env.ZIP_NAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
+          ./.github/rclone copy "${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
