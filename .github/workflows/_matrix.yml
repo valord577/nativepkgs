@@ -63,9 +63,6 @@ env:
   GH_OSSUTIL_PKGS: ${{ secrets.GH_OSSUTIL_PKGS }}
   GH_OSSUTIL_CNAME: ${{ secrets.GH_OSSUTIL_CNAME }}
   PKG_NAME: ${{ github.workflow }}
-  INST_DIR: ${{ github.workspace }}/${{ github.workflow }}
-  DEPS_VER: ${{ github.workspace }}/${{ github.workflow }}.ver
-  CCACHE_DIR: ${{ github.workspace }}/.ccache
   CI_HIT_MESSAGE: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} (${{ github.sha }})"
   S3_R2_ACCOUNT_ID: ${{ secrets.S3_R2_ACCOUNT_ID }}
   S3_R2_ACCESS_KEY: ${{ secrets.S3_R2_ACCESS_KEY }}
@@ -194,10 +191,6 @@ jobs:
             -DisableRealtimeMonitoring $True
 
           choco install ccache nasm; choco list
-      - name: set required env
-        run: |
-          echo "CCACHE_GHA_KEY=${{ env.PKG_NAME }}-${{ matrix.pkg_type }}-${{ matrix.platform }}-${{ matrix.arch }}" >> "${{ github.env }}"
-          echo "PKG_ZIP_NAME=${{ env.PKG_NAME }}_${{ matrix.platform }}_${{ matrix.arch }}_${{ needs._preset.outputs.pkgver }}_${{ matrix.pkg_type }}" >> "${{ github.env }}"
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -209,43 +202,54 @@ jobs:
       - name: setup rclone for s3 (cloudflare r2)
         run: |
           python3 ./.github/rclone.py
+      - name: set required env - 00
+        run: |
+          python3 ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
       - name: gh action ccache restore
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-      - name: buildx library - ${{ env.PKG_NAME }} - macos
+      - name: library buildx - ${{ env.PKG_NAME }} - macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
-          ./build_${{ matrix.platform }}_${{ matrix.arch }}.sh ${{ env.PKG_NAME }} ${{ matrix.pkg_type }}
-
-          # keep file permissions and case sensitivity
-          zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ env.PKG_NAME }}
-      - name: buildx library - ${{ env.PKG_NAME }} - windows
+          python3 -m venv .env; source .env/bin/activate
+          ./build.py ${{ matrix.platform }} ${{ matrix.arch }} -m ${{ env.PKG_NAME }}
+      - name: library buildx - ${{ env.PKG_NAME }} - windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
           & ".\build_${{ matrix.platform }}_${{ matrix.arch }}.ps1" ${{ env.PKG_NAME }} ${{ matrix.pkg_type }}
           if (($LASTEXITCODE -ne $null) -and ($LASTEXITCODE -ne 0)) { exit $LASTEXITCODE }
-
-          # keep file permissions and case sensitivity
-          C:/msys64/usr/bin/bash.exe -lc 'pacman --noconfirm -S zip;'
-          C:/msys64/usr/bin/bash.exe -lc `
-            'cd $(cygpath -u "${{ github.workspace }}"); zip -ry "${{ env.PKG_ZIP_NAME }}.zip" ${{ env.PKG_NAME }}'
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.CCACHE_GHA_KEY }}
-      - name: upload library - ${{ env.PKG_NAME }}
+      - name: set required env - 01
+        run: |
+          python3 ./.github/setenv_01.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.pkg_type }}'
+      - name: library packed - ${{ env.PKG_NAME }}  - macos
+        if: ${{ startsWith(matrix.os, 'macos') }}
+        run: |
+          # keep file permissions and case sensitivity
+          zip -ry "${{ env.PKG_ZIPNAME }}.zip" ${{ env.PKG_NAME }}
+      - name: library packed - ${{ env.PKG_NAME }}  - windows
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: |
+          # keep file permissions and case sensitivity
+          C:/msys64/usr/bin/bash.exe -lc 'pacman --noconfirm -S zip;'
+          C:/msys64/usr/bin/bash.exe -lc `
+            'cd $(cygpath -u "${{ github.workspace }}"); zip -ry "${{ env.PKG_ZIPNAME }}.zip" ${{ env.PKG_NAME }}'
+      - name: library upload - ${{ env.PKG_NAME }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.PKG_ZIP_NAME }}
-          path: ${{ env.PKG_ZIP_NAME }}.zip
+          name: ${{ env.PKG_ZIPNAME }}
+          path: ${{ env.PKG_ZIPNAME }}.zip
           compression-level: 0
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
-          python3 ./.github/oss_v4.py push "${{ env.PKG_ZIP_NAME }}.zip" "${{ env.PKG_NAME }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIP_NAME }}.zip"
+          python3 ./.github/oss_v4.py push "${{ env.PKG_ZIPNAME }}.zip" "${{ env.PKG_NAME }}/${{ needs._preset.outputs.pkgver }}/${{ env.PKG_ZIPNAME }}.zip"
 
   _buildx_on_container:
     needs: _preset
@@ -287,9 +291,7 @@ jobs:
               build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.libc }}'
             }
 
-          python3 -m venv .env
-          source .env/bin/activate
-          export PKG_TYPE=${{ matrix.pkg_type }}
+          python3 -m venv .env; source .env/bin/activate
           ./build.py ${build_target_args} -m ${{ env.PKG_NAME }}
       - name: gh action ccache save
         uses: actions/cache/save@v4

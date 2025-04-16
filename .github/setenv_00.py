@@ -32,6 +32,8 @@ if __name__ == "__main__":
         _print(f'{k}: {v}'); f.write(f'{k}={v}\n')
 
     with open(_github_env, 'a') as f:
+        _setenv(f, 'PKG_TYPE', _pkg_type)
+
         _inst_dir = os.path.abspath(os.path.join(_basedir, _pkg_name))
         _setenv(f, 'INST_DIR', _inst_dir)
         _deps_ver = f'{_inst_dir}.ver'
