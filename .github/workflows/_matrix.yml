@@ -200,8 +200,13 @@ jobs:
           key: ${{ env.CCACHE_GHA_KEY }}
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
-          python3 -m venv .env; source .env/${{ startsWith(matrix.os, 'windows') && 'Scripts' || 'bin' }}/activate
-          ./build.py ${{ matrix.platform }} ${{ matrix.arch }} -m ${{ env.PKG_NAME }}
+          python3 -m venv .env
+          ${{
+            startsWith(matrix.os, 'windows')
+              && '.env/Scripts/activate.ps1'
+              || 'source .env/bin/activate'
+          }}
+          python3 ./build.py ${{ matrix.platform }} ${{ matrix.arch }} -m ${{ env.PKG_NAME }}
       # - name: library buildx - ${{ env.PKG_NAME }} - windows
       #   if: ${{ startsWith(matrix.os, 'windows') }}
       #   run: |
