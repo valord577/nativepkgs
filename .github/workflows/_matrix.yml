@@ -207,11 +207,6 @@ jobs:
               || 'source .env/bin/activate'
           }}
           python3 ./build.py ${{ matrix.platform }} ${{ matrix.arch }} -m ${{ env.PKG_NAME }}
-      # - name: library buildx - ${{ env.PKG_NAME }} - windows
-      #   if: ${{ startsWith(matrix.os, 'windows') }}
-      #   run: |
-      #     python3 -m venv .env; source .env/Scripts/activate
-      #     ./build.py ${{ matrix.platform }} ${{ matrix.arch }} -m ${{ env.PKG_NAME }}
       - name: gh action ccache save
         uses: actions/cache/save@v4
         with:
@@ -239,7 +234,7 @@ jobs:
           path: ${{ env.PKG_ZIPNAME }}.zip
           compression-level: 0
       - name: commit to pre-compiled storage
-        if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
+        # if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
           ./.github/rclone copy "${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
 
