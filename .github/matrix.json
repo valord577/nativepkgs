@@ -9,7 +9,7 @@
   },
   {
     "platform": "iphonesimulator",
-    "arch": "x86_64"
+    "arch": "amd64"
   },
   {
     "platform": "macosx",
@@ -17,7 +17,7 @@
   },
   {
     "platform": "macosx",
-    "arch": "x86_64"
+    "arch": "amd64"
   },
   {
     "platform": "win-msvc",
