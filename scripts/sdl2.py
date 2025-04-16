@@ -9,7 +9,7 @@ import shutil
 _env: dict = {}
 _ctx: dict = {
     'PKG_INST_STRIP': '',
-    'CMAKE_CMD': shutil.which('cmake'),
+    'CMAKE_CMD': 'cmake',
     'BUILD_ENV': os.environ.copy(),
 }
 
@@ -28,25 +28,25 @@ def module_init(env: dict) -> list:
 def _source_download():
     _git_target = 'refs/tags/release-2.32.4'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/libsdl-org/SDL.git'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
+        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'init'])
+        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'remote', 'add', 'x', 'https://github.com/libsdl-org/SDL.git'])
+        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
+        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER'):
         with open(file_ver, 'w') as f:
             f.write('v' + _git_target.split('-')[-1])
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
-    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'reset', '--hard', 'HEAD'])
-    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'clean', '-d', '-f', '-q'])
+    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'reset', '--hard', 'HEAD'])
+    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'clean', '-d', '-f', '-q'])
     with os.scandir(_env['SUBPROJ_SRC_PATCHES']) as it:
         entries = sorted(it, key=lambda e: e.name)
         for entry in entries:
             if not entry.is_file():
                 continue
             _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'],
-                args=[shutil.which('git'), 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
+                args=['git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
 
 
 def _build_step_00():
@@ -76,12 +76,12 @@ def _build_step_00():
         '-D',  'SDL2_DISABLE_SDL2MAIN:BOOL=1',
     ]
     args.extend(_extra_args_cmake)
-    _env['FUNC_PROC'](args=args)
+    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args)
 def _build_step_01():
     args = [_ctx['CMAKE_CMD'], '--build', _env['PKG_BULD_DIR'], '-j', _env['PARALLEL_JOBS']]
-    _env['FUNC_PROC'](args=args)
+    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args)
 def _build_step_02():
     args = [_ctx['CMAKE_CMD'], '--install', _env['PKG_BULD_DIR']]
     if _ctx['PKG_INST_STRIP']:
         args.append( _ctx['PKG_INST_STRIP'])
-    _env['FUNC_PROC'](args=args)
+    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args)

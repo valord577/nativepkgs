@@ -176,6 +176,7 @@ jobs:
             -DisableArchiveScanning    $True `
             -DisableScriptScanning     $True `
             -DisableRealtimeMonitoring $True
+          Set-ExecutionPolicy -ExecutionPolicy Bypass -Force -Scope CurrentUser
 
           choco install ccache nasm; choco list
       - name: clone source

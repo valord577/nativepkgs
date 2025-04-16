@@ -41,25 +41,25 @@ def _source_dl_3rd_deps():
 def _source_download():
     _git_target = 'refs/heads/release/7.1'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://git.ffmpeg.org/ffmpeg.git'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
+        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'init'])
+        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'remote', 'add', 'x', 'https://git.ffmpeg.org/ffmpeg.git'])
+        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
+        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER'):
         with open(file_ver, 'w') as f:
             f.write('release' + _git_target.split('/')[-1])
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
-    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'reset', '--hard', 'HEAD'])
-    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'clean', '-d', '-f', '-q'])
+    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'reset', '--hard', 'HEAD'])
+    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'clean', '-d', '-f', '-q'])
     with os.scandir(_env['SUBPROJ_SRC_PATCHES']) as it:
         entries = sorted(it, key=lambda e: e.name)
         for entry in entries:
             if not entry.is_file():
                 continue
             _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'],
-                args=[shutil.which('git'), 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
+                args=['git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
 
 
 def _build_step_00():
@@ -141,15 +141,15 @@ def _build_step_00():
     _ctx['BUILD_ENV']['PKG_CONFIG_PATH'] = f"{os.pathsep.join(_ctx['PKG_CONFIG_PATH'])}{os.pathsep}{os.getenv('PKG_CONFIG_PATH', '')}"
     _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
 def _build_step_01():
-    args = [shutil.which('make'), '-j', _env['PARALLEL_JOBS']]
+    args = ['make', '-j', _env['PARALLEL_JOBS']]
     if shutil.which('bear'):
         args = [shutil.which('bear'), '--'] + args
     _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
 def _build_step_02():
     if (_env['PKG_PLATFORM'] == 'iphoneos') or (_env['PKG_PLATFORM'] == 'iphonesimulator'):
-        _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-headers'])
-        _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-libs'])
+        _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=['make', 'install-headers'])
+        _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=['make', 'install-libs'])
     else:
-        _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-progs'])
+        _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=['make', 'install-progs'])
         if _env['PKG_TYPE'] == 'shared':
-            _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-libs'])
+            _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=['make', 'install-libs'])

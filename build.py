@@ -4,6 +4,7 @@
 
 import datetime as dt
 import importlib.util
+import json
 import os
 import platform
 import pprint
@@ -177,7 +178,7 @@ def _util_func__subprocess_str(args: list[str],
     cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None,
 ) -> str:
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
-    proc = sp.run(args=args, cwd=cwd, env=env, stdout=sp.PIPE, text=True)
+    proc = sp.run(args=args, cwd=cwd, env=env, shell=True, stdout=sp.PIPE, text=True)
     if proc.returncode != 0:
         print(f'>>>> subprocess exitcode: {proc.returncode}', file=sys.stderr)
         sys.exit(proc.returncode)
@@ -186,7 +187,7 @@ def _util_func__subprocess(args: list[str],
     cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None,
 ):
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
-    proc = sp.run(args=args, cwd=cwd, env=env)
+    proc = sp.run(args=args, cwd=cwd, env=env, shell=True)
     if proc.returncode != 0:
         print(f'>>>> subprocess exitcode: {proc.returncode}', file=sys.stderr)
         sys.exit(proc.returncode)
@@ -418,7 +419,77 @@ def _setctx_win32_mingw(
 def _setctx_win32_msvc(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
-    pass
+    if ctx.native_plat != 'windows':
+        show_errmsg(f'unsupported host os: {ctx.native_plat}')
+    ctx.env_passthrough['PLATFORM_WIN32'] = True
+
+    ctx.target_arch = ctx.native_arch
+    if not _native:
+        ctx.target_arch = _tuple[1]
+
+    ctx.extra_cmake.extend(['-G', 'Ninja'])
+
+    def _msvc_env_json_dump(dst: str, vs_path: str, _vs_devshell_dll: str, target_arch: str):
+        # Only supports access to the VS DevShell from PowerShell
+        #  - https://learn.microsoft.com/visualstudio/ide/reference/command-prompt-powershell#developer-powershell
+        _vs_devshell_arg = f'-host_arch={ctx.native_arch} -arch={target_arch}'
+
+        _pwsh_script_blk  = f'Import-Module "{_vs_devshell_dll}"; '
+        _pwsh_script_blk += f'Enter-VsDevShell -VsInstallPath "{vs_path}" -SkipAutomaticLocation -DevCmdArguments "{_vs_devshell_arg}"; '
+        _pwsh_script_blk += f'Get-ChildItem Env: | Select-Object -Property Name,Value | ConvertTo-Json -Depth 1  1>{dst}; '
+        _util_func__subprocess([
+            shutil.which('pwsh') or 'pwsh',
+            '-WorkingDirectory', PROJ_ROOT,
+            '-NonInteractive',
+            '-NoProfileLoadTime',
+            '-ExecutionPolicy', 'Bypass',
+            '-Command', _pwsh_script_blk
+        ])
+
+    _vs_search_path: list[str] = []
+    if _user_def := os.getenv('MSVC_INSTALL_DIR', ''):
+        _vs_search_path.append(_user_def)
+    else:
+        # auto search vs install dir
+        _msvc_install_dir = [
+            'C:/Program Files/Microsoft Visual Studio',
+            'C:/Program Files (x86)/Microsoft Visual Studio',
+        ]
+        _msvc_product_arr = [
+            '2022/BuildTools',    '2019/BuildTools',
+            '2022/Community',     '2019/Community',
+            '2022/Professional',  '2019/Professional',
+            '2022/Enterprise',    '2019/Enterprise',
+        ]
+        for _dir in _msvc_install_dir:
+            for _product in _msvc_product_arr:
+                _vs_search_path.append(f'{_dir}/{_product}')
+
+
+    _vs_path = ''; _vs_devshell_dll = ''
+    for _dir in _vs_search_path:
+        _dll = os.path.abspath(os.path.join(_dir, 'Common7', 'Tools', 'Microsoft.VisualStudio.DevShell.dll'))
+        if os.path.exists(_dll):
+            _vs_path = _dir; _vs_devshell_dll = _dll
+            break
+    if (not _vs_path) or (not _vs_devshell_dll):
+        show_errmsg('Failed to search MSVC environment')
+
+    _msvc_env_json_native = os.path.abspath(os.path.join(PROJ_ROOT, '.msvc_env_native.json'))
+    _msvc_env_json_target = os.path.abspath(os.path.join(PROJ_ROOT, '.msvc_env_target.json'))
+    _msvc_env_json_dump(_msvc_env_json_native, _vs_path, _vs_devshell_dll, ctx.native_arch)
+    _msvc_env_json_dump(_msvc_env_json_target, _vs_path, _vs_devshell_dll, ctx.target_arch)
+
+
+    def _msvc_env_json2dict(envkey: str, src: str):
+        _dict: dict[str, str] = {}
+        with open(src, 'r') as f:
+            _list = json.load(f)
+            for _kv in _list:
+                _dict[_kv['Name']] = _kv['Value']
+        ctx.env_passthrough[envkey] = _dict
+    _msvc_env_json2dict('WIN32_MSVC_ENV_NATIVE', _msvc_env_json_native)
+    _msvc_env_json2dict('WIN32_MSVC_ENV_TARGET', _msvc_env_json_target)
 
 
 _targets = {

@@ -3,6 +3,9 @@
 .env
 __pycache__
 
+.msvc_env_native.json
+.msvc_env_target.json
+
 /.deps/
 /.lib.*/
 
