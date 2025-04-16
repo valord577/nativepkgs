@@ -1,0 +1,12 @@
+{
+  "exclude": [
+    "**/**",
+  ],
+  "include": [
+    "*.py",
+    ".github/*.py",
+    "scripts/*.py",
+  ],
+  "venvPath": ".",
+  "venv": ".env",
+}

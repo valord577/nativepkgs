@@ -2,34 +2,34 @@
   {
     "platform": "linux",
     "arch": "amd64",
-    "lib_impl": "gnu"
+    "libc": "gnu"
   },
   {
     "platform": "linux",
     "arch": "arm64",
-    "lib_impl": "gnu"
+    "libc": "gnu"
   },
   {
     "platform": "linux",
     "arch": "armv7",
-    "lib_impl": "gnueabihf"
+    "libc": "gnueabihf"
   },
   {
     "platform": "linux",
     "arch": "amd64",
-    "lib_impl": "musl"
+    "libc": "musl"
   },
   {
     "platform": "linux",
     "arch": "arm64",
-    "lib_impl": "musl"
+    "libc": "musl"
   },
   {
     "platform": "win-mingw",
-    "arch": "x86_64"
+    "arch": "amd64"
   },
   {
     "platform": "win-mingw",
-    "arch": "aarch64"
+    "arch": "arm64"
   }
 ]
