@@ -231,7 +231,7 @@ def _setctx_linux(
 
         ctx.target_libc = _get_linux_libc_type()
         if not ctx.target_libc:
-            show_errmsg(f'unknown native libc type')
+            show_errmsg('unknown native libc type')
 
         if ctx.ccache:
             for cc  in ['cc',  'clang',   'gcc']:
