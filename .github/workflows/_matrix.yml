@@ -56,12 +56,6 @@ on:
 
 env:
   GH_TOKEN: ${{ github.token }}
-  GH_OSSUTIL_AK: ${{ secrets.GH_OSSUTIL_AK }}
-  GH_OSSUTIL_SK: ${{ secrets.GH_OSSUTIL_SK }}
-  GH_OSSUTIL_BUCKET: ${{ secrets.GH_OSSUTIL_BUCKET }}
-  GH_OSSUTIL_REGION: ${{ secrets.GH_OSSUTIL_REGION }}
-  GH_OSSUTIL_PKGS: ${{ secrets.GH_OSSUTIL_PKGS }}
-  GH_OSSUTIL_CNAME: ${{ secrets.GH_OSSUTIL_CNAME }}
   PKG_NAME: ${{ github.workflow }}
   CI_HIT_MESSAGE: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} (${{ github.sha }})"
   S3_R2_ACCOUNT_ID: ${{ secrets.S3_R2_ACCOUNT_ID }}
@@ -78,7 +72,6 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
     outputs:
-      pkgver: ${{ steps.set-pkgver.outputs.pkgver }}
       matrix: ${{ steps.set-matrix.outputs.matrix }}
       matrix-container: ${{ steps.set-matrix-container.outputs.matrix-container }}
     steps:
@@ -90,12 +83,6 @@ jobs:
           git remote add x ${{github.server_url}}/${{ github.repository }}.git
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
-      - name: set pkgver
-        id: set-pkgver
-        run: |
-          pkgver=$(git ls-tree -d --abbrev=7 --format='%(objectname)' HEAD -- deps/${{ env.PKG_NAME }})
-          printf "\e[1m\e[33m%s\e[0m\n" "pkgver: $pkgver"
-          echo "pkgver=$pkgver" >> "$GITHUB_OUTPUT"
       - name: jq filters
         run: |
           _platforms_="${{ inputs.select_platforms }}"; _platforms_triplet_=(${_platforms_//,/ })
@@ -247,7 +234,7 @@ jobs:
           path: ${{ env.PKG_ZIPNAME }}.zip
           compression-level: 0
       - name: commit to pre-compiled storage
-        # if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
+        if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
           ./.github/rclone copy "${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
 
