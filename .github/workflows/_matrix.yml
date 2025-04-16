@@ -260,9 +260,6 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
     steps:
-      - name: set required env
-        run: |
-          ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -271,6 +268,9 @@ jobs:
           git remote add x ${{github.server_url}}/${{ github.repository }}.git
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
+      - name: set required env
+        run: |
+          ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
       - name: setup rclone for s3 (cloudflare r2)
         run: |
           ./.github/rclone.py
