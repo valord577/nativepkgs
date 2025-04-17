@@ -34,7 +34,7 @@ def _source_download():
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'remote', 'add', 'x', 'https://github.com/videolan/dav1d.git'])
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'checkout', 'FETCH_HEAD'])
-    if file_ver := os.getenv('DEPS_VER'):
+    if file_ver := os.getenv('DEPS_VER', ''):
         with open(file_ver, 'w') as f:
             f.write(f'{_git_target[:7]}')
 def _source_apply_patches():

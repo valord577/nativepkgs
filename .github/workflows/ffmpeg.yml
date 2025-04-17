@@ -1,6 +1,5 @@
 name: ffmpeg
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
@@ -8,12 +7,9 @@ on:
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/ffmpeg.yml'
-      - 'deps/ffmpeg'
       - 'patches/ffmpeg/**'
-      - 'scripts/ffmpeg.sh'
-      - 'build.sh'
-      - 'env-*.sh'
-      - 'pkg-conf.sh'
+      - 'scripts/ffmpeg.py'
+      - 'build.py'
   pull_request:
     branches:
       - main
@@ -21,16 +17,13 @@ on:
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/ffmpeg.yml'
-      - 'deps/ffmpeg'
       - 'patches/ffmpeg/**'
-      - 'scripts/ffmpeg.sh'
-      - 'build.sh'
-      - 'env-*.sh'
-      - 'pkg-conf.sh'
+      - 'scripts/ffmpeg.py'
+      - 'build.py'
 
 jobs:
   build:
-    if: ${{ false }}
+    # if: ${{ false }}
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
