@@ -14,6 +14,10 @@ on:
         default: false
         required: false
         type: boolean
+      disable_ccache:
+        default: true
+        required: false
+        type: boolean
       allow_failure:
         default: true
         required: false
@@ -101,7 +105,7 @@ jobs:
 
           matrix=$(cat .github/matrix.json | jq -c -M)
           matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_apple_} then . + {os: \"macos-15\"} else . end)")
-          matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_win32_} then . + {os: \"windows-2025\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_win32_} then . + {os: \"windows-2022\"} else . end)")
 
           [ -n "${jq_expr_plat}" ] && \
             { matrix=$(echo ${matrix} | jq -c -M "map(. | select($jq_expr_plat) )"); }
@@ -179,6 +183,9 @@ jobs:
           Set-ExecutionPolicy -ExecutionPolicy Bypass -Force -Scope CurrentUser
 
           choco install ccache nasm; choco list
+
+          C:/msys64/usr/bin/bash.exe -lc `
+            'pacman --noconfirm -S zip;'
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -193,11 +200,10 @@ jobs:
       - name: set required env - 00
         run: |
           python3 ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
-      - name: gh action ccache restore
-        uses: actions/cache/restore@v4
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CCACHE_GHA_KEY }}
+      - name: ccache get... (s3)
+        if: ${{ (! inputs.disable_ccache) }}
+        run: |
+          python3 ./.github/ccache_get.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
           python3 -m venv .env
@@ -207,26 +213,17 @@ jobs:
               || 'source .env/bin/activate'
           }}
           python3 ./build.py ${{ matrix.platform }} ${{ matrix.arch }} -m ${{ env.PKG_NAME }}
-      - name: gh action ccache save
-        uses: actions/cache/save@v4
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CCACHE_GHA_KEY }}
+      - name: ccache put... (s3)
+        if: ${{ (! inputs.disable_ccache) }}
+        run: |
+          python3 ./.github/ccache_put.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: set required env - 01
         run: |
           python3 ./.github/setenv_01.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.pkg_type }}'
-      - name: library packed - ${{ env.PKG_NAME }}  - macos
-        if: ${{ startsWith(matrix.os, 'macos') }}
+      - name: library packed - ${{ env.PKG_NAME }}
         run: |
           # keep file permissions and case sensitivity
-          zip -ry "${{ env.PKG_ZIPNAME }}.zip" ${{ env.PKG_NAME }}
-      - name: library packed - ${{ env.PKG_NAME }}  - windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: |
-          # keep file permissions and case sensitivity
-          C:/msys64/usr/bin/bash.exe -lc 'pacman --noconfirm -S zip;'
-          C:/msys64/usr/bin/bash.exe -lc `
-            'cd $(cygpath -u "${{ github.workspace }}"); zip -ry "${{ env.PKG_ZIPNAME }}.zip" ${{ env.PKG_NAME }}'
+          python3 ./.github/library_packed.py
       - name: library upload - ${{ env.PKG_NAME }}
         uses: actions/upload-artifact@v4
         with:
@@ -265,11 +262,10 @@ jobs:
       - name: set required env - 00
         run: |
           ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
-      - name: gh action ccache restore
-        uses: actions/cache/restore@v4
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CCACHE_GHA_KEY }}
+      - name: ccache get... (s3)
+        if: ${{ (! inputs.disable_ccache) }}
+        run: |
+          python3 ./.github/ccache_get.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
           build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
@@ -280,18 +276,17 @@ jobs:
 
           python3 -m venv .env; source .env/bin/activate
           ./build.py ${build_target_args} -m ${{ env.PKG_NAME }}
-      - name: gh action ccache save
-        uses: actions/cache/save@v4
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CCACHE_GHA_KEY }}
+      - name: ccache put... (s3)
+        if: ${{ (! inputs.disable_ccache) }}
+        run: |
+          python3 ./.github/ccache_put.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: set required env - 01
         run: |
           ./.github/setenv_01.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.pkg_type }}'
       - name: library packed - ${{ env.PKG_NAME }}
         run: |
           # keep file permissions and case sensitivity
-          zip -ry "${{ env.PKG_ZIPNAME }}.zip" ${{ env.PKG_NAME }}
+          python3 ./.github/library_packed.py
       - name: library upload - ${{ env.PKG_NAME }}
         uses: actions/upload-artifact@v4
         with:

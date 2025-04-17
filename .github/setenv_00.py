@@ -47,5 +47,5 @@ if __name__ == "__main__":
         # ccache
         _ccache_dir = os.path.abspath(os.path.join(_basedir, '.ccache'))
         _setenv(f, 'CCACHE_DIR', _ccache_dir)
-        _ccache_gha_key = f'{_pkg_name}-{_pkg_type}-{_pkg_plat}-{_target_arch_libc}'
-        _setenv(f, 'CCACHE_GHA_KEY', _ccache_gha_key)
+        _ccache_key = f'{_pkg_name}-{_pkg_type}-{_pkg_plat}-{_target_arch_libc}'
+        _setenv(f, 'CCACHE_KEY', _ccache_key)
