@@ -105,7 +105,7 @@ jobs:
 
           matrix=$(cat .github/matrix.json | jq -c -M)
           matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_apple_} then . + {os: \"macos-15\"} else . end)")
-          matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_win32_} then . + {os: \"windows-2025\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if ${_is_win32_} then . + {os: \"windows-2022\"} else . end)")
 
           [ -n "${jq_expr_plat}" ] && \
             { matrix=$(echo ${matrix} | jq -c -M "map(. | select($jq_expr_plat) )"); }
