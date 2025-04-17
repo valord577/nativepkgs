@@ -184,7 +184,8 @@ jobs:
 
           choco install ccache nasm; choco list
 
-          C:/msys64/usr/bin/bash.exe -lc 'pacman --noconfirm -S zip xz;'
+          C:/msys64/usr/bin/bash.exe -lc `
+            'pacman --noconfirm -S zip xz;'
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -199,11 +200,10 @@ jobs:
       - name: set required env - 00
         run: |
           python3 ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
-      - name: gh action ccache restore
-        uses: actions/cache/restore@v4
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CCACHE_KEY }}
+      - name: ccache get... (s3)
+        if: ${{ (! inputs.disable_ccache) }}
+        run: |
+          python3 ./.github/ccache_get.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
           python3 -m venv .env
@@ -213,35 +213,17 @@ jobs:
               || 'source .env/bin/activate'
           }}
           python3 ./build.py ${{ matrix.platform }} ${{ matrix.arch }} -m ${{ env.PKG_NAME }}
-      - name: gh action ccache save
-        uses: actions/cache/save@v4
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CCACHE_KEY }}
+      - name: ccache put... (s3)
+        if: ${{ (! inputs.disable_ccache) }}
+        run: |
+          python3 ./.github/ccache_put.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: set required env - 01
         run: |
           python3 ./.github/setenv_01.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.pkg_type }}'
-      - name: library packed - ${{ env.PKG_NAME }}  - macos
-        if: ${{ startsWith(matrix.os, 'macos') }}
+      - name: library packed - ${{ env.PKG_NAME }}
         run: |
           # keep file permissions and case sensitivity
-          zip -ry "${{ env.PKG_ZIPNAME }}.zip" ${{ env.PKG_NAME }}
-
-          ${{ (! inputs.disable_ccache) }} && \
-            {
-              XZ_OPT="--threads=0" tar --posix --xz -cvf ${{ env.CCACHE_KEY }}.tar.xz ${{ env.CCACHE_DIRNAME }}
-            }
-      - name: library packed - ${{ env.PKG_NAME }}  - windows
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        run: |
-          # keep file permissions and case sensitivity
-          C:/msys64/usr/bin/bash.exe -lc `
-            'cd $(cygpath -u "${{ github.workspace }}"); zip -ry "${{ env.PKG_ZIPNAME }}.zip" ${{ env.PKG_NAME }}'
-
-          if (-not $${{ (! inputs.disable_ccache) }}) {
-            C:/msys64/usr/bin/bash.exe -lc `
-              'cd $(cygpath -u "${{ github.workspace }}"); XZ_OPT="--threads=0" tar --posix --xz -cvf ${{ env.CCACHE_KEY }}.tar.xz ${{ env.CCACHE_DIRNAME }}'
-          }
+          python3 ./.github/library_packed.py
       - name: library upload - ${{ env.PKG_NAME }}
         uses: actions/upload-artifact@v4
         with:
