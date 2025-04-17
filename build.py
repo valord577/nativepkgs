@@ -160,7 +160,15 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
     elif ON_GITLAB_CI:
         pass
     elif ON_GITHUB_CI:
-        pass
+        _pkg_dl_name = f"{pkg_name}_{_env['PKG_PLATFORM']}_{_env['PKG_ARCH_LIBC']}_{pkg_version}_{pkg_type}"
+        if pkg_extra:
+            _pkg_dl_name += f"_{pkg_extra}"
+        _rclone = os.path.abspath(os.path.join(PROJ_ROOT, '.github', 'rclone'))
+        _util_func__subprocess([
+            _rclone, 'copy',
+            f'r2:{os.getenv("S3_R2_STORAGE_BUCKET", "")}/packages/{pkg_name}/{pkg_version}/{_pkg_dl_name}.zip', _3rd_deps_dir,
+        ])
+        shutil.unpack_archive(os.path.abspath(os.path.join(_3rd_deps_dir, f'{_pkg_dl_name}.zip')), extract_dir=_3rd_deps_dir)
     else:
         try:
             os.remove(_this_lib_dir)

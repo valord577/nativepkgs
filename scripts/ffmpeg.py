@@ -37,7 +37,7 @@ def _source_dl_3rd_deps():
         '22098d4', 'static'); _ctx['EXTRA_ARGS_CONFIGURE'].append('--enable-mbedtls')
 
     if _env['PKG_PLATFORM'] == 'macosx':
-        _env['FUNC_PKGC'](_ctx, _env, 'sdl2', 'fa24d86', 'static')
+        _env['FUNC_PKGC'](_ctx, _env, 'sdl2', 'v2.32.4', 'static')
 def _source_download():
     _git_target = 'refs/heads/release/7.1'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
@@ -45,7 +45,7 @@ def _source_download():
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://git.ffmpeg.org/ffmpeg.git'])
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
-    if file_ver := os.getenv('DEPS_VER'):
+    if file_ver := os.getenv('DEPS_VER', ''):
         with open(file_ver, 'w') as f:
             f.write(f'release{_git_target.split("/")[-1]}')
 def _source_apply_patches():
