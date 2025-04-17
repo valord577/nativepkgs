@@ -76,11 +76,6 @@ def _build_step_00():
 
     args = [
         _ctx['MESON_CMD'], 'setup',
-        '--prefix', _env['PKG_INST_DIR'],
-        '--pkgconfig.relocatable',
-        '--libdir', 'lib', '--python.install-env', 'venv',
-        '--wrap-mode', 'nofallback', '-Db_pie=true',
-
         '-Denable_docs=false',
         '-Denable_examples=false',
         '-Denable_seek_stress=false',

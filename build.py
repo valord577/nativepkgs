@@ -52,6 +52,16 @@ class _ctx:
         self.cross_target_triple = ''
         self.cross_pkgconfig_bin = ''
 
+        self.extra_cmake.extend(['-D', 'CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON'])
+        self.extra_cmake.extend(['-D', 'CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON'])
+        self.extra_cmake.extend(['-D', 'CMAKE_INSTALL_LIBDIR:PATH=lib'])
+
+        self.extra_meson.extend(['--pkgconfig.relocatable'])
+        self.extra_meson.extend(['--libdir', 'lib'])
+        self.extra_meson.extend(['--python.install-env', 'venv'])
+        self.extra_meson.extend(['--wrap-mode', 'nofallback'])
+        self.extra_meson.extend(['-Db_pie=true'])
+
         self.ccache = ''
         if ccache := shutil.which('ccache'):
             self.ccache = ccache
@@ -115,6 +125,11 @@ class _ctx:
         env['PKG_INST_DIR'] = os.path.abspath(os.path.join(PROJ_ROOT, 'out', env['PKG_NAME'], env['PKG_PLATFORM'], env['PKG_ARCH_LIBC']))
         if ON_GITLAB_CI or ON_GITHUB_CI:
             env['PKG_INST_DIR'] = os.getenv('INST_DIR') or env['PKG_INST_DIR']
+
+        self.extra_cmake.extend(['-B', env['PKG_BULD_DIR']])
+        self.extra_cmake.extend(['-D', f'CMAKE_INSTALL_PREFIX={env["PKG_INST_DIR"]}'])
+
+        self.extra_meson.extend(['--prefix', env['PKG_INST_DIR']])
 
         if not _unique_module:
             env['SUBPROJ_SRC'] = os.path.abspath(os.path.join(PROJ_ROOT, '.deps', env['PKG_NAME']))
