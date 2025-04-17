@@ -35,13 +35,13 @@ if __name__ == "__main__":
     _ccache_key = sys.argv[2]
 
     _sh = shutil.which('bash') or 'bash'
-    _cwd = os.path.abspath(os.path.dirname(_ccache_dir))
+    _cwd = _cwd_origin = os.path.abspath(os.path.dirname(_ccache_dir))
     if sys.platform == 'win32':
         _sh = 'C:/msys64/usr/bin/bash.exe'
         _cwd = f'$(cygpath -u "{_cwd}")'
     _tar_cmd = f'tar --posix --xz -cvf {_ccache_key}.tar.xz {os.path.basename(_ccache_dir)}'
     _util_func__subprocess(args=[_sh, '-lc', f'cd {_cwd}; export XZ_OPT="--threads=0"; {_tar_cmd}'])
 
-    _src = os.path.abspath(os.path.join(_cwd, f'{_ccache_key}.tar.xz'))
+    _src = os.path.abspath(os.path.join(_cwd_origin, f'{_ccache_key}.tar.xz'))
     _dst = f'r2:{_s3_storage_bucket}/ccache/'
-    _util_func__subprocess(args=[ _rclone, 'copy', _src, _dst])
+    _util_func__subprocess(args=[_rclone, 'copy', _src, _dst])
