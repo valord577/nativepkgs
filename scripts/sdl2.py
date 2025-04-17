@@ -80,11 +80,6 @@ def _build_step_00():
     args = [
         _ctx['CMAKE_CMD'],
         '-S',  _env['SUBPROJ_SRC'],
-        '-B',  _env['PKG_BULD_DIR'],
-        '-D',  'CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON',
-        '-D',  'CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON',
-        '-D', f'CMAKE_INSTALL_PREFIX={_env["PKG_INST_DIR"]}',
-        '-D',  'CMAKE_INSTALL_LIBDIR:PATH=lib',
         '-D',  'SDL_CCACHE:BOOL=0',
         '-D',  'SDL_TEST:BOOL=0',
         '-D',  'SDL2_DISABLE_SDL2MAIN:BOOL=1',
