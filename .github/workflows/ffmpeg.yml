@@ -4,6 +4,7 @@ on:
     branches:
       - main
     paths:
+      - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/ffmpeg.yml'
@@ -14,6 +15,7 @@ on:
     branches:
       - main
     paths:
+      - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/ffmpeg.yml'
