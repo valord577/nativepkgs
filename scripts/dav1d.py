@@ -10,7 +10,7 @@ import sys
 _env: dict = {}
 _ctx: dict = {
     'PKG_INST_STRIP': '',
-    'MESON_CMD': '',
+    'MESON_CMD': 'meson',
     'BUILD_ENV': os.environ.copy(),
 }
 
@@ -53,12 +53,9 @@ def _source_apply_patches():
 
 def _build_tools_setup():
     _env['FUNC_PYPI'](['pip', 'meson', 'ninja'])
-    _ctx['MESON_CMD'] = shutil.which('meson') or _ctx['MESON_CMD']
-    if not _ctx['MESON_CMD']:
+    if not os.getenv('VIRTUAL_ENV'):
         _binary_dirname = 'Scripts' if sys.platform == 'win32' else 'bin'
         _binary_dirpath = os.path.abspath(os.path.join(sys.prefix, _binary_dirname))
-
-        _ctx['MESON_CMD'] = os.path.join(_binary_dirpath, 'meson')
         _ctx['BUILD_ENV']['PATH'] = f"{_binary_dirpath}{os.pathsep}{os.getenv('PATH', '')}"
 def _build_step_00():
     _extra_args_meson: list[str] = _env['EXTRA_MESON']
