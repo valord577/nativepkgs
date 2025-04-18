@@ -661,9 +661,6 @@ if __name__ == "__main__":
 
 
     build_env = ctx.getenv()
-    if os.getenv('NATIVEPKGS_RUNTIME_VERBOSE', '0') == '1':
-        pprint.pp(build_env, indent=2, width=512)
-
     if build_env['SUBPROJ_SRC']:
         os.makedirs(build_env['SUBPROJ_SRC'], exist_ok=True)
     shutil.rmtree(build_env['PKG_BULD_DIR'], ignore_errors=True); \

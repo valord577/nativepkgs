@@ -130,7 +130,7 @@ def _build_step_00():
         '-D',  'LLDB_ENABLE_FBSDVMCORE:BOOL=0',
         '-D',  'LLVM_TARGETS_TO_BUILD=AArch64;ARM;RISCV;WebAssembly;X86',
         '-D',  'LLDB_USE_SYSTEM_DEBUGSERVER:BOOL=1',
-        '-D', f'LLVM_NATIVE_TOOL_DIR={os.path.abspath(os.path.join(_tblgen_dir, 'bin'))}',
+        '-D', f'LLVM_NATIVE_TOOL_DIR={os.path.abspath(os.path.join(_tblgen_dir, "bin"))}',
     ]
     args.extend(_extra_args_cmake)
 
