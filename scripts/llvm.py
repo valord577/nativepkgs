@@ -152,10 +152,10 @@ def _build_step_00():
         _tblgen_build_env = _env['WIN32_MSVC_ENV_NATIVE']
         _tblgen_build_env['CFLAGS']   = '/utf-8'
         _tblgen_build_env['CXXFLAGS'] = _tblgen_build_env['CFLAGS']
-        _env['FUNC_PROC'](env=_tblgen_build_env, args=args, shell=_ctx['SHELL_REQ'])
+        _env['FUNC_PROC'](env=_tblgen_build_env, args=_tblgen_build_args, shell=_ctx['SHELL_REQ'])
 
         _tblgen_build_targets = ['llvm-tblgen', 'clang-tblgen', 'lldb-tblgen', 'clang-tidy-confusable-chars-gen']
-        _tblgen_build_args = [_ctx['CMAKE_CMD'], '--build', _env['PKG_BULD_DIR'], '-j', _env['PARALLEL_JOBS'], '--target', ';'.join(_tblgen_build_targets)]
+        _tblgen_build_args = [_ctx['CMAKE_CMD'], '--build', _tblgen_dir, '-j', _env['PARALLEL_JOBS'], '--target', ';'.join(_tblgen_build_targets)]
         _env['FUNC_PROC'](env=_tblgen_build_env, args=_tblgen_build_args, shell=_ctx['SHELL_REQ'])
 
 
