@@ -193,12 +193,20 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
         os.symlink(_src, _this_lib_dir, target_is_directory=True)
 
 
-    _ctx.get('CMAKE_SEARCH_PATH', []).append(_this_lib_dir)
-    _ctx.get('PKG_CONFIG_PATH', []).append(os.path.abspath(os.path.join(_this_lib_dir, 'lib', 'pkgconfig')))
+    def _ensure_key(key: str, default):
+        if not _ctx.get(key):
+            _ctx[key] = default
+    _ensure_key('CMAKE_SEARCH_PATH', [])
+    _ensure_key('PKG_CONFIG_PATH', [])
+    _ensure_key('PKG_3RD_DEPS_SHARED', [])
+    _ensure_key('PKG_3RD_DEPS_STATIC', [])
+
+    _ctx['CMAKE_SEARCH_PATH'].append(_this_lib_dir)
+    _ctx['PKG_CONFIG_PATH'].append(os.path.abspath(os.path.join(_this_lib_dir, 'lib', 'pkgconfig')))
     if pkg_type == 'shared':
-        _ctx.get('PKG_3RD_DEPS_SHARED', []).append(_this_lib_dir)
+        _ctx['PKG_3RD_DEPS_SHARED'].append(_this_lib_dir)
     if pkg_type == 'static':
-        _ctx.get('PKG_3RD_DEPS_STATIC', []).append(_this_lib_dir)
+        _ctx['PKG_3RD_DEPS_STATIC'].append(_this_lib_dir)
 def _util_func__subprocess_str(args: list[str],
     cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
 ) -> str:
