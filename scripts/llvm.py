@@ -11,12 +11,8 @@ _env: dict = {}
 _ctx: dict = {
     'PKG_INST_STRIP': '',
     'CMAKE_CMD': 'cmake',
-    'PKG_3RD_DEPS_SHARED': [],
-    'PKG_3RD_DEPS_STATIC': [],
-    'PKG_CONFIG_PATH': [],
     'BUILD_ENV': os.environ.copy(),
     'SHELL_REQ': False,
-    'CMAKE_SEARCH_PATH': [],
 }
 
 def module_init(env: dict) -> list:
