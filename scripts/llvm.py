@@ -101,11 +101,12 @@ def _build_step_00():
     _tblgen_dir = os.path.abspath(os.path.join(os.path.dirname(_env['PKG_INST_DIR']), '.NATIVE'))
     _tblgen_req = ((_env['PKG_PLATFORM'] == 'win-msvc') and (_env['CROSS_BUILD_ENABLED']))
 
+    _cmake_search_path = ';'.join(_ctx.get('CMAKE_SEARCH_PATH', []))
     args = [
         _ctx['CMAKE_CMD'],
         '-S',  os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], 'llvm')),
-        '-D', f'CMAKE_PREFIX_PATH={";".join(_ctx["CMAKE_SEARCH_PATH"])}',
-        '-D', f'CMAKE_FIND_ROOT_PATH={_env["SYSROOT"]};{";".join(_ctx["CMAKE_SEARCH_PATH"])}',
+        '-D', f'CMAKE_PREFIX_PATH={_cmake_search_path}',
+        '-D', f'CMAKE_FIND_ROOT_PATH={_env["SYSROOT"]};{_cmake_search_path}',
         '-D',  'LLVM_ENABLE_PROJECTS=clang;clang-tools-extra;lldb',
         '-D',  'CLANG_PLUGIN_SUPPORT:BOOL=0',
         '-D',  'LLVM_APPEND_VC_REV:BOOL=0',
