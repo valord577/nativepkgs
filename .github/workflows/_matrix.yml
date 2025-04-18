@@ -206,7 +206,11 @@ jobs:
           python3 ./.github/ccache_get.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
-          python3 -m venv .env
+          ${{
+            startsWith(matrix.os, 'windows')
+              && 'python3 -m venv .env'
+              || 'python3.11 -m venv .env'
+          }}
           ${{
             startsWith(matrix.os, 'windows')
               && '.env/Scripts/activate.ps1'
