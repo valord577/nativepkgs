@@ -457,6 +457,7 @@ def _setctx_win32_msvc(
         ctx.cross_target_triple = f'aarch64-pc-windows-msvc'
     if ctx.target_arch == 'amd64':
         ctx.cross_target_triple = f'x86_64-pc-windows-msvc'
+    ctx.env_passthrough['SYSROOT'] = ''
 
     ctx.extra_cmake.extend(['-G', 'Ninja'])
 

@@ -178,8 +178,11 @@ def _build_step_00():
             '-D', f'CMAKE_CXX_HOST_COMPILER={_env["HOSTCXX"]}',
         ])
     if _env['PKG_PLATFORM'] == 'win-mingw':
+        _triple = ''
+        if _env['PKG_ARCH'] == 'amd64': _triple = 'x86_64-w64-windows-gnu'
+        if _env['PKG_ARCH'] == 'arm64': _triple = 'aarch64--w64-windows-gnu'
         args.extend([
-            '-D', f'LLVM_HOST_TRIPLE={_env["PKG_ARCH"]}-w64-windows-gnu',
+            '-D', f'LLVM_HOST_TRIPLE={_triple}',
             '-D', f'LLVM_TARGET_ARCH={LLVM_ARCH}',
             '-D', f'CMAKE_C_HOST_COMPILER={_env["HOSTCC"]}',
             '-D', f'CMAKE_CXX_HOST_COMPILER={_env["HOSTCXX"]}',
