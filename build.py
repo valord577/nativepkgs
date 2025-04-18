@@ -192,6 +192,8 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
         _src = os.path.abspath(os.path.join(PROJ_ROOT, 'out', pkg_name, _env['PKG_PLATFORM'], _env['PKG_ARCH_LIBC']))
         os.symlink(_src, _this_lib_dir, target_is_directory=True)
 
+
+    _ctx['CMAKE_SEARCH_PATH'].append(_this_lib_dir)
     _ctx['PKG_CONFIG_PATH'].append(os.path.abspath(os.path.join(_this_lib_dir, 'lib', 'pkgconfig')))
     if pkg_type == 'shared':
         _ctx['PKG_3RD_DEPS_SHARED'].append(_this_lib_dir)
@@ -333,6 +335,7 @@ def _setctx_apple(
     if not _native:
         ctx.target_plat = _tuple[0]
         ctx.target_arch = _tuple[1]
+        ctx.cross_build_enabled = True
     _target_arch = 'x86_64' if ctx.target_arch == 'amd64' else ctx.target_arch
 
     _min_version_deployment = '10.15' if ctx.target_plat == 'macosx' else '12'
@@ -449,6 +452,11 @@ def _setctx_win32_msvc(
     ctx.target_arch = ctx.native_arch
     if not _native:
         ctx.target_arch = _tuple[1]
+    ctx.cross_build_enabled = (ctx.target_arch == ctx.native_arch)
+    if ctx.target_arch == 'arm64':
+        ctx.cross_target_triple = f'aarch64-pc-windows-msvc'
+    if ctx.target_arch == 'amd64':
+        ctx.cross_target_triple = f'x86_64-pc-windows-msvc'
 
     ctx.extra_cmake.extend(['-G', 'Ninja'])
 
@@ -513,6 +521,12 @@ def _setctx_win32_msvc(
         ctx.env_passthrough[envkey] = _dict
     _msvc_env_json2dict('WIN32_MSVC_ENV_NATIVE', _msvc_env_json_native)
     _msvc_env_json2dict('WIN32_MSVC_ENV_TARGET', _msvc_env_json_target)
+
+    _msvc_env_native = ctx.env_passthrough['WIN32_MSVC_ENV_NATIVE']
+    ctx.env_passthrough['HOSTCC'] = os.path.abspath(os.path.join(
+        _msvc_env_native['VCToolsInstallDir'], 'bin', f"host{_msvc_env_native['VSCMD_ARG_HOST_ARCH']}", _msvc_env_native['VSCMD_ARG_HOST_ARCH'], 'cl.exe'
+    ))
+    ctx.env_passthrough['HOSTCXX'] = ctx.env_passthrough['HOSTCC']
 
 
 _targets = {
