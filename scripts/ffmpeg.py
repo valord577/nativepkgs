@@ -9,9 +9,6 @@ import shutil
 _env: dict = {}
 _ctx: dict = {
     'PKG_INST_STRIP': '',
-    'PKG_3RD_DEPS_SHARED': [],
-    'PKG_3RD_DEPS_STATIC': [],
-    'PKG_CONFIG_PATH': [],
     'BUILD_ENV': os.environ.copy(),
 
     'EXTRA_ARGS_CONFIGURE': [],
