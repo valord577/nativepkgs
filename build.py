@@ -452,7 +452,7 @@ def _setctx_win32_msvc(
     ctx.target_arch = ctx.native_arch
     if not _native:
         ctx.target_arch = _tuple[1]
-    ctx.cross_build_enabled = (ctx.target_arch == ctx.native_arch)
+    ctx.cross_build_enabled = (ctx.target_arch != ctx.native_arch)
     if ctx.target_arch == 'arm64':
         ctx.cross_target_triple = f'aarch64-pc-windows-msvc'
     if ctx.target_arch == 'amd64':
