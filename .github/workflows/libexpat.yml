@@ -4,36 +4,28 @@ on:
     branches:
       - main
     paths:
+      - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/libexpat.yml'
-      - 'deps/libexpat'
       - 'patches/libexpat/**'
-      - 'scripts/libexpat.sh'
-      - 'scripts/libexpat.ps1'
-      - 'build.sh'
-      - 'build.ps1'
-      - 'env-*.sh'
-      - 'env-*.ps1'
+      - 'scripts/libexpat.py'
+      - 'build.py'
   pull_request:
     branches:
       - main
     paths:
+      - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/libexpat.yml'
-      - 'deps/libexpat'
       - 'patches/libexpat/**'
-      - 'scripts/libexpat.sh'
-      - 'scripts/libexpat.ps1'
-      - 'build.sh'
-      - 'build.ps1'
-      - 'env-*.sh'
-      - 'env-*.ps1'
+      - 'scripts/libexpat.py'
+      - 'build.py'
 
 jobs:
   build:
-    if: ${{ false }}
+    # if: ${{ false }}
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
