@@ -86,6 +86,12 @@ def _build_step_00():
         '-D',  'WITH_TURBOJPEG:BOOL=0',
     ]
     args.extend(_extra_args_cmake)
+
+    if _env['PKG_PLATFORM'] == 'win-msvc':
+        args.extend([
+            '-D', f'CMAKE_SYSTEM_PROCESSOR={_env["PKG_ARCH"]}',
+        ])
+
     _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
 def _build_step_01():
     args = [_ctx['CMAKE_CMD'], '--build', _env['PKG_BULD_DIR'], '-j', _env['PARALLEL_JOBS']]
