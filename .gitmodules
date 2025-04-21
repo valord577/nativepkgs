@@ -1,3 +1,0 @@
-[submodule "deps/libpng16"]
-	path = deps/libpng16
-	url = https://github.com/pnggroup/libpng.git

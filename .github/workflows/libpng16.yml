@@ -4,41 +4,27 @@ on:
     branches:
       - main
     paths:
+      - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/libpng16.yml'
-      - 'deps/libpng16'
       - 'patches/libpng16/**'
-      - 'scripts/libpng16.sh'
-      - 'scripts/libpng16.ps1'
-      - 'build.sh'
-      - 'build.ps1'
-      - 'env-*.sh'
-      - 'env-*.ps1'
-      - 'pkg-conf.sh'
-      - 'pkg-conf.ps1'
+      - 'scripts/libpng16.py'
+      - 'build.py'
   pull_request:
     branches:
       - main
     paths:
+      - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/libpng16.yml'
-      - 'deps/libpng16'
       - 'patches/libpng16/**'
-      - 'scripts/libpng16.sh'
-      - 'scripts/libpng16.ps1'
-      - 'build.sh'
-      - 'build.ps1'
-      - 'env-*.sh'
-      - 'env-*.ps1'
-      - 'pkg-conf.sh'
-      - 'pkg-conf.ps1'
+      - 'scripts/libpng16.py'
+      - 'build.py'
 
 jobs:
   build:
-    if: ${{ false }}
+    # if: ${{ false }}
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
-    with:
-      skip_platform_linux: true

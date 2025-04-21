@@ -17,6 +17,7 @@ _ctx: dict = {
 def module_init(env: dict) -> list:
     global _env; _env = env
     return [
+        _source_dl_3rd_deps,
         _source_download,
         _source_apply_patches,
         _build_step_msvc,
@@ -27,11 +28,14 @@ def module_init(env: dict) -> list:
 
 
 
+def _source_dl_3rd_deps():
+    if not _env.get('PLATFORM_APPLE', False):
+        _env['FUNC_PKGC'](_ctx, _env, 'zlib-ng', '860e4cf', 'static')
 def _source_download():
-    _git_target = 'refs/tags/R_2_7_1'
+    _git_target = 'refs/tags/v1.6.47'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/libexpat/libexpat.git'])
+        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/pnggroup/libpng.git'])
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER', ''):
@@ -67,28 +71,26 @@ def _build_step_00():
     _extra_args_cmake: list[str] = _env['EXTRA_CMAKE']
 
     if _env['PKG_TYPE'] == 'static':
-        _extra_args_cmake.extend(['-D', 'EXPAT_SHARED_LIBS:BOOL=0'])
+        _extra_args_cmake.extend(['-D', 'PNG_SHARED:BOOL=0', '-D', 'PNG_STATIC:BOOL=1'])
     if _env['PKG_TYPE'] == 'shared':
-        _extra_args_cmake.extend(['-D', 'EXPAT_SHARED_LIBS:BOOL=1'])
+        _extra_args_cmake.extend(['-D', 'PNG_SHARED:BOOL=1', '-D', 'PNG_STATIC:BOOL=0'])
 
     if _env['LIB_RELEASE'] == '0':
+        _extra_args_cmake.extend(['-D', 'PNG_DEBUG:BOOL=1'])
         _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Debug'])
     if _env['LIB_RELEASE'] == '1':
         _ctx['PKG_INST_STRIP'] = '--strip'
         _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Release'])
 
+    _cmake_search_path = ';'.join(_ctx.get('CMAKE_SEARCH_PATH', []))
     args = [
         _ctx['CMAKE_CMD'],
-        '-S',  os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], 'expat')),
-        '-D',  'EXPAT_WARNINGS_AS_ERRORS:BOOL=1',
-        '-D',  'EXPAT_MSVC_STATIC_CRT:BOOL=1',
-        '-D',  'EXPAT_BUILD_TOOLS:BOOL=0',
-        '-D',  'EXPAT_BUILD_EXAMPLES:BOOL=0',
-        '-D',  'EXPAT_BUILD_TESTS:BOOL=0',
-        '-D',  'EXPAT_BUILD_DOCS:BOOL=0',
-        '-D',  'EXPAT_BUILD_FUZZERS:BOOL=0',
-        '-D',  'EXPAT_OSSFUZZ_BUILD:BOOL=0',
-        '-D',  'EXPAT_WITH_LIBBSD:BOOL=0',
+        '-S',  _env['SUBPROJ_SRC'],
+        '-D', f'CMAKE_PREFIX_PATH={_cmake_search_path}',
+        '-D', f'CMAKE_FIND_ROOT_PATH={_env["SYSROOT"]};{_cmake_search_path}',
+        '-D',  'PNG_FRAMEWORK:BOOL=0',
+        '-D',  'PNG_TESTS:BOOL=0',
+        '-D',  'PNG_TOOLS:BOOL=0',
     ]
     args.extend(_extra_args_cmake)
     _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
