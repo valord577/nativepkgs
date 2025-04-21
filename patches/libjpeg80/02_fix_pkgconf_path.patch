@@ -1,0 +1,32 @@
+diff --git a/release/libjpeg.pc.in b/release/libjpeg.pc.in
+index 74fb7fc6..cbf9e143 100644
+--- a/release/libjpeg.pc.in
++++ b/release/libjpeg.pc.in
+@@ -1,7 +1,7 @@
+-prefix=@CMAKE_INSTALL_PREFIX@
+-exec_prefix=@CMAKE_INSTALL_PREFIX@
+-libdir=@CMAKE_INSTALL_FULL_LIBDIR@
+-includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
++prefix=${pcfiledir}/../..
++exec_prefix=${prefix}
++libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
++includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+ 
+ Name: libjpeg
+ Description: A SIMD-accelerated JPEG codec that provides the libjpeg API
+diff --git a/release/libturbojpeg.pc.in b/release/libturbojpeg.pc.in
+index 81a00632..3912ceb6 100644
+--- a/release/libturbojpeg.pc.in
++++ b/release/libturbojpeg.pc.in
+@@ -1,7 +1,7 @@
+-prefix=@CMAKE_INSTALL_PREFIX@
+-exec_prefix=@CMAKE_INSTALL_PREFIX@
+-libdir=@CMAKE_INSTALL_FULL_LIBDIR@
+-includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
++prefix=${pcfiledir}/../..
++exec_prefix=${prefix}
++libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
++includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+ 
+ Name: libturbojpeg
+ Description: A SIMD-accelerated JPEG codec that provides the TurboJPEG API
