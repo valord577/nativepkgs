@@ -1,6 +1,3 @@
 [submodule "deps/libpng16"]
 	path = deps/libpng16
 	url = https://github.com/pnggroup/libpng.git
-[submodule "deps/libexpat"]
-	path = deps/libexpat
-	url = https://github.com/libexpat/libexpat.git
