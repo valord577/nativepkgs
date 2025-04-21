@@ -29,4 +29,5 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
+      disable_commit: true
       skip_platform_apple: true

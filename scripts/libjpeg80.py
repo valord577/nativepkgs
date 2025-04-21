@@ -89,6 +89,8 @@ def _build_step_00():
 
     if _env['PKG_PLATFORM'] == 'win-msvc':
         args.extend([
+            '-D',  'CMAKE_SYSTEM_NAME=Windows',
+            '-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE',
             '-D', f'CMAKE_SYSTEM_PROCESSOR={_env["PKG_ARCH"]}',
         ])
 
