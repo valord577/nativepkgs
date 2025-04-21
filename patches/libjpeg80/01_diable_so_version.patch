@@ -1,0 +1,30 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index adb0ca45..70bb0c4a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -692,8 +692,8 @@ if(WITH_TURBOJPEG)
+       endif()
+       set_target_properties(turbojpeg PROPERTIES MACOSX_RPATH 1)
+     endif()
+-    set_target_properties(turbojpeg PROPERTIES
+-      SOVERSION ${TURBOJPEG_SO_MAJOR_VERSION} VERSION ${TURBOJPEG_SO_VERSION})
++    # set_target_properties(turbojpeg PROPERTIES
++    #   SOVERSION ${TURBOJPEG_SO_MAJOR_VERSION} VERSION ${TURBOJPEG_SO_VERSION})
+     if(TJMAPFLAG)
+       set_target_properties(turbojpeg PROPERTIES
+         LINK_FLAGS "${TJMAPFLAG}${TJMAPFILE}")
+diff --git a/sharedlib/CMakeLists.txt b/sharedlib/CMakeLists.txt
+index 8e942569..8b2c836c 100644
+--- a/sharedlib/CMakeLists.txt
++++ b/sharedlib/CMakeLists.txt
+@@ -39,8 +39,8 @@ endif()
+ add_library(jpeg SHARED ${JPEG_SRCS} ${DEFFILE} ${SIMD_TARGET_OBJECTS}
+   ${SIMD_OBJS} $<TARGET_OBJECTS:jpeg12> $<TARGET_OBJECTS:jpeg16>)
+ 
+-set_target_properties(jpeg PROPERTIES SOVERSION ${SO_MAJOR_VERSION}
+-  VERSION ${SO_MAJOR_VERSION}.${SO_AGE}.${SO_MINOR_VERSION})
++# set_target_properties(jpeg PROPERTIES SOVERSION ${SO_MAJOR_VERSION}
++#   VERSION ${SO_MAJOR_VERSION}.${SO_AGE}.${SO_MINOR_VERSION})
+ if(APPLE AND (NOT CMAKE_OSX_DEPLOYMENT_TARGET OR
+               CMAKE_OSX_DEPLOYMENT_TARGET VERSION_GREATER 10.4))
+   if(NOT CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG)

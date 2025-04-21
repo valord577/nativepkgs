@@ -1,4 +1,4 @@
-name: libexpat
+name: libjpeg80
 on:
   push:
     branches:
@@ -7,9 +7,9 @@ on:
       - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
-      - '.github/workflows/libexpat.yml'
-      - 'patches/libexpat/**'
-      - 'scripts/libexpat.py'
+      - '.github/workflows/libjpeg80.yml'
+      - 'patches/libjpeg80/**'
+      - 'scripts/libjpeg80.py'
       - 'build.py'
   pull_request:
     branches:
@@ -18,9 +18,9 @@ on:
       - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
-      - '.github/workflows/libexpat.yml'
-      - 'patches/libexpat/**'
-      - 'scripts/libexpat.py'
+      - '.github/workflows/libjpeg80.yml'
+      - 'patches/libjpeg80/**'
+      - 'scripts/libjpeg80.py'
       - 'build.py'
 
 jobs:
@@ -30,4 +30,3 @@ jobs:
     uses: ./.github/workflows/_matrix.yml
     with:
       disable_commit: true
-      skip_platform_apple: true
