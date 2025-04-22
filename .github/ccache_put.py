@@ -20,7 +20,7 @@ def show_errmsg(errmsg: str) -> NoReturn:
     sys.exit(1)
 
 
-def _util_func__subprocess(args: list[str],
+def _util_func__subprocess_devnul(args: list[str],
     cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
 ):
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
@@ -40,8 +40,8 @@ if __name__ == "__main__":
         _sh = 'C:/msys64/usr/bin/bash.exe'
         _cwd = f'$(cygpath -u "{_cwd}")'
     _tar_cmd = f'tar --posix --xz -cvf {_ccache_key}.tar.xz {os.path.basename(_ccache_dir)}'
-    _util_func__subprocess(args=[_sh, '-lc', f'cd {_cwd}; export XZ_OPT="--threads=0"; {_tar_cmd}'])
+    _util_func__subprocess_devnul(args=[_sh, '-lc', f'cd {_cwd}; export XZ_OPT="--threads=0"; {_tar_cmd}'])
 
     _src = os.path.abspath(os.path.join(_cwd_origin, f'{_ccache_key}.tar.xz'))
     _dst = f'r2:{_s3_storage_bucket}/ccache/'
-    _util_func__subprocess(args=[_rclone, 'copy', _src, _dst])
+    _util_func__subprocess_devnul(args=[_rclone, 'copy', _src, _dst])

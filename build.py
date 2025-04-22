@@ -99,10 +99,11 @@ class _ctx:
                 'LIB_RELEASE': LIB_RELEASE,
                 'PARALLEL_JOBS': str(self.nproc),
 
-                'FUNC_PROC': _util_func__subprocess,
                 'FUNC_PYPI': _util_func__pip_install,
                 'FUNC_PKGC': _util_func__dl_pkgc,
                 'FUNC_EXIT': show_errmsg,
+                'FUNC_SHELL_DEVNUL': _util_func__subprocess_devnul,
+                'FUNC_SHELL_STDOUT': _util_func__subprocess_stdout,
 
                 'PKG_NAME': self.module,
                 'PKG_TYPE': PKG_TYPE,
@@ -179,7 +180,7 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
         if pkg_extra:
             _pkg_dl_name += f"_{pkg_extra}"
         _rclone = os.path.abspath(os.path.join(PROJ_ROOT, '.github', 'rclone'))
-        _util_func__subprocess([
+        _util_func__subprocess_devnul([
             _rclone, 'copy',
             f'r2:{os.getenv("S3_R2_STORAGE_BUCKET", "")}/packages/{pkg_name}/{pkg_version}/{_pkg_dl_name}.zip', _3rd_deps_dir,
         ])
@@ -207,7 +208,7 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
         _ctx['PKG_3RD_DEPS_SHARED'].append(_this_lib_dir)
     if pkg_type == 'static':
         _ctx['PKG_3RD_DEPS_STATIC'].append(_this_lib_dir)
-def _util_func__subprocess_str(args: list[str],
+def _util_func__subprocess_stdout(args: list[str],
     cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
 ) -> str:
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
@@ -216,7 +217,7 @@ def _util_func__subprocess_str(args: list[str],
         print(f'>>>> subprocess exitcode: {proc.returncode}', file=sys.stderr)
         sys.exit(proc.returncode)
     return proc.stdout
-def _util_func__subprocess(args: list[str],
+def _util_func__subprocess_devnul(args: list[str],
     cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
 ):
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
@@ -229,7 +230,7 @@ def _util_func__pip_install(packages: list[str]):
     if not ON_GITHUB_CI:
         args.extend(['-i', 'https://mirrors.bfsu.edu.cn/pypi/web/simple'])
     args.extend(packages)
-    _util_func__subprocess(args)
+    _util_func__subprocess_devnul(args)
 
 
 
@@ -362,10 +363,10 @@ def _setctx_apple(
     else:
         show_errmsg(f'unsupported target platform: {ctx.target_plat}')
 
-    ctx.env_passthrough['SYSROOT'] = sysroot = _util_func__subprocess_str([shutil.which('xcrun') or 'xcrun', '--sdk', 'macosx', '--show-sdk-path'])[:-1]
+    ctx.env_passthrough['SYSROOT'] = sysroot = _util_func__subprocess_stdout([shutil.which('xcrun') or 'xcrun', '--sdk', 'macosx', '--show-sdk-path'])[:-1]
     ctx.env_passthrough['CROSS_FLAGS'] = f'-arch {_target_arch} -m{_min_version_target_flag}-version-min={_min_version_deployment}'
-    ctx.env_passthrough['HOSTCC']  = _util_func__subprocess_str([shutil.which('xcrun') or 'xcrun', '-f', 'clang'])[:-1]
-    ctx.env_passthrough['HOSTCXX'] = _util_func__subprocess_str([shutil.which('xcrun') or 'xcrun', '-f', 'clang++'])[:-1]
+    ctx.env_passthrough['HOSTCC']  = _util_func__subprocess_stdout([shutil.which('xcrun') or 'xcrun', '-f', 'clang'])[:-1]
+    ctx.env_passthrough['HOSTCXX'] = _util_func__subprocess_stdout([shutil.which('xcrun') or 'xcrun', '-f', 'clang++'])[:-1]
     ctx.env_passthrough['CC']  = f"{ctx.ccache} {ctx.env_passthrough['HOSTCC']}  {ctx.env_passthrough['CROSS_FLAGS']} --sysroot={sysroot}"
     ctx.env_passthrough['CXX'] = f"{ctx.ccache} {ctx.env_passthrough['HOSTCXX']} {ctx.env_passthrough['CROSS_FLAGS']} --sysroot={sysroot}"
     ctx.env_passthrough['OBJC']   = ctx.env_passthrough['CC']
@@ -477,7 +478,7 @@ def _setctx_win32_msvc(
         _pwsh_script_blk  = f'Import-Module "{_vs_devshell_dll}"; '
         _pwsh_script_blk += f'Enter-VsDevShell -VsInstallPath "{vs_path}" -SkipAutomaticLocation -DevCmdArguments "{_vs_devshell_arg}"; '
         _pwsh_script_blk += f'Get-ChildItem Env: | Select-Object -Property Name,Value | ConvertTo-Json -Depth 1  1>{dst}; '
-        _util_func__subprocess([
+        _util_func__subprocess_devnul([
             shutil.which('pwsh') or 'pwsh',
             '-WorkingDirectory', PROJ_ROOT,
             '-NonInteractive',

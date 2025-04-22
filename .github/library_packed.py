@@ -19,7 +19,7 @@ def show_errmsg(errmsg: str) -> NoReturn:
     sys.exit(1)
 
 
-def _util_func__subprocess(args: list[str],
+def _util_func__subprocess_devnul(args: list[str],
     cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
 ):
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
@@ -39,4 +39,4 @@ if __name__ == "__main__":
         _sh = 'C:/msys64/usr/bin/bash.exe'
         _cwd = f'$(cygpath -u "{_cwd}")'
     _zip_cmd = f'zip -ry {_pkg_zipname}.zip {os.path.basename(_inst_dir)}'
-    _util_func__subprocess(args=[_sh, '-lc', f'cd {_cwd}; {_zip_cmd}'])
+    _util_func__subprocess_devnul(args=[_sh, '-lc', f'cd {_cwd}; {_zip_cmd}'])

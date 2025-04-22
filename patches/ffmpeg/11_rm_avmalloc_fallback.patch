@@ -1,0 +1,17 @@
+diff --git a/libavutil/mem.c b/libavutil/mem.c
+index b205d3f..667434d 100644
+--- a/libavutil/mem.c
++++ b/libavutil/mem.c
+@@ -141,10 +141,12 @@ void *av_malloc(size_t size)
+ #else
+     ptr = malloc(size);
+ #endif
++    /* Remove fallback
+     if(!ptr && !size) {
+         size = 1;
+         ptr= av_malloc(1);
+     }
++    */
+ #if CONFIG_MEMORY_POISONING
+     if (ptr)
+         memset(ptr, FF_MEMORY_POISON, size);
