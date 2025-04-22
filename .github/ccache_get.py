@@ -20,7 +20,7 @@ def show_errmsg(errmsg: str) -> NoReturn:
     sys.exit(1)
 
 
-def _util_func__subprocess(args: list[str],
+def _util_func__subprocess_devnul(args: list[str],
     cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
 ):
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
@@ -36,6 +36,6 @@ if __name__ == "__main__":
 
     _src = f'r2:{_s3_storage_bucket}/ccache/{_ccache_key}.tar.xz'
     _dst = os.path.abspath(os.path.join(_basedir, f'{_ccache_key}.tar.xz'))
-    _util_func__subprocess(args=[_rclone, 'copyto', _src, _dst])
+    _util_func__subprocess_devnul(args=[_rclone, 'copyto', _src, _dst])
     if os.path.exists(_dst):
         shutil.unpack_archive(_dst, extract_dir=os.path.abspath(os.path.dirname(_ccache_dir)))
