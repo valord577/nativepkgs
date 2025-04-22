@@ -40,24 +40,24 @@ def _source_dl_3rd_deps():
 def _source_download():
     _git_target = 'refs/tags/llvmorg-20.1.3'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/llvm/llvm-project.git'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/llvm/llvm-project.git'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER', ''):
         with open(file_ver, 'w') as f:
             f.write(f'v{_git_target.split("-")[-1]}')
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
-    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'reset', '--hard', 'HEAD'])
-    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'clean', '-d', '-f', '-q'])
+    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'reset', '--hard', 'HEAD'])
+    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'clean', '-d', '-f', '-q'])
     with os.scandir(_env['SUBPROJ_SRC_PATCHES']) as it:
         entries = sorted(it, key=lambda e: e.name)
         for entry in entries:
             if not entry.is_file():
                 continue
-            _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'],
+            _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'],
                 args=[shutil.which('git'), 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
 
 
@@ -149,11 +149,11 @@ def _build_step_00():
         _tblgen_build_env = _env['WIN32_MSVC_ENV_NATIVE']
         _tblgen_build_env['CFLAGS']   = '/utf-8'
         _tblgen_build_env['CXXFLAGS'] = _tblgen_build_env['CFLAGS']
-        _env['FUNC_PROC'](env=_tblgen_build_env, args=_tblgen_build_args, shell=_ctx['SHELL_REQ'])
+        _env['FUNC_SHELL_DEVNUL'](env=_tblgen_build_env, args=_tblgen_build_args, shell=_ctx['SHELL_REQ'])
 
         _tblgen_build_targets = ['llvm-tblgen', 'clang-tblgen', 'lldb-tblgen', 'clang-tidy-confusable-chars-gen']
         _tblgen_build_args = [_ctx['CMAKE_CMD'], '--build', _tblgen_dir, '-j', _env['PARALLEL_JOBS'], '--target', ';'.join(_tblgen_build_targets)]
-        _env['FUNC_PROC'](env=_tblgen_build_env, args=_tblgen_build_args, shell=_ctx['SHELL_REQ'])
+        _env['FUNC_SHELL_DEVNUL'](env=_tblgen_build_env, args=_tblgen_build_args, shell=_ctx['SHELL_REQ'])
 
 
     LLVM_ARCH = ''
@@ -194,7 +194,7 @@ def _build_step_00():
             '-D', f'CMAKE_CXX_HOST_COMPILER={_env["HOSTCXX"]}',
         ])
 
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
 def _build_step_01():
     _build_targets = ['clangd', 'llvm-symbolizer', 'lldb', 'lldb-dap', 'lldb-instr']
     if _env.get('PLATFORM_LINUX', False):
@@ -203,38 +203,38 @@ def _build_step_01():
         _build_targets.append('lldb-server')
 
     args = [_ctx['CMAKE_CMD'], '--build', _env['PKG_BULD_DIR'], '-j', _env['PARALLEL_JOBS'], '--target', ';'.join(_build_targets)]
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
 def _build_step_02():
     args = [_ctx['CMAKE_CMD'], '--install', '<?>', '--component', '<?>']
     if _ctx['PKG_INST_STRIP']:
         args.append( _ctx['PKG_INST_STRIP'])
 
     args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools')); args[4] = 'llvm-symbolizer'
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
 
     args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb', 'tools')); args[4] = 'lldb'
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
     args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb', 'tools')); args[4] = 'lldb-argdumper'
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
     args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb', 'tools')); args[4] = 'lldb-dap'
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
     args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb', 'tools')); args[4] = 'lldb-instr'
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
 
     args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb')); args[4] = 'liblldb'
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
     args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'clang')); args[4] = 'clangd'
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
     args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'clang')); args[4] = 'clang-resource-headers'
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
 
     if _env.get('PLATFORM_LINUX', False):
         args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb', 'tools')); args[4] = 'lldbIntelFeatures'
-        _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+        _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
     if _env.get('PLATFORM_APPLE', False):
         _src = '/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Versions/A/Resources/debugserver'
         _dst = os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'bin', 'lldb-server'))
         os.symlink(_src, _dst, target_is_directory=False)
     else:
         args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb', 'tools')); args[4] = 'lldb-server'
-        _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+        _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])

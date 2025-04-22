@@ -99,10 +99,11 @@ class _ctx:
                 'LIB_RELEASE': LIB_RELEASE,
                 'PARALLEL_JOBS': str(self.nproc),
 
-                'FUNC_PROC': _util_func__subprocess,
                 'FUNC_PYPI': _util_func__pip_install,
                 'FUNC_PKGC': _util_func__dl_pkgc,
                 'FUNC_EXIT': show_errmsg,
+                'FUNC_SHELL_DEVNUL': _util_func__subprocess_devnul,
+                'FUNC_SHELL_STDOUT': _util_func__subprocess_stdout,
 
                 'PKG_NAME': self.module,
                 'PKG_TYPE': PKG_TYPE,
@@ -207,7 +208,7 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
         _ctx['PKG_3RD_DEPS_SHARED'].append(_this_lib_dir)
     if pkg_type == 'static':
         _ctx['PKG_3RD_DEPS_STATIC'].append(_this_lib_dir)
-def _util_func__subprocess_str(args: list[str],
+def _util_func__subprocess_stdout(args: list[str],
     cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
 ) -> str:
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
@@ -216,7 +217,7 @@ def _util_func__subprocess_str(args: list[str],
         print(f'>>>> subprocess exitcode: {proc.returncode}', file=sys.stderr)
         sys.exit(proc.returncode)
     return proc.stdout
-def _util_func__subprocess(args: list[str],
+def _util_func__subprocess_devnul(args: list[str],
     cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
 ):
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)

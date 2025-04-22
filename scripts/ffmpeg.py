@@ -2,7 +2,9 @@
 
 # fmt: off
 
+from importlib.machinery import FileFinder
 import os
+import shlex
 import shutil
 
 
@@ -18,10 +20,10 @@ def module_init(env: dict) -> list:
     global _env; _env = env
     return [
         _source_dl_3rd_deps,
-        _source_download,
-        _source_apply_patches,
-        _build_step_00,
-        _build_step_01,
+        # _source_download,
+        # _source_apply_patches,
+        # _build_step_00,
+        # _build_step_01,
         _build_step_02,
     ]
 
@@ -38,24 +40,24 @@ def _source_dl_3rd_deps():
 def _source_download():
     _git_target = 'refs/heads/release/7.1'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://git.ffmpeg.org/ffmpeg.git'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://git.ffmpeg.org/ffmpeg.git'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER', ''):
         with open(file_ver, 'w') as f:
             f.write(f'release{_git_target.split("/")[-1]}')
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
-    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'reset', '--hard', 'HEAD'])
-    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'clean', '-d', '-f', '-q'])
+    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'reset', '--hard', 'HEAD'])
+    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'clean', '-d', '-f', '-q'])
     with os.scandir(_env['SUBPROJ_SRC_PATCHES']) as it:
         entries = sorted(it, key=lambda e: e.name)
         for entry in entries:
             if not entry.is_file():
                 continue
-            _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'],
+            _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'],
                 args=[shutil.which('git'), 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
 
 
@@ -136,17 +138,86 @@ def _build_step_00():
 
     _env['PKG_BULD_DIR'] = _env['SUBPROJ_SRC'] if os.getenv('CLANGD_CODE_COMPLETION', '') == '1' else _env['PKG_BULD_DIR']
     _ctx['BUILD_ENV']['PKG_CONFIG_PATH'] = f"{os.pathsep.join(_ctx['PKG_CONFIG_PATH'])}{os.pathsep}{os.getenv('PKG_CONFIG_PATH', '')}"
-    _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
+    _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
 def _build_step_01():
     args = [shutil.which('make'), '-j', _env['PARALLEL_JOBS']]
     if shutil.which('bear'):
         args = [shutil.which('bear'), '--'] + args
-    _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
+    _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
 def _build_step_02():
-    if (_env['PKG_PLATFORM'] == 'iphoneos') or (_env['PKG_PLATFORM'] == 'iphonesimulator'):
-        _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-headers'])
-        _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-libs'])
-    else:
-        _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-progs'])
-        if _env['PKG_TYPE'] == 'shared':
-            _env['FUNC_PROC'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-libs'])
+    if not (_env['PKG_PLATFORM'] in ['iphoneos', 'iphonesimulator']):
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-progs'])
+    _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-headers'])
+    _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-libs'])
+
+    if _env.get('PLATFORM_APPLE', False) or _env['PKG_PLATFORM'] == 'linux':
+        # symbols list
+        _ffmpeg_libs_dir = []
+        with os.scandir(_env['SUBPROJ_SRC']) as it:
+            entries = sorted(it, key=lambda e: e.name)
+            _ffmpeg_libs_dir.extend([d.path for d in entries if d.is_dir() and d.name.startswith('lib')])
+
+        _ffmpeg_symbol_v = []
+        for _lib_dir in _ffmpeg_libs_dir:
+            with os.scandir(_lib_dir) as it:
+                entries = sorted(it, key=lambda e: e.name)
+                _ffmpeg_symbol_v.extend([v.path for v in entries if v.name.endswith('.v')])
+
+        _ffmpeg_mergeso_sym_l = []
+        for _v in _ffmpeg_symbol_v:
+            with open(_v, 'r') as f:
+                _x = f.read()
+                _l = _x[_x.index('global:'):_x.index('local:')]
+                for _s in _l.splitlines():
+                    if not _s.endswith(';'):
+                        continue
+                    _ffmpeg_mergeso_sym_l.append(_s.strip()[:-1])
+
+        _ffmpeg_mergeso_sym_v = os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'lib', 'libffmpeg.v'))
+        with open(_ffmpeg_mergeso_sym_v, 'w') as f:
+            if _env.get('PLATFORM_APPLE', False):
+                f.write('\n'.join(_ffmpeg_mergeso_sym_l))
+            if _env['PKG_PLATFORM'] == 'linux':
+                f.write('{ global:\n')
+                f.write('; \n'.join(_ffmpeg_mergeso_sym_l))
+                f.write('; \nlocal: *; };')
+
+
+        _ffmpeg_pkgconf_dir = os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'lib', 'pkgconfig'))
+        _ctx['BUILD_ENV']['PKG_CONFIG_PATH'] = f"{_ffmpeg_pkgconf_dir}{os.pathsep}{os.getenv('PKG_CONFIG_PATH', '')}"
+
+        _pkgconf_bin = _env.get('CROSS_PKGCONFIG_BIN', '')
+        if not _pkgconf_bin:
+            _pkgconf_bin = shutil.which('pkgconf') or 'pkg-config'
+        _ffmpeg_mergeso_lib = _env['FUNC_SHELL_STDOUT'](env=_ctx['BUILD_ENV'], args=[_pkgconf_bin, '--libs', 'libavdevice'])
+
+
+        _ffmpeg_mergeso_out = ''; _ffmpeg_mergeso_cmd = []
+        _ffmpeg_mergeso_cmd.extend(shlex.split(f"{_env.get('CC', 'clang')} {_env.get('CROSS_LDFLAGS', '')}"))
+        if 'ccache' in _ffmpeg_mergeso_cmd[0]:
+            _ffmpeg_mergeso_cmd = _ffmpeg_mergeso_cmd[1:]
+        _ffmpeg_mergeso_cmd.extend(['-shared'])
+        _ffmpeg_mergeso_cmd.extend(['-Wl,--whole-archive'])
+        _ffmpeg_mergeso_cmd.extend(shlex.split(_ffmpeg_mergeso_lib))
+        _ffmpeg_mergeso_cmd.extend(['-Wl,--no-whole-archive'])
+        if _env.get('PLATFORM_APPLE', False):
+            _ffmpeg_mergeso_out = 'lib/libffmpeg.dylib'
+            _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out])
+            _ffmpeg_mergeso_cmd.extend(['-Wl,-exported_symbols_list', _ffmpeg_mergeso_sym_v])
+        if _env['PKG_PLATFORM'] == 'linux':
+            _ffmpeg_mergeso_out = 'lib/libffmpeg.so'
+            _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out, '-Wl,--soname=libffmpeg.so'])
+            _ffmpeg_mergeso_cmd.extend([f'-Wl,--version-script={_ffmpeg_mergeso_sym_v}'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_INST_DIR'], env=_ctx['BUILD_ENV'], args=_ffmpeg_mergeso_cmd)
+
+        if _env['LIB_RELEASE'] == '1':
+            _ffmpeg_mergeso_cmd = [_env.get('STRIP', 'strip')]
+            if _env.get('PLATFORM_APPLE', False):
+                _ffmpeg_mergeso_cmd.append('-x')
+            if _env['PKG_PLATFORM'] == 'linux':
+                _ffmpeg_mergeso_cmd.append('--strip-all')
+            _ffmpeg_mergeso_cmd.append(_ffmpeg_mergeso_out)
+            _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_INST_DIR'], env=_ctx['BUILD_ENV'], args=_ffmpeg_mergeso_cmd)
+
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'uninstall-libs'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'uninstall-pkgconfig'])

@@ -30,24 +30,24 @@ def module_init(env: dict) -> list:
 def _source_download():
     _git_target = '42b2b24fb8819f1ed3643aa9cf2a62f03868e3aa'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'init'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'remote', 'add', 'x', 'https://github.com/videolan/dav1d.git'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
-        _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'checkout', 'FETCH_HEAD'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=['git', 'init'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=['git', 'remote', 'add', 'x', 'https://github.com/videolan/dav1d.git'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=['git', 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER', ''):
         with open(file_ver, 'w') as f:
             f.write(f'{_git_target[:7]}')
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
-    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'reset', '--hard', 'HEAD'])
-    _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'], args=['git', 'clean', '-d', '-f', '-q'])
+    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=['git', 'reset', '--hard', 'HEAD'])
+    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=['git', 'clean', '-d', '-f', '-q'])
     with os.scandir(_env['SUBPROJ_SRC_PATCHES']) as it:
         entries = sorted(it, key=lambda e: e.name)
         for entry in entries:
             if not entry.is_file():
                 continue
-            _env['FUNC_PROC'](cwd=_env['SUBPROJ_SRC'],
+            _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'],
                 args=['git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
 
 
@@ -81,12 +81,12 @@ def _build_step_00():
     ]
     args.extend(_extra_args_meson)
     args.extend([_env['PKG_BULD_DIR'], _env['SUBPROJ_SRC']])
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args)
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args)
 def _build_step_01():
     args = [_ctx['MESON_CMD'], 'compile', '-C', _env['PKG_BULD_DIR'], '-j', _env['PARALLEL_JOBS']]
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args)
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args)
 def _build_step_02():
     args = [_ctx['MESON_CMD'], 'install', '-C', _env['PKG_BULD_DIR'], '--no-rebuild']
     if _ctx['PKG_INST_STRIP']:
         args.append( _ctx['PKG_INST_STRIP'])
-    _env['FUNC_PROC'](env=_ctx['BUILD_ENV'], args=args)
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args)
