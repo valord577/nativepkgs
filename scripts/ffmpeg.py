@@ -20,10 +20,10 @@ def module_init(env: dict) -> list:
     global _env; _env = env
     return [
         _source_dl_3rd_deps,
-        # _source_download,
-        # _source_apply_patches,
-        # _build_step_00,
-        # _build_step_01,
+        _source_download,
+        _source_apply_patches,
+        _build_step_00,
+        _build_step_01,
         _build_step_02,
     ]
 
