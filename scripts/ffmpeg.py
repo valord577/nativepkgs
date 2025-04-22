@@ -176,11 +176,16 @@ def _build_step_02():
         _ffmpeg_mergeso_sym_v = os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'lib', 'libffmpeg.v'))
         with open(_ffmpeg_mergeso_sym_v, 'w') as f:
             if _env.get('PLATFORM_APPLE', False):
-                f.write('\n'.join(_ffmpeg_mergeso_sym_l))
+                for x in _ffmpeg_mergeso_sym_l:
+                    f.write(f'_{x}\n')
             if _env['PKG_PLATFORM'] == 'linux':
-                f.write('{ global:\n')
-                f.write('; \n'.join(_ffmpeg_mergeso_sym_l))
-                f.write('; \nlocal: *; };')
+                f.write('{\n')
+                f.write('  global:\n')
+                for x in _ffmpeg_mergeso_sym_l:
+                    f.write(f'    {x};\n')
+                f.write('  local:\n')
+                f.write('     *;')
+                f.write('};')
 
 
         _ffmpeg_pkgconf_dir = os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'lib', 'pkgconfig'))
@@ -197,17 +202,19 @@ def _build_step_02():
         if 'ccache' in _ffmpeg_mergeso_cmd[0]:
             _ffmpeg_mergeso_cmd = _ffmpeg_mergeso_cmd[1:]
         _ffmpeg_mergeso_cmd.extend(['-shared'])
-        _ffmpeg_mergeso_cmd.extend(['-Wl,--whole-archive'])
-        _ffmpeg_mergeso_cmd.extend(shlex.split(_ffmpeg_mergeso_lib))
-        _ffmpeg_mergeso_cmd.extend(['-Wl,--no-whole-archive'])
         if _env.get('PLATFORM_APPLE', False):
             _ffmpeg_mergeso_out = 'lib/libffmpeg.dylib'
             _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out])
             _ffmpeg_mergeso_cmd.extend(['-Wl,-exported_symbols_list', _ffmpeg_mergeso_sym_v])
+            _ffmpeg_mergeso_cmd.extend(['-all_load'])
+            _ffmpeg_mergeso_cmd.extend(shlex.split(_ffmpeg_mergeso_lib))
         if _env['PKG_PLATFORM'] == 'linux':
             _ffmpeg_mergeso_out = 'lib/libffmpeg.so'
             _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out, '-Wl,--soname=libffmpeg.so'])
             _ffmpeg_mergeso_cmd.extend([f'-Wl,--version-script={_ffmpeg_mergeso_sym_v}'])
+            _ffmpeg_mergeso_cmd.extend(['-Wl,--whole-archive'])
+            _ffmpeg_mergeso_cmd.extend(shlex.split(_ffmpeg_mergeso_lib))
+            _ffmpeg_mergeso_cmd.extend(['-Wl,--no-whole-archive'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_INST_DIR'], env=_ctx['BUILD_ENV'], args=_ffmpeg_mergeso_cmd)
 
         if _env['LIB_RELEASE'] == '1':
