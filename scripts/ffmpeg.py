@@ -2,7 +2,6 @@
 
 # fmt: off
 
-from importlib.machinery import FileFinder
 import os
 import shlex
 import shutil
@@ -204,7 +203,7 @@ def _build_step_02():
         _ffmpeg_mergeso_cmd.extend(['-shared'])
         if _env.get('PLATFORM_APPLE', False):
             _ffmpeg_mergeso_out = 'lib/libffmpeg.dylib'
-            _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out])
+            _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out, '-install_name', 'libffmpeg.dylib'])
             _ffmpeg_mergeso_cmd.extend(['-Wl,-exported_symbols_list', _ffmpeg_mergeso_sym_v])
             _ffmpeg_mergeso_cmd.extend(['-all_load'])
             _ffmpeg_mergeso_cmd.extend(shlex.split(_ffmpeg_mergeso_lib))

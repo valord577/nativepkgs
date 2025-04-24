@@ -29,4 +29,4 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
-      select_platforms: "macosx, linux"
+      select_platforms: "macosx, linux, win-mingw"

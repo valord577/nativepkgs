@@ -1,7 +1,7 @@
 [constants]
 prefix = ''
 sys_root = '__SYSROOT__'
-c_args = ['-arch', 'arm64', '--sysroot=' + sys_root, __EXTRA_FLAGS__]
+c_args = ['-arch', 'arm64', '-isysroot', sys_root, __EXTRA_FLAGS__]
 cpp_args = c_args + []
 
 [host_machine]

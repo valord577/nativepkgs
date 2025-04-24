@@ -363,12 +363,13 @@ def _setctx_apple(
     else:
         show_errmsg(f'unsupported target platform: {ctx.target_plat}')
 
-    ctx.env_passthrough['SYSROOT'] = sysroot = _util_func__subprocess_stdout([shutil.which('xcrun') or 'xcrun', '--sdk', 'macosx', '--show-sdk-path'])[:-1]
+    ctx.env_passthrough['SYSROOT'] = sysroot = \
+        _util_func__subprocess_stdout([shutil.which('xcrun') or 'xcrun', '--sdk', ctx.target_plat, '--show-sdk-path'])[:-1]
     ctx.env_passthrough['CROSS_FLAGS'] = f'-arch {_target_arch} -m{_min_version_target_flag}-version-min={_min_version_deployment}'
     ctx.env_passthrough['HOSTCC']  = _util_func__subprocess_stdout([shutil.which('xcrun') or 'xcrun', '-f', 'clang'])[:-1]
     ctx.env_passthrough['HOSTCXX'] = _util_func__subprocess_stdout([shutil.which('xcrun') or 'xcrun', '-f', 'clang++'])[:-1]
-    ctx.env_passthrough['CC']  = f"{ctx.ccache} {ctx.env_passthrough['HOSTCC']}  {ctx.env_passthrough['CROSS_FLAGS']} --sysroot={sysroot}"
-    ctx.env_passthrough['CXX'] = f"{ctx.ccache} {ctx.env_passthrough['HOSTCXX']} {ctx.env_passthrough['CROSS_FLAGS']} --sysroot={sysroot}"
+    ctx.env_passthrough['CC']  = f"{ctx.ccache} {ctx.env_passthrough['HOSTCC']}  {ctx.env_passthrough['CROSS_FLAGS']} -isysroot {sysroot}"
+    ctx.env_passthrough['CXX'] = f"{ctx.ccache} {ctx.env_passthrough['HOSTCXX']} {ctx.env_passthrough['CROSS_FLAGS']} -isysroot {sysroot}"
     ctx.env_passthrough['OBJC']   = ctx.env_passthrough['CC']
     ctx.env_passthrough['OBJCXX'] = ctx.env_passthrough['CXX']
 
@@ -598,8 +599,9 @@ def show_errmsg(errmsg: str) -> NoReturn:
 def show_help(exitcode = 1) -> NoReturn:
     _native_flag_width = 0
     for k, v in _targets.items():
-        if v['native'] and len(k) > _native_flag_width:
-            _native_flag_width = len(k) + 1
+        _width = len(k) + 1
+        if v['native'] and (_width > _native_flag_width):
+            _native_flag_width = _width
 
     _targets_help_str = ''
     for k, v in _targets.items():

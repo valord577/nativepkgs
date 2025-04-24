@@ -11,10 +11,5 @@ __pycache__
 
 /tmp/
 /out/
-/lib/
 
 /toolchain
-
-/deps/*/.env
-/deps/*/.cache
-/deps/*/compile_commands*.json
