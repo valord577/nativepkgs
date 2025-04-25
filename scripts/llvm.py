@@ -38,7 +38,7 @@ def _source_dl_3rd_deps():
     if not _env.get('PLATFORM_APPLE', False):
         _env['FUNC_PKGC'](_ctx, _env, 'zlib-ng', '860e4cf', 'static')
 def _source_download():
-    _git_target = 'refs/tags/llvmorg-20.1.3'
+    _git_target = 'refs/heads/release/20.x'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/llvm/llvm-project.git'])
@@ -46,7 +46,7 @@ def _source_download():
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER', ''):
         with open(file_ver, 'w') as f:
-            f.write(f'v{_git_target.split("-")[-1]}')
+            f.write(f'v{_git_target.split("/")[-1]}')
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return

@@ -7,9 +7,6 @@ import sys
 from typing import NoReturn
 
 
-_basedir = os.path.abspath(os.path.dirname(__file__))
-_basedir = os.path.abspath(os.path.join(_basedir, '..'))
-
 def _print(msg: str):
     print(msg, file=sys.stderr)
 def show_errmsg(errmsg: str) -> NoReturn:

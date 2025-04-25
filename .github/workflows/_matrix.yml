@@ -265,7 +265,7 @@ jobs:
       - name: ccache get... (s3)
         if: ${{ (! inputs.disable_ccache) }}
         run: |
-          python3 ./.github/ccache_get.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
+          ./.github/ccache_get.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
           build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
@@ -279,14 +279,14 @@ jobs:
       - name: ccache put... (s3)
         if: ${{ (! inputs.disable_ccache) }}
         run: |
-          python3 ./.github/ccache_put.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
+          ./.github/ccache_put.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: set required env - 01
         run: |
           ./.github/setenv_01.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.pkg_type }}'
       - name: library packed - ${{ env.PKG_NAME }}
         run: |
           # keep file permissions and case sensitivity
-          python3 ./.github/library_packed.py
+          ./.github/library_packed.py
       - name: library upload - ${{ env.PKG_NAME }}
         uses: actions/upload-artifact@v4
         with:
