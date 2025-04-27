@@ -60,6 +60,9 @@ def _source_apply_patches():
                 args=[shutil.which('git'), 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
 
 
+def _build_clangd_dev():
+    if _env['ON_CLANGD_CK']:
+        _env['PKG_BULD_DIR'] = _env['SUBPROJ_SRC']
 def _build_step_00():
     _extra_args_configure: list[str] = _ctx['EXTRA_ARGS_CONFIGURE']
 
@@ -135,8 +138,8 @@ def _build_step_00():
             f'--strip={_env["STRIP"]}',
         ])
 
-    _env['PKG_BULD_DIR'] = _env['SUBPROJ_SRC'] if os.getenv('CLANGD_CODE_COMPLETION', '') == '1' else _env['PKG_BULD_DIR']
-    _ctx['BUILD_ENV']['PKG_CONFIG_PATH'] = f"{os.pathsep.join(_ctx['PKG_CONFIG_PATH'])}{os.pathsep}{os.getenv('PKG_CONFIG_PATH', '')}"
+    _ctx['BUILD_ENV']['PKG_CONFIG_PATH'] = \
+        f"{os.pathsep.join(_ctx['PKG_CONFIG_PATH'])}{os.pathsep}{os.getenv('PKG_CONFIG_PATH', '')}"
     _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
 def _build_step_01():
     args = [shutil.which('make'), '-j', _env['PARALLEL_JOBS']]

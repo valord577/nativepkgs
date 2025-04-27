@@ -13,11 +13,6 @@ import sys
 from typing import NoReturn, Union
 
 
-# set when only building one module
-_unique_module: str = ''
-
-
-
 PROJ_ROOT = os.path.abspath(os.path.dirname(__file__))
 # ----------------------------
 # optimize
@@ -34,17 +29,24 @@ PKG_TYPE = 'shared' if os.getenv('PKG_TYPE', '') == 'shared' else 'static'
 # ----------------------------
 ON_GITLAB_CI = os.getenv('GITLAB_CI', '')      == 'true'
 ON_GITHUB_CI = os.getenv('GITHUB_ACTIONS', '') == 'true'
+ON_CLANGD_CK = os.getenv('CLANGD_CODE_COMPLETION', '0') == '1'
 
 class _ctx:
     def __init__(self, module: str):
         self.module = module
         self.script = self._lazy_import()
+
         self.native_plat = platform.system().lower()
         self.native_arch = platform.machine().lower()
+        if self.native_arch == 'x86_64':  self.native_arch = 'amd64'
+        if self.native_arch == 'aarch64': self.native_arch = 'arm64'
+
         self.target_plat = ''
         self.target_arch = ''
         self.target_libc = ''
+
         self.env_passthrough = {}
+
         self.extra_cmake: list[str] = []
         self.extra_meson: list[str] = []
         self.cross_build_enabled = False
@@ -97,6 +99,9 @@ class _ctx:
 
                 'LIB_RELEASE': LIB_RELEASE,
                 'PARALLEL_JOBS': str(self.nproc),
+                'ON_GITLAB_CI': ON_GITLAB_CI,
+                'ON_GITHUB_CI': ON_GITHUB_CI,
+                'ON_CLANGD_CK': ON_CLANGD_CK,
 
                 'FUNC_PYPI': _util_func__pip_install,
                 'FUNC_PKGC': _util_func__dl_pkgc,
@@ -131,9 +136,8 @@ class _ctx:
 
         self.extra_meson.extend(['--prefix', env['PKG_INST_DIR']])
 
-        if not _unique_module:
-            env['SUBPROJ_SRC'] = os.path.abspath(os.path.join(PROJ_ROOT, '.deps', env['PKG_NAME']))
-            env['SUBPROJ_SRC_PATCHES'] = os.path.abspath(os.path.join(PROJ_ROOT, 'patches', env['PKG_NAME']))
+        env['SUBPROJ_SRC'] = os.path.abspath(os.path.join(PROJ_ROOT, '.deps', env['PKG_NAME']))
+        env['SUBPROJ_SRC_PATCHES'] = os.path.abspath(os.path.join(PROJ_ROOT, 'patches', env['PKG_NAME']))
         return env
 
 
@@ -610,7 +614,7 @@ def show_help(exitcode = 1) -> NoReturn:
             _targets_help_str += f'        {" ".join(tgt[1:])}\n'
 
     help_str  = f'Usage: {sys.argv[0]} -h|--help\n'
-    help_str += f'Usage: {sys.argv[0]} [target] {"" if _unique_module else "-m|--module <module>"}\n\n'
+    help_str += f'Usage: {sys.argv[0]} [target] -m|--module <module>\n\n'
     help_str += f'Target Options:\n{_targets_help_str}\n'
     print(help_str[:-1], file=sys.stderr)
     sys.exit(exitcode)
@@ -623,8 +627,7 @@ if __name__ == "__main__":
         show_errmsg(f'Please run this script in a [virtual environment](https://docs.python.org/3/library/venv.html)')
 
 
-    argv_tgt: list[str] = []
-    argv_mod: str = _unique_module
+    argv_tgt: list[str] = []; argv_mod: str = ''
     argv = sys.argv[1:]; argc = len(argv); i = 0
     while i < argc:
         arg = argv[i]; i += 1
@@ -633,9 +636,7 @@ if __name__ == "__main__":
         elif arg.startswith('-h') or arg.startswith('--help'):
             show_help(0)  # exited
         elif arg.startswith('-m') or arg.startswith('--module'):
-            if not _unique_module:
-                argv_mod = argv[i]
-            i += 1
+            argv_mod = argv[i]; i += 1
         else:
             argv_tgt.append(arg)
     if not argv_mod:
@@ -683,5 +684,6 @@ if __name__ == "__main__":
     build_steps = ctx.script.module_init(build_env)
     for func in build_steps:
         func()
-    _self_func__tree(build_env['PKG_INST_DIR'], depth=3)
+    if not ON_CLANGD_CK:
+        _self_func__tree(build_env['PKG_INST_DIR'], depth=3)
     print(f'──── Build Done @{dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")} ────', file=sys.stderr)
