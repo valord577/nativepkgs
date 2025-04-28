@@ -258,14 +258,9 @@ def _setctx_linux(
         return _libc_type
 
     if _native:
-        if False:
-            pass
-        elif ctx.native_arch == 'aarch64':
-            ctx.target_arch = 'arm64'
-        elif ctx.native_arch == 'x86_64':
-            ctx.target_arch = 'amd64'
-        else:
-            show_errmsg(f'unsupported native arch: {ctx.native_arch}')
+        ctx.target_arch = ctx.native_arch
+        if not (ctx.target_arch in ['arm64', 'amd64']):
+            show_errmsg(f'unsupported target arch: {ctx.target_arch}')
 
         ctx.target_libc = _get_linux_libc_type()
         if not ctx.target_libc:
@@ -343,15 +338,21 @@ def _setctx_apple(
         ctx.extra_cmake.extend(['-D', 'CMAKE_OBJC_COMPILER_LAUNCHER=ccache'])
         ctx.extra_cmake.extend(['-D', 'CMAKE_OBJCXX_COMPILER_LAUNCHER=ccache'])
 
-    ctx.target_plat = 'macosx' if ctx.native_plat == 'darwin' else ctx.native_plat
-    ctx.target_arch = 'amd64'  if ctx.native_arch == 'x86_64' else ctx.native_arch
+    if _native:
+        ctx.target_arch = ctx.native_arch
+        if not (ctx.target_arch in ['arm64', 'amd64']):
+            show_errmsg(f'unsupported target arch: {ctx.target_arch}')
     if not _native:
         ctx.target_plat = _tuple[0]
         ctx.target_arch = _tuple[1]
         ctx.cross_build_enabled = True
-    _target_arch = 'x86_64' if ctx.target_arch == 'amd64' else ctx.target_arch
+    _target_arch = ctx.target_arch
+    if _target_arch == 'amd64':
+        _target_arch = 'x86_64'
 
-    _min_version_deployment = '10.15' if ctx.target_plat == 'macosx' else '12'
+    _min_version_deployment = '10.15'
+    if ctx.target_plat == 'macosx':
+        _min_version_deployment = '12'
     _min_version_target_flag = ''
     if False:
         pass
