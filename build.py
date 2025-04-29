@@ -555,6 +555,7 @@ _targets = {
             ('linux', 'crossbuild', 'armv7', 'gnueabihf'),
             ('linux', 'crossbuild', 'amd64', 'musl'),
             ('linux', 'crossbuild', 'arm64', 'musl'),
+            ('linux', 'crossbuild', 'armv7', 'musleabihf'),
         ],
     },
     'macosx': {

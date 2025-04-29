@@ -28,7 +28,7 @@ on:
         required: false
         type: string
       container_linux_vers:
-        default: "b0625a391c418460f8b5b5645987a599a3e7b61c"
+        default: "787973a8716b364e1c4d3209046549e6078a6d98"
         required: false
         type: string
       container_mingw:
@@ -36,7 +36,7 @@ on:
         required: false
         type: string
       container_mingw_vers:
-        default: "f6aaedbed9cb2aa48519f69bf1df4bcbc3ba79a2"
+        default: "38860d19671e256dc2bb7b85cf9bb91bd6e1303b"
         required: false
         type: string
 

@@ -9,6 +9,7 @@ import shutil
 
 _env: dict = {}
 _ctx: dict = {
+    'PKG_VERSION': 'unknown',
     'PKG_INST_STRIP': '',
     'BUILD_ENV': os.environ.copy(),
 
@@ -21,6 +22,7 @@ def module_init(env: dict) -> list:
         _source_dl_3rd_deps,
         _source_download,
         _source_apply_patches,
+        _build_clangd_dev,
         _build_step_00,
         _build_step_01,
         _build_step_02,
@@ -38,6 +40,8 @@ def _source_dl_3rd_deps():
         _env['FUNC_PKGC'](_ctx, _env, 'sdl2', 'v2.32.4', 'static')
 def _source_download():
     _git_target = 'refs/heads/release/7.1'
+    _ctx['PKG_VERSION'] = f'release{_git_target.split("/")[-1]}'
+
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://git.ffmpeg.org/ffmpeg.git'])
@@ -45,7 +49,7 @@ def _source_download():
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER', ''):
         with open(file_ver, 'w') as f:
-            f.write(f'release{_git_target.split("/")[-1]}')
+            f.write(_ctx['PKG_VERSION'])
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
@@ -186,7 +190,7 @@ def _build_step_02():
                 for x in _ffmpeg_mergeso_sym_l:
                     f.write(f'    {x};\n')
                 f.write('  local:\n')
-                f.write('     *;')
+                f.write('    *;\n')
                 f.write('};')
 
 
@@ -230,3 +234,14 @@ def _build_step_02():
 
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'uninstall-libs'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'uninstall-pkgconfig'])
+
+        with open(os.path.abspath(os.path.join(_ffmpeg_pkgconf_dir, 'libffmpeg.pc')), 'w') as f:
+            f.write("prefix=${pcfiledir}/../..\n")
+            f.write("includedir=${prefix}/include\n")
+            f.write("libdir=${prefix}/lib\n")
+            f.write("\n")
+            f.write("Name: libffmpeg\n")
+            f.write("Description: LGPL FFMPEG Library\n")
+            f.write(f"Version: {_ctx['PKG_VERSION']}\n")
+            f.write("Libs: -L${libdir} -lffmpeg\n")
+            f.write("Cflags: -I${includedir}\n")

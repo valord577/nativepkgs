@@ -25,6 +25,11 @@
     "libc": "musl"
   },
   {
+    "platform": "linux",
+    "arch": "armv7",
+    "libc": "musleabihf"
+  },
+  {
     "platform": "win-mingw",
     "arch": "amd64"
   },
