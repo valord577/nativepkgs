@@ -70,11 +70,10 @@ def _build_clangd_dev():
 def _build_step_00():
     _extra_args_configure: list[str] = _ctx['EXTRA_ARGS_CONFIGURE']
 
-    if _env['PKG_TYPE'] == 'static':
-        _extra_args_configure.extend([])
-    if _env['PKG_TYPE'] == 'shared':
-        _env['FUNC_EXIT'](f'unsupported pkg type: {_env["PKG_TYPE"]}')  # exited
-        _extra_args_configure.extend(['--disable-static', '--enable-shared'])
+    # if _env['PKG_TYPE'] == 'static':
+    #     _extra_args_configure.extend([])
+    # if _env['PKG_TYPE'] == 'shared':
+    #     _extra_args_configure.extend(['--disable-static', '--enable-shared'])
 
     if _env['LIB_RELEASE'] == '0':
         _ctx['PKG_INST_STRIP'] = '--disable-stripping'
@@ -156,7 +155,8 @@ def _build_step_02():
     _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-headers'])
     _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-libs'])
 
-    if _env.get('PLATFORM_APPLE', False) or _env['PKG_PLATFORM'] == 'linux':
+
+    if _env.get('PLATFORM_APPLE', False) or _env['PKG_PLATFORM'] in ['linux', 'win-mingw']:
         # symbols list
         _ffmpeg_libs_dir = []
         with os.scandir(_env['SUBPROJ_SRC']) as it:
@@ -177,7 +177,9 @@ def _build_step_02():
                 for _s in _l.splitlines():
                     if not _s.endswith(';'):
                         continue
-                    _ffmpeg_mergeso_sym_l.append(_s.strip()[:-1])
+                    _ret = _s.strip()[:-1]
+                    if _ret not in _ffmpeg_mergeso_sym_l:
+                        _ffmpeg_mergeso_sym_l.append(_ret)
 
         _ffmpeg_mergeso_sym_v = os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'lib', 'libffmpeg.v'))
         with open(_ffmpeg_mergeso_sym_v, 'w') as f:
@@ -192,6 +194,17 @@ def _build_step_02():
                 f.write('  local:\n')
                 f.write('    *;\n')
                 f.write('};')
+            if _env['PKG_PLATFORM'] == 'win-mingw':
+                _dll_sym_arg = f"{_env['NM']} -a lib/*.a | grep ' T ' | cut -d ' ' -f 3"
+                _dll_sym_all = _env['FUNC_SHELL_STDOUT'](cwd=_env['PKG_INST_DIR'], env=_ctx['BUILD_ENV'], shell=True, args=_dll_sym_arg)
+                f.write('LIBRARY libffmpeg\n')
+                f.write('EXPORTS\n')
+                for x in shlex.split(_dll_sym_all):
+                    for rule in _ffmpeg_mergeso_sym_l:
+                        _rule = rule[:-1] if rule.endswith('*') else rule
+                        if x.startswith(_rule):
+                            f.write(f'  {x}\n')
+                            break
 
 
         _ffmpeg_pkgconf_dir = os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'lib', 'pkgconfig'))
@@ -200,27 +213,57 @@ def _build_step_02():
         _pkgconf_bin = _env.get('CROSS_PKGCONFIG_BIN', '')
         if not _pkgconf_bin:
             _pkgconf_bin = shutil.which('pkgconf') or 'pkg-config'
-        _ffmpeg_mergeso_lib = _env['FUNC_SHELL_STDOUT'](env=_ctx['BUILD_ENV'], args=[_pkgconf_bin, '--libs', 'libavdevice'])
+        _ffmpeg_mergeso_lib0 = _env['FUNC_SHELL_STDOUT'](env=_ctx['BUILD_ENV'], args=[_pkgconf_bin, '--libs', 'libavdevice'])
+        _ffmpeg_mergeso_lib1 = shlex.split(_ffmpeg_mergeso_lib0)
+        _ffmpeg_mergeso_libdir = []; _ffmpeg_mergeso_libffm = []; _ffmpeg_mergeso_libext = []; _ffmpeg_mergeso_libstd = []
+        for x in _ffmpeg_mergeso_lib1:
+            if x.startswith('-L'):
+                if x not in _ffmpeg_mergeso_libdir: _ffmpeg_mergeso_libdir.append(x)
+            elif x.startswith('-lav') or x.startswith('-lsw'):
+                if x not in _ffmpeg_mergeso_libffm: _ffmpeg_mergeso_libffm.append(x)
+            elif x in ['-lm', '-ldl', '-latomic']:
+                if x not in _ffmpeg_mergeso_libstd: _ffmpeg_mergeso_libstd.append(x)
+            else:
+                if x not in _ffmpeg_mergeso_libext: _ffmpeg_mergeso_libext.append(x)
 
 
         _ffmpeg_mergeso_out = ''; _ffmpeg_mergeso_cmd = []
         _ffmpeg_mergeso_cmd.extend(shlex.split(f"{_env.get('CC', 'clang')} {_env.get('CROSS_LDFLAGS', '')}"))
         if 'ccache' in _ffmpeg_mergeso_cmd[0]:
             _ffmpeg_mergeso_cmd = _ffmpeg_mergeso_cmd[1:]
-        _ffmpeg_mergeso_cmd.extend(['-shared'])
+        _ffmpeg_mergeso_cmd.extend(['-shared', '-v'])
         if _env.get('PLATFORM_APPLE', False):
             _ffmpeg_mergeso_out = 'lib/libffmpeg.dylib'
-            _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out, '-install_name', 'libffmpeg.dylib'])
+            _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out, '-install_name', _ffmpeg_mergeso_out.split("/")[-1]])
             _ffmpeg_mergeso_cmd.extend(['-Wl,-exported_symbols_list', _ffmpeg_mergeso_sym_v])
+            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libdir)
             _ffmpeg_mergeso_cmd.extend(['-all_load'])
-            _ffmpeg_mergeso_cmd.extend(shlex.split(_ffmpeg_mergeso_lib))
+            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libffm)
+            _ffmpeg_mergeso_cmd.extend(['-noall_load'])
+            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libext)
+            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libstd)
         if _env['PKG_PLATFORM'] == 'linux':
             _ffmpeg_mergeso_out = 'lib/libffmpeg.so'
-            _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out, '-Wl,--soname=libffmpeg.so'])
+            _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out, f'-Wl,--soname={_ffmpeg_mergeso_out.split("/")[-1]}'])
             _ffmpeg_mergeso_cmd.extend([f'-Wl,--version-script={_ffmpeg_mergeso_sym_v}'])
+            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libdir)
             _ffmpeg_mergeso_cmd.extend(['-Wl,--whole-archive'])
-            _ffmpeg_mergeso_cmd.extend(shlex.split(_ffmpeg_mergeso_lib))
+            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libffm)
             _ffmpeg_mergeso_cmd.extend(['-Wl,--no-whole-archive'])
+            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libext)
+            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libstd)
+        if _env['PKG_PLATFORM'] == 'win-mingw':
+            _ffmpeg_mergeso_out = 'lib/libffmpeg.dll'
+            _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out])
+            _ffmpeg_mergeso_cmd.extend([f'-Wl,--Xlink=/DEF:{_ffmpeg_mergeso_sym_v}'])
+            _ffmpeg_mergeso_cmd.extend([f'-Wl,--output-def={_ffmpeg_mergeso_out.split(".")[0]}.def'])
+            _ffmpeg_mergeso_cmd.extend([f'-Wl,--out-implib={_ffmpeg_mergeso_out.split(".")[0]}.lib'])
+            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libdir)
+            _ffmpeg_mergeso_cmd.extend(['-Wl,--whole-archive'])
+            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libffm)
+            _ffmpeg_mergeso_cmd.extend(['-Wl,--no-whole-archive'])
+            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libext)
+            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libstd)
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_INST_DIR'], env=_ctx['BUILD_ENV'], args=_ffmpeg_mergeso_cmd)
 
         if _env['LIB_RELEASE'] == '1':
