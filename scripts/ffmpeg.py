@@ -282,7 +282,7 @@ def _build_step_02():
             _ffmpeg_mergeso_cmd = [_env.get('STRIP', 'strip')]
             if _env.get('PLATFORM_APPLE', False):
                 _ffmpeg_mergeso_cmd.append('-x')
-            if _env['PKG_PLATFORM'] == 'linux':
+            if _env['PKG_PLATFORM'] in ['linux', 'win-mingw']:
                 _ffmpeg_mergeso_cmd.append('--strip-all')
             _ffmpeg_mergeso_cmd.append(_ffmpeg_mergeso_out)
             _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_INST_DIR'], env=_ctx['BUILD_ENV'], args=_ffmpeg_mergeso_cmd)
