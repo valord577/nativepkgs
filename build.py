@@ -212,7 +212,7 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
         _ctx['PKG_3RD_DEPS_SHARED'].append(_this_lib_dir)
     if pkg_type == 'static':
         _ctx['PKG_3RD_DEPS_STATIC'].append(_this_lib_dir)
-def _util_func__subprocess_stdout(args: list[str],
+def _util_func__subprocess_stdout(args: Union[str, list[str]],
     cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
 ) -> str:
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
@@ -221,7 +221,7 @@ def _util_func__subprocess_stdout(args: list[str],
         print(f'>>>> subprocess exitcode: {proc.returncode}', file=sys.stderr)
         sys.exit(proc.returncode)
     return proc.stdout
-def _util_func__subprocess_devnul(args: list[str],
+def _util_func__subprocess_devnul(args: Union[str, list[str]],
     cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
 ):
     print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
