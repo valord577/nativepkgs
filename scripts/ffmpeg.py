@@ -215,14 +215,25 @@ def _build_step_02():
             _pkgconf_bin = shutil.which('pkgconf') or 'pkg-config'
         _ffmpeg_mergeso_lib0 = _env['FUNC_SHELL_STDOUT'](env=_ctx['BUILD_ENV'], args=[_pkgconf_bin, '--libs', 'libavdevice'])
         _ffmpeg_mergeso_lib1 = shlex.split(_ffmpeg_mergeso_lib0)
-        _ffmpeg_mergeso_libdir = []; _ffmpeg_mergeso_libffm = []; _ffmpeg_mergeso_libext = []; _ffmpeg_mergeso_libstd = []
-        for x in _ffmpeg_mergeso_lib1:
-            if x.startswith('-L'):
+        _ffmpeg_mergeso_libdir = []
+        _ffmpeg_mergeso_libffm = []
+        _ffmpeg_mergeso_libmac = []
+        _ffmpeg_mergeso_libext = []
+        _ffmpeg_mergeso_libstd = []
+        i = 0; c = len(_ffmpeg_mergeso_lib1)
+        while i < c:
+            x = _ffmpeg_mergeso_lib1[i]; i += 1
+            if False:
+                pass
+            elif x.startswith('-L'):
                 if x not in _ffmpeg_mergeso_libdir: _ffmpeg_mergeso_libdir.append(x)
             elif x.startswith('-lav') or x.startswith('-lsw'):
                 if x not in _ffmpeg_mergeso_libffm: _ffmpeg_mergeso_libffm.append(x)
             elif x in ['-lm', '-ldl', '-latomic']:
                 if x not in _ffmpeg_mergeso_libstd: _ffmpeg_mergeso_libstd.append(x)
+            elif x in ['-framework']:
+                f = _ffmpeg_mergeso_lib1[i]; i += 1
+                if f not in _ffmpeg_mergeso_libmac: _ffmpeg_mergeso_libmac.append(f)
             else:
                 if x not in _ffmpeg_mergeso_libext: _ffmpeg_mergeso_libext.append(x)
 
@@ -237,11 +248,12 @@ def _build_step_02():
             _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out, '-install_name', _ffmpeg_mergeso_out.split("/")[-1]])
             _ffmpeg_mergeso_cmd.extend(['-Wl,-exported_symbols_list', _ffmpeg_mergeso_sym_v])
             _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libdir)
-            _ffmpeg_mergeso_cmd.extend(['-all_load'])
-            _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libffm)
-            _ffmpeg_mergeso_cmd.extend(['-noall_load'])
+            for x in _ffmpeg_mergeso_libffm:
+                _ffmpeg_mergeso_cmd.extend(['-Wl,-force_load', f'lib/lib{x[2:]}.a'])
             _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libext)
             _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libstd)
+            for x in _ffmpeg_mergeso_libmac:
+                _ffmpeg_mergeso_cmd.extend(['-framework', x])
         if _env['PKG_PLATFORM'] == 'linux':
             _ffmpeg_mergeso_out = 'lib/libffmpeg.so'
             _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out, f'-Wl,--soname={_ffmpeg_mergeso_out.split("/")[-1]}'])
