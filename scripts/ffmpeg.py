@@ -145,10 +145,9 @@ def _build_step_00():
         f"{os.pathsep.join(_ctx['PKG_CONFIG_PATH'])}{os.pathsep}{os.getenv('PKG_CONFIG_PATH', '')}"
     _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
 def _build_step_01():
-    args = [shutil.which('make'), '-j', _env['PARALLEL_JOBS']]
-    if shutil.which('bear'):
-        args = [shutil.which('bear'), '--'] + args
-    _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
+    args = f"{shutil.which('make')} -j {_env['PARALLEL_JOBS']} 1>/dev/null"
+    if bear := shutil.which('bear'): args = f"{bear} -- " + args
+    _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], shell=True, args=args)
 def _build_step_02():
     if not (_env['PKG_PLATFORM'] in ['iphoneos', 'iphonesimulator']):
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-progs'])
