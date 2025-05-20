@@ -1,8 +1,16 @@
 diff --git a/libavutil/mem.c b/libavutil/mem.c
-index b205d3f..667434d 100644
+index b205d3f..0d5bbd0 100644
 --- a/libavutil/mem.c
 +++ b/libavutil/mem.c
-@@ -141,10 +141,12 @@ void *av_malloc(size_t size)
+@@ -103,7 +103,6 @@ void *av_malloc(size_t size)
+         return NULL;
+ 
+ #if HAVE_POSIX_MEMALIGN
+-    if (size) //OS X on SDK 10.6 has a broken posix_memalign implementation
+     if (posix_memalign(&ptr, ALIGN, size))
+         ptr = NULL;
+ #elif HAVE_ALIGNED_MALLOC
+@@ -141,10 +140,12 @@ void *av_malloc(size_t size)
  #else
      ptr = malloc(size);
  #endif

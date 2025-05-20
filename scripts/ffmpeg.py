@@ -228,7 +228,7 @@ def _build_step_02():
                 if x not in _ffmpeg_mergeso_libdir: _ffmpeg_mergeso_libdir.append(x)
             elif x.startswith('-lav') or x.startswith('-lsw'):
                 if x not in _ffmpeg_mergeso_libffm: _ffmpeg_mergeso_libffm.append(x)
-            elif x in ['-lm', '-ldl', '-latomic']:
+            elif x in ['-lm', '-ldl', '-latomic', '-pthread']:
                 if x not in _ffmpeg_mergeso_libstd: _ffmpeg_mergeso_libstd.append(x)
             elif x in ['-framework']:
                 f = _ffmpeg_mergeso_lib1[i]; i += 1
