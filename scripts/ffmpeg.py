@@ -2,6 +2,7 @@
 
 # fmt: off
 
+import glob
 import os
 import shlex
 import shutil
@@ -157,20 +158,23 @@ def _build_step_02():
 
     if _env.get('PLATFORM_APPLE', False) or _env['PKG_PLATFORM'] in ['linux', 'win-mingw']:
         # symbols list
-        _ffmpeg_libs_dir = []
-        with os.scandir(_env['SUBPROJ_SRC']) as it:
-            entries = sorted(it, key=lambda e: e.name)
-            _ffmpeg_libs_dir.extend([d.path for d in entries if d.is_dir() and d.name.startswith('lib')])
+        #_ffmpeg_libs_dir = []
+        #with os.scandir(_env['SUBPROJ_SRC']) as it:
+        #    entries = sorted(it, key=lambda e: e.name)
+        #    _ffmpeg_libs_dir.extend([d.path for d in entries if d.is_dir() and d.name.startswith('lib')])
+        #
+        #_ffmpeg_symbol_v = []
+        #for _lib_dir in _ffmpeg_libs_dir:
+        #    with os.scandir(_lib_dir) as it:
+        #        entries = sorted(it, key=lambda e: e.name)
+        #        _ffmpeg_symbol_v.extend([v.path for v in entries if v.name.endswith('.v')])
+        #print('debug >>>>>>', _ffmpeg_symbol_v)
 
-        _ffmpeg_symbol_v = []
-        for _lib_dir in _ffmpeg_libs_dir:
-            with os.scandir(_lib_dir) as it:
-                entries = sorted(it, key=lambda e: e.name)
-                _ffmpeg_symbol_v.extend([v.path for v in entries if v.name.endswith('.v')])
+        _ffmpeg_symbol_v = glob.glob(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], 'lib*', '*.v')))
 
         _ffmpeg_mergeso_sym_l = []
         for _v in _ffmpeg_symbol_v:
-            with open(_v, 'r') as f:
+            with open(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], _v)), 'r') as f:
                 _x = f.read()
                 _l = _x[_x.index('global:'):_x.index('local:')]
                 for _s in _l.splitlines():
@@ -192,7 +196,7 @@ def _build_step_02():
                     f.write(f'    {x};\n')
                 f.write('  local:\n')
                 f.write('    *;\n')
-                f.write('};')
+                f.write('};\n')
             if _env['PKG_PLATFORM'] == 'win-mingw':
                 _dll_sym_arg = f"{_env['NM']} -a lib/*.a | grep ' T ' | cut -d ' ' -f 3"
                 _dll_sym_all = _env['FUNC_SHELL_STDOUT'](cwd=_env['PKG_INST_DIR'], env=_ctx['BUILD_ENV'], shell=True, args=_dll_sym_arg)

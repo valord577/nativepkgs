@@ -19,11 +19,13 @@ PROJ_ROOT = os.path.abspath(os.path.dirname(__file__))
 #  - 0 DEBUG
 #  - 1 RELEASE (default)
 # ----------------------------
-LIB_RELEASE = '0' if os.getenv('LIB_RELEASE', '') == '0' else '1'
+LIB_RELEASE = os.getenv('LIB_RELEASE', '1')
+if LIB_RELEASE != '0': LIB_RELEASE = '1'
 # ----------------------------
 # static or shared
 # ----------------------------
-PKG_TYPE = 'shared' if os.getenv('PKG_TYPE', '') == 'shared' else 'static'
+PKG_TYPE = os.getenv('PKG_TYPE', 'shared')
+if PKG_TYPE != 'static': PKG_TYPE = 'shared'
 # ----------------------------
 # ci runtime
 # ----------------------------
