@@ -64,7 +64,7 @@ def _build_step_msvc():
     _ctx['SHELL_REQ'] = True
 
     if _env['LIB_RELEASE'] == '0':
-        _env['FUNC_EXIT'](f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')  # exited
+        raise NotImplementedError(f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')
     if _env['LIB_RELEASE'] == '1':
         _env['EXTRA_CMAKE'].extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
 def _build_step_00():

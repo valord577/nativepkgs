@@ -24,7 +24,7 @@ def module_init(env: dict) -> list:
         _source_download,
         _source_apply_patches,
         _build_clangd_dev,
-        _build_step_00,
+        # _build_step_00,
         _build_step_01,
         _build_step_02,
     ]
@@ -147,7 +147,7 @@ def _build_step_00():
     _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
 def _build_step_01():
     args = f"{shutil.which('make')} -j {_env['PARALLEL_JOBS']} 1>/dev/null"
-    if bear := shutil.which('bear'): args = f"{bear} -- " + args
+    # if bear := shutil.which('bear'): args = f"{bear} -- " + args
     _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], shell=True, args=args)
 def _build_step_02():
     if not (_env['PKG_PLATFORM'] in ['iphoneos', 'iphonesimulator']):

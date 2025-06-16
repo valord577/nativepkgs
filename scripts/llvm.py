@@ -33,7 +33,7 @@ def module_init(env: dict) -> list:
 
 def _platform_check():
     if not (_env['PKG_PLATFORM'] in ['macosx', 'linux', 'win-mingw', 'win-msvc']):
-        _env['FUNC_EXIT'](f'unsupported PKG_PLATFORM: {_env["PKG_PLATFORM"]}')  # exited
+        raise NotImplementedError(f'unsupported PKG_PLATFORM: {_env["PKG_PLATFORM"]}')
 def _source_dl_3rd_deps():
     if not _env.get('PLATFORM_APPLE', False):
         _env['FUNC_PKGC'](_ctx, _env, 'zlib-ng', '860e4cf', 'static')
@@ -71,7 +71,7 @@ def _build_step_msvc():
     _ctx['SHELL_REQ'] = True
 
     if _env['LIB_RELEASE'] == '0':
-        _env['FUNC_EXIT'](f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')  # exited
+        raise NotImplementedError(f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')
     if _env['LIB_RELEASE'] == '1':
         _env['EXTRA_CMAKE'].extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
 def _build_step_unix():
@@ -88,7 +88,7 @@ def _build_step_00():
     if _env['PKG_TYPE'] == 'static':
         _extra_args_cmake.extend(['-D', 'LLVM_BUILD_LLVM_DYLIB:BOOL=0'])
     if _env['PKG_TYPE'] == 'shared':
-        _env['FUNC_EXIT'](f'unsupported pkg type: {_env["PKG_TYPE"]}')  # exited
+        raise NotImplementedError(f'unsupported pkg type: {_env["PKG_TYPE"]}')
         _extra_args_cmake.extend(['-D', 'LLVM_BUILD_LLVM_DYLIB:BOOL=1'])
 
     if _env['LIB_RELEASE'] == '0':
