@@ -95,7 +95,7 @@ def _build_step_msvc():
     _ctx['SHELL_REQ'] = True
 
     if _env['LIB_RELEASE'] == '0':
-        _env['FUNC_EXIT'](f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')  # exited
+        raise NotImplementedError(f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')
     if _env['LIB_RELEASE'] == '1':
         _env['EXTRA_CMAKE'].extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
 def _build_step_00():
@@ -105,7 +105,7 @@ def _build_step_00():
         _extra_args_cmake.extend(['-D', 'USE_STATIC_MBEDTLS_LIBRARY:BOOL=1'])
         _extra_args_cmake.extend(['-D', 'USE_SHARED_MBEDTLS_LIBRARY:BOOL=0'])
     if _env['PKG_TYPE'] == 'shared':
-        _env['FUNC_EXIT'](f'unsupported pkg type: {_env["PKG_TYPE"]}')  # exited
+        raise NotImplementedError(f'unsupported pkg type: {_env["PKG_TYPE"]}')
 
     if _env['LIB_RELEASE'] == '0':
         _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Debug'])

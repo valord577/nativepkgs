@@ -83,14 +83,14 @@ class _ctx:
         path = os.path.abspath(os.path.join(PROJ_ROOT, 'scripts', f'{name}.py'))
         spec = importlib.util.spec_from_file_location('', path)
         if not spec:
-            show_errmsg(f'missing module[{name}]: "failed @importlib.util.spec_from_file_location"')
+            raise ModuleNotFoundError(f'missing module[{name}]: "failed @importlib.util.spec_from_file_location"')
         module = importlib.util.module_from_spec(spec)
         try:
             spec.loader.exec_module(module)  # type: ignore
         except FileNotFoundError:
-            show_errmsg(f'missing module[{name}]: "no such file [{path}]"')
+            raise ModuleNotFoundError(f'missing module[{name}]: "no such file [{path}]"')
         if not hasattr(module, 'module_init'):
-            show_errmsg(f'missing module[{name}]: "no attr [module_init]"')
+            raise ModuleNotFoundError(f'missing module[{name}]: "no attr [module_init]"')
         return module
 
     def getenv(self) -> dict:
@@ -107,7 +107,6 @@ class _ctx:
 
                 'FUNC_PYPI': _util_func__pip_install,
                 'FUNC_PKGC': _util_func__dl_pkgc,
-                'FUNC_EXIT': show_errmsg,
                 'FUNC_SHELL_DEVNUL': _util_func__subprocess_devnul,
                 'FUNC_SHELL_STDOUT': _util_func__subprocess_stdout,
 
@@ -244,7 +243,7 @@ def _setctx_linux(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
     if ctx.native_plat != 'linux':
-        show_errmsg(f'unsupported host os: {ctx.native_plat}')
+        raise NotImplementedError(f'unsupported host os: {ctx.native_plat}')
     ctx.env_passthrough['PLATFORM_LINUX'] = True
 
     def _get_linux_libc_type() -> str:
@@ -262,11 +261,11 @@ def _setctx_linux(
     if _native:
         ctx.target_arch = ctx.native_arch
         if not (ctx.target_arch in ['arm64', 'amd64']):
-            show_errmsg(f'unsupported target arch: {ctx.target_arch}')
+            raise NotImplementedError(f'unsupported target arch: {ctx.target_arch}')
 
         ctx.target_libc = _get_linux_libc_type()
         if not ctx.target_libc:
-            show_errmsg('unknown native libc type')
+            raise GeneratorExit('unknown native libc type')
 
         if ctx.ccache:
             for cc  in ['cc',  'clang',   'gcc']:
@@ -280,7 +279,7 @@ def _setctx_linux(
     else:
         CROSS_TOOLCHAIN_ROOT = os.getenv('CROSS_TOOLCHAIN_ROOT')
         if not CROSS_TOOLCHAIN_ROOT:
-            show_errmsg('missing required env: `CROSS_TOOLCHAIN_ROOT`')
+            raise GeneratorExit('missing required env: `CROSS_TOOLCHAIN_ROOT`')
 
         ctx.cross_build_enabled = True
         ctx.target_arch = _tuple[2]
@@ -333,7 +332,7 @@ def _setctx_apple(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
     if ctx.native_plat != 'darwin':
-        show_errmsg(f'unsupported host os: {ctx.native_plat}')
+        raise NotImplementedError(f'unsupported host os: {ctx.native_plat}')
     ctx.env_passthrough['PLATFORM_APPLE'] = True
 
     if ctx.ccache:
@@ -343,7 +342,7 @@ def _setctx_apple(
     if _native:
         ctx.target_arch = ctx.native_arch
         if not (ctx.target_arch in ['arm64', 'amd64']):
-            show_errmsg(f'unsupported target arch: {ctx.target_arch}')
+            raise NotImplementedError(f'unsupported target arch: {ctx.target_arch}')
     if not _native:
         ctx.target_plat = _tuple[0]
         ctx.target_arch = _tuple[1]
@@ -368,7 +367,7 @@ def _setctx_apple(
         _min_version_target_flag = 'ios-simulator'
         ctx.extra_cmake.extend(['-D', 'CMAKE_SYSTEM_NAME=iOS'])
     else:
-        show_errmsg(f'unsupported target platform: {ctx.target_plat}')
+        raise NotImplementedError(f'unsupported target platform: {ctx.target_plat}')
 
     ctx.env_passthrough['SYSROOT'] = sysroot = \
         _util_func__subprocess_stdout([shutil.which('xcrun') or 'xcrun', '--sdk', ctx.target_plat, '--show-sdk-path'])[:-1]
@@ -411,12 +410,12 @@ def _setctx_win32_mingw(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
     if ctx.native_plat != 'linux':
-        show_errmsg(f'unsupported host os: {ctx.native_plat}')
+        raise NotImplementedError(f'unsupported host os: {ctx.native_plat}')
     ctx.env_passthrough['PLATFORM_WIN32'] = True
 
     CROSS_TOOLCHAIN_ROOT = os.getenv('CROSS_TOOLCHAIN_ROOT')
     if not CROSS_TOOLCHAIN_ROOT:
-        show_errmsg('missing required env: `CROSS_TOOLCHAIN_ROOT`')
+        raise GeneratorExit('missing required env: `CROSS_TOOLCHAIN_ROOT`')
 
     ctx.cross_build_enabled = True
     ctx.target_arch = _tuple[1]
@@ -463,7 +462,7 @@ def _setctx_win32_msvc(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
     if ctx.native_plat != 'windows':
-        show_errmsg(f'unsupported host os: {ctx.native_plat}')
+        raise NotImplementedError(f'unsupported host os: {ctx.native_plat}')
     ctx.env_passthrough['PLATFORM_WIN32'] = True
 
     ctx.target_arch = ctx.native_arch
@@ -522,7 +521,7 @@ def _setctx_win32_msvc(
             _vs_path = _dir; _vs_devshell_dll = _dll
             break
     if (not _vs_path) or (not _vs_devshell_dll):
-        show_errmsg('Failed to search MSVC environment')
+        raise NotImplementedError('Failed to search MSVC environment')
 
     _msvc_env_json_native = os.path.abspath(os.path.join(PROJ_ROOT, '.msvc_env_native.json'))
     _msvc_env_json_target = os.path.abspath(os.path.join(PROJ_ROOT, '.msvc_env_target.json'))
@@ -601,9 +600,6 @@ _targets = {
     },
 }
 
-def show_errmsg(errmsg: str) -> NoReturn:
-    print(f'[e] {errmsg}', file=sys.stderr)
-    sys.exit(1)
 def show_help(exitcode = 1) -> NoReturn:
     _native_flag_width = 0
     for k, v in _targets.items():
@@ -626,9 +622,9 @@ def show_help(exitcode = 1) -> NoReturn:
 
 if __name__ == "__main__":
     if sys.version_info < (3, 6):
-        show_errmsg(f'Required Python Interpreter ≥ 3.6')
+        raise GeneratorExit(f'Required Python Interpreter ≥ 3.6')
     if sys.prefix == sys.base_prefix:
-        show_errmsg(f'Please run this script in a [virtual environment](https://docs.python.org/3/library/venv.html)')
+        raise GeneratorExit(f'Please run this script in a [virtual environment](https://docs.python.org/3/library/venv.html)')
 
 
     argv_tgt: list[str] = []; argv_mod: str = ''
@@ -644,7 +640,7 @@ if __name__ == "__main__":
         else:
             argv_tgt.append(arg)
     if not argv_mod:
-        show_errmsg(f'Please declare the module to be built')
+        raise GeneratorExit(f'Please declare the module to be built')
 
     argc_tgt = len(argv_tgt)
     ctx = _ctx(module=argv_mod)
@@ -658,22 +654,22 @@ if __name__ == "__main__":
         elif ctx.native_plat == 'windows':
             argc_tgt +=1; argv_tgt.append('win-msvc')
         else:
-            show_errmsg(f'unsupported native platform: {ctx.native_plat}')
+            raise NotImplementedError(f'unsupported native platform: {ctx.native_plat}')
 
     ctx.target_plat = argv_tgt[0]
     _target = _targets.get(ctx.target_plat)
     if not _target:
-        show_errmsg(f'unsupported target platform: {ctx.target_plat}')
+        raise NotImplementedError(f'unsupported target platform: {ctx.target_plat}')
 
     _tuple: Union[tuple[str, ...], None] = None
     if argc_tgt > 1:
         # check target tuple
         _tuple = tuple(argv_tgt)
         if not (_tuple in _target['tuples']):
-            show_errmsg(f'unsupported target tuple: {_tuple}')
+            raise NotImplementedError(f'unsupported target tuple: {_tuple}')
     _is_native_build = ((argc_tgt == 1) and (_target['native']))
     if (not _is_native_build) and (not _tuple):
-        show_errmsg(f'unsupported native build: {ctx.target_plat}')
+        raise NotImplementedError(f'unsupported native build: {ctx.target_plat}')
     _target['setctx'](ctx, _is_native_build, _tuple)
 
 
