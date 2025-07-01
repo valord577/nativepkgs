@@ -35,7 +35,7 @@ def _source_dl_3rd_deps():
     _env['FUNC_PKGC'](_ctx, _env, 'dav1d',
         '42b2b24', 'static'); _ctx['EXTRA_ARGS_CONFIGURE'].append('--enable-libdav1d')
     _env['FUNC_PKGC'](_ctx, _env, 'mbedtls',
-        '22098d4', 'static'); _ctx['EXTRA_ARGS_CONFIGURE'].append('--enable-mbedtls')
+        'c765c83', 'static'); _ctx['EXTRA_ARGS_CONFIGURE'].append('--enable-mbedtls')
 
     if _env['PKG_PLATFORM'] == 'macosx':
         _env['FUNC_PKGC'](_ctx, _env, 'sdl2', 'v2.32.4', 'static')
