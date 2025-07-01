@@ -30,12 +30,16 @@ def module_init(env: dict) -> list:
 
 
 def _source_download():
-    _git_target = '22098d41c6620ce07cf8a0134d37302355e1e5ef'
+    _git_target = 'c765c831e5c2a0971410692f92f7a81d6ec65ec2'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/Mbed-TLS/mbedtls.git'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
+
+        # _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'submodule', 'set-url', '--', 'framework', '../mbedtls-framework.git'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'submodule', 'update', '--init', '--depth=1', '--single-branch', '-f', '--', 'framework'])
+
     if file_ver := os.getenv('DEPS_VER', ''):
         with open(file_ver, 'w') as f:
             f.write(f'{_git_target[:7]}')
