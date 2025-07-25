@@ -31,6 +31,5 @@ jobs:
     uses: ./.github/workflows/_matrix.yml
     with:
       disable_commit: true
-      disable_ccache: false
       container_linux: "linux310-gcc7"
       select_platforms: "macosx, linux, win-msvc"
