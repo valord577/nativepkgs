@@ -40,7 +40,7 @@ def _source_dl_3rd_deps():
     if _env['PKG_PLATFORM'] == 'macosx':
         _env['FUNC_PKGC'](_ctx, _env, 'sdl2', 'v2.32.4', 'static')
 def _source_download():
-    _git_target = 'refs/heads/release/7.1'
+    _git_target = 'refs/heads/release/8.0'
     _ctx['PKG_VERSION'] = f'release{_git_target.split("/")[-1]}'
 
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
