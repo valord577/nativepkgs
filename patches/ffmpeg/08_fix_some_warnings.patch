@@ -2,14 +2,14 @@ diff --git a/libavcodec/videotoolboxenc.c b/libavcodec/videotoolboxenc.c
 index f4070571d3..e67fbe2280 100644
 --- a/libavcodec/videotoolboxenc.c
 +++ b/libavcodec/videotoolboxenc.c
-@@ -1203,8 +1203,8 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
+@@ -1218,8 +1218,8 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
          return AVERROR_EXTERNAL;
      }
  
 -#if defined (MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
--    if (__builtin_available(macOS 10.13, *)) {
+-    if (__builtin_available(macOS 10.13, iOS 11.0, *)) {
 +#if AV_HAS_BUILTIN(__builtin_available) && (TARGET_OS_OSX || TARGET_OS_IOS || TARGET_OS_TV)
-+    if (__builtin_available(macOS 10.15, iOS 11, tvOS 11, *)) {
++    if (__builtin_available(macOS 10.15, iOS 11.0, tvOS 11, *)) {
          if (vtctx->supported_props) {
              CFRelease(vtctx->supported_props);
              vtctx->supported_props = NULL;
