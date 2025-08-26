@@ -38,7 +38,7 @@ def _source_dl_3rd_deps():
         'c765c83', 'static'); _ctx['EXTRA_ARGS_CONFIGURE'].append('--enable-mbedtls')
 
     if _env['PKG_PLATFORM'] == 'macosx':
-        _env['FUNC_PKGC'](_ctx, _env, 'sdl2', 'v2.32.4', 'static')
+        _env['FUNC_PKGC'](_ctx, _env, 'sdl2', 'v2.32.8', 'static')
 def _source_download():
     _git_target = 'refs/heads/release/8.0'
     _ctx['PKG_VERSION'] = f'release{_git_target.split("/")[-1]}'
