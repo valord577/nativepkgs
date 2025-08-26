@@ -28,10 +28,10 @@ def module_init(env: dict) -> list:
 
 
 def _source_download():
-    _git_target = 'refs/tags/release-2.32.8'
+    _git_target = 'refs/tags/pcre2-10.45'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/libsdl-org/SDL.git'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/PCRE2Project/pcre2.git'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER', ''):
@@ -68,6 +68,7 @@ def _build_step_00():
 
     if _env['PKG_TYPE'] == 'static':
         _extra_args_cmake.extend(['-D', 'BUILD_SHARED_LIBS:BOOL=0'])
+        _extra_args_cmake.extend(['-D', 'BUILD_STATIC_LIBS:BOOL=1'])
     if _env['PKG_TYPE'] == 'shared':
         raise NotImplementedError(f'unsupported pkg type: {_env["PKG_TYPE"]}')
 
@@ -80,11 +81,20 @@ def _build_step_00():
     args = [
         _ctx['CMAKE_CMD'],
         '-S',  _env['SUBPROJ_SRC'],
-        '-D',  'SDL_CCACHE:BOOL=0',
-        '-D',  'SDL_TEST:BOOL=0',
-        '-D',  'SDL2_DISABLE_SDL2MAIN:BOOL=1',
+        '-D',  'PCRE2_STATIC_PIC:BOOL=1',
+        '-D',  'PCRE2_BUILD_TESTS:BOOL=0',
+        '-D',  'PCRE2_BUILD_PCRE2GREP:BOOL=0',
+        '-D',  'PCRE2_STATIC_RUNTIME:BOOL=1',
     ]
     args.extend(_extra_args_cmake)
+
+    if _env['PKG_PLATFORM'] == 'win-msvc':
+        args.extend([
+            '-D',  'CMAKE_SYSTEM_NAME=Windows',
+            '-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE',
+            '-D', f'CMAKE_SYSTEM_PROCESSOR={_env["PKG_ARCH"]}',
+        ])
+
     _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
 def _build_step_01():
     args = [_ctx['CMAKE_CMD'], '--build', _env['PKG_BULD_DIR'], '-j', _env['PARALLEL_JOBS']]

@@ -1,0 +1,36 @@
+diff --git a/libpcre2-16.pc.in b/libpcre2-16.pc.in
+index bacb466..2e5d667 100644
+--- a/libpcre2-16.pc.in
++++ b/libpcre2-16.pc.in
+@@ -1,6 +1,6 @@
+ # Package Information for pkg-config
+ 
+-prefix=@prefix@
++prefix=${pcfiledir}/../..
+ exec_prefix=@exec_prefix@
+ libdir=@libdir@
+ includedir=@includedir@
+diff --git a/libpcre2-32.pc.in b/libpcre2-32.pc.in
+index 06241f0..d8fea1c 100644
+--- a/libpcre2-32.pc.in
++++ b/libpcre2-32.pc.in
+@@ -1,6 +1,6 @@
+ # Package Information for pkg-config
+ 
+-prefix=@prefix@
++prefix=${pcfiledir}/../..
+ exec_prefix=@exec_prefix@
+ libdir=@libdir@
+ includedir=@includedir@
+diff --git a/libpcre2-8.pc.in b/libpcre2-8.pc.in
+index 246bb9e..230c23d 100644
+--- a/libpcre2-8.pc.in
++++ b/libpcre2-8.pc.in
+@@ -1,6 +1,6 @@
+ # Package Information for pkg-config
+ 
+-prefix=@prefix@
++prefix=${pcfiledir}/../..
+ exec_prefix=@exec_prefix@
+ libdir=@libdir@
+ includedir=@includedir@

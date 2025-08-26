@@ -10,7 +10,7 @@ import sys
 import urllib.request
 
 
-_rclone_ver = 'v1.69.1'
+_rclone_ver = 'v1.70.3'
 _rclone_dir = os.path.abspath(os.path.dirname(__file__))
 
 def _print(msg: str):

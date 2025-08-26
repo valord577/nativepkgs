@@ -24,7 +24,7 @@ if LIB_RELEASE != '0': LIB_RELEASE = '1'
 # ----------------------------
 # static or shared
 # ----------------------------
-PKG_TYPE = os.getenv('PKG_TYPE', 'shared')
+PKG_TYPE = os.getenv('PKG_TYPE', 'static')
 if PKG_TYPE != 'static': PKG_TYPE = 'shared'
 # ----------------------------
 # ci runtime
