@@ -58,12 +58,11 @@ def _source_apply_patches():
 def _source_set_features():
     _config_script = os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], 'scripts', 'config.py'))
 
-    _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_PEM_PARSE_C'])
-    _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_PEM_WRITE_C'])
+    _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'set', 'MBEDTLS_PEM_PARSE_C'])
+    _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'set', 'MBEDTLS_PEM_WRITE_C'])
 
     _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'set', 'MBEDTLS_HAVE_SSE2'])
     _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'set', 'MBEDTLS_DEPRECATED_WARNING'])
-    _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'set', 'MBEDTLS_DEPRECATED_REMOVED'])
 
     _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'set', 'MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT'])
     _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'set', 'MBEDTLS_SHA512_USE_A64_CRYPTO_IF_PRESENT'])
@@ -75,7 +74,6 @@ def _source_set_features():
 
     _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_DEBUG_C'])
     _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_SELF_TEST'])
-    _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_SSL_SRV_C'])
     _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_SSL_RENEGOTIATION'])
 
     if _env['PKG_PLATFORM'] == 'win-msvc':
