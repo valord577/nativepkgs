@@ -1,0 +1,24 @@
+diff --git a/build/cmake/CMakeLists.txt b/build/cmake/CMakeLists.txt
+index c372733..4f0259e 100644
+--- a/build/cmake/CMakeLists.txt
++++ b/build/cmake/CMakeLists.txt
+@@ -194,8 +194,8 @@ if(NOT LZ4_BUNDLED_MODE)
+     "${LZ4_LIB_SOURCE_DIR}/lz4frame.h"
+     "${LZ4_LIB_SOURCE_DIR}/lz4file.h"
+     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+-  install(FILES "${LZ4_PROG_SOURCE_DIR}/lz4.1"
+-    DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
++  #install(FILES "${LZ4_PROG_SOURCE_DIR}/lz4.1"
++  #  DESTINATION "${CMAKE_INSTALL_MANDIR}/man1")
+   install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblz4.pc"
+     DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+ 
+@@ -249,7 +249,7 @@ if(NOT LZ4_BUNDLED_MODE)
+ endif(NOT LZ4_BUNDLED_MODE)
+ 
+ # pkg-config
+-set(PREFIX "${CMAKE_INSTALL_PREFIX}")
++set(PREFIX "\${pcfiledir}/../..")
+ 
+ if("${CMAKE_INSTALL_FULL_LIBDIR}" STREQUAL "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+   set(LIBDIR "\${prefix}/${CMAKE_INSTALL_LIBDIR}")

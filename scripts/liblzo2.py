@@ -16,7 +16,6 @@ _ctx: dict = {
 def module_init(env: dict) -> list:
     global _env; _env = env
     return [
-        _source_dl_3rd_deps,
         _source_download,
         _source_apply_patches,
         _build_step_msvc,
@@ -27,15 +26,11 @@ def module_init(env: dict) -> list:
 
 
 
-def _source_dl_3rd_deps():
-    _env['FUNC_PKGC'](_ctx, _env, 'mbedtls', '?', 'static')
-    _env['FUNC_PKGC'](_ctx, _env, 'liblz4',  '?', 'static')
-    _env['FUNC_PKGC'](_ctx, _env, 'liblzo2', '?', 'static')
 def _source_download():
-    _git_target = 'refs/tags/upstream/2.6.14'
+    _git_target = 'refs/tags/upstream/2.10'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=['git', 'init'])
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=['git', 'remote', 'add', 'x', 'https://salsa.debian.org/debian/openvpn.git'])
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=['git', 'remote', 'add', 'x', 'https://salsa.debian.org/debian/lzo2.git'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=['git', 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER', ''):
@@ -62,23 +57,14 @@ def _build_step_00():
     _extra_args_configure: list[str] = []
 
     if _env['PKG_TYPE'] == 'static':
-        _extra_args_configure.extend(['--enable-shared=no'])
+        _extra_args_configure.extend(['--enable-static=yes', '--enable-shared=no'])
     if _env['PKG_TYPE'] == 'shared':
         raise NotImplementedError(f'unsupported pkg type: {_env["PKG_TYPE"]}')
-
-    if _env['LIB_RELEASE'] == '0':
-        _extra_args_configure.extend(['--disable-debug=no'])
-    if _env['LIB_RELEASE'] == '1':
-        _extra_args_configure.extend(['--disable-debug'])
 
     args = [
          os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], 'configure')),
         f'--prefix={_env["PKG_INST_DIR"]}',
-         '--disable-plugins',
-         '--enable-pic=yes',
-         '--disable-unit-tests',
-         '--with-openssl-engine=no',
-         '--with-crypto-library=mbedtls',
+         '--with-pic=yes',
     ]
     args.extend(_extra_args_configure)
 
@@ -86,11 +72,12 @@ def _build_step_00():
     if _cc  := _env.get('CC'):  _ctx['BUILD_ENV']['CC']  = _cc
     if _cxx := _env.get('CXX'): _ctx['BUILD_ENV']['CXX'] = _cxx
 
+    LIBLZO2_ARCH = _env['PKG_ARCH']
+    if LIBLZO2_ARCH == 'arm64': LIBLZO2_ARCH = 'aarch64'
     if _env.get('PLATFORM_APPLE', False):
         _ctx['BUILD_ENV']['LDFLAGS'] = _env['CROSS_FLAGS']
         args.extend([
-           f'--host={_env["PKG_ARCH"]}-apple-darwin',
-            '--disable-dco',
+           f'--host={LIBLZO2_ARCH}-apple-darwin',
         ])
     if _env['PKG_PLATFORM'] == 'linux':
         pass
@@ -98,17 +85,6 @@ def _build_step_00():
         pass
 
 
-    _pkgconf_bin = _env.get('CROSS_PKGCONFIG_BIN', '')
-    if not _pkgconf_bin:
-        _pkgconf_bin = shutil.which('pkgconf') or 'pkg-config'
-    _ctx['BUILD_ENV']['SYSROOT'] = _env['SYSROOT']
-    _ctx['BUILD_ENV']['PKG_CONFIG'] = _pkgconf_bin
-    _ctx['BUILD_ENV']['PKG_CONFIG_PATH'] = \
-        f"{os.pathsep.join(_ctx['PKG_CONFIG_PATH'])}{os.pathsep}{os.getenv('PKG_CONFIG_PATH', '')}"
-    _ctx['BUILD_ENV']['MBEDTLS_CFLAGS'] = \
-        _env['FUNC_SHELL_STDOUT'](env=_ctx['BUILD_ENV'], args=[_pkgconf_bin, '--cflags', 'mbedtls'])[:-1]
-    _ctx['BUILD_ENV']['MBEDTLS_LIBS'] = \
-        _env['FUNC_SHELL_STDOUT'](env=_ctx['BUILD_ENV'], args=[_pkgconf_bin, '--libs', 'mbedtls'])[:-1]
     _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
 def _build_step_01():
     args = f"make -j {_env['PARALLEL_JOBS']}"
@@ -120,3 +96,7 @@ def _build_step_02():
     _env['FUNC_SHELL_DEVNUL'](
         cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], shell=True, args='make install'
     )
+
+    liblzo2_datadir = os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'share')); \
+        shutil.rmtree(liblzo2_datadir, ignore_errors=True)
+    os.remove(os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'lib', 'liblzo2.la')))
