@@ -32,4 +32,4 @@ jobs:
     with:
       disable_commit: true
       disable_ccache: false
-      select_platforms: "macosx, linux, win-mingw"
+      select_platforms: "macosx, linux, win-mingw, android"

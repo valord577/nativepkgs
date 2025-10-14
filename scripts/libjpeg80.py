@@ -20,6 +20,7 @@ def module_init(env: dict) -> list:
         _source_download,
         _source_apply_patches,
         _build_step_msvc,
+        _build_step_android,
         _build_step_00,
         _build_step_01,
         _build_step_02,
@@ -63,6 +64,10 @@ def _build_step_msvc():
         raise NotImplementedError(f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')
     if _env['LIB_RELEASE'] == '1':
         _env['EXTRA_CMAKE'].extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
+def _build_step_android():
+    if _env['PKG_PLATFORM'] != 'android':
+        return
+    _ctx['BUILD_ENV']['ANDROID_API_LEVEL'] = _env['ANDROID_API_LEVEL']
 def _build_step_00():
     _extra_args_cmake: list[str] = _env['EXTRA_CMAKE']
 
