@@ -44,7 +44,7 @@ on:
         required: false
         type: string
       container_android_vers:
-        default: "0568b971815a51a4b5371fdb17411b61276d5a3f"
+        default: "9f31af09b0e5452312f259f2eb8a8dd7dd619ada"
         required: false
         type: string
 
