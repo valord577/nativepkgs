@@ -40,7 +40,7 @@ if __name__ == "__main__":
         _setenv(f, 'DEPS_VER', _deps_ver)
 
         _target_arch_libc = f'{_pkg_arch}'
-        if _pkg_plat == 'linux' and _pkg_libc:
+        if _pkg_plat in ['linux', 'android'] and _pkg_libc:
             _target_arch_libc = f'{_pkg_arch}-{_pkg_libc}'
         _setenv(f, 'TARGET_ARCH_LIBC', _target_arch_libc)
 

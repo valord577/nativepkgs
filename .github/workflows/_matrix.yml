@@ -24,11 +24,11 @@ on:
         type: boolean
 
       container_linux:
-        default: "linux310-gcc4"
+        default: "linux310-gcc7-cross"
         required: false
         type: string
       container_linux_vers:
-        default: "787973a8716b364e1c4d3209046549e6078a6d98"
+        default: "5e1cd74dd7892b7e89f135155b7bdaf6bfa49841"
         required: false
         type: string
       container_mingw:
@@ -36,7 +36,15 @@ on:
         required: false
         type: string
       container_mingw_vers:
-        default: "38860d19671e256dc2bb7b85cf9bb91bd6e1303b"
+        default: "5e1cd74dd7892b7e89f135155b7bdaf6bfa49841"
+        required: false
+        type: string
+      container_android:
+        default: "android-ndk-r27d"
+        required: false
+        type: string
+      container_android_vers:
+        default: "9f31af09b0e5452312f259f2eb8a8dd7dd619ada"
         required: false
         type: string
 
@@ -49,6 +57,10 @@ on:
         required: false
         type: boolean
       skip_platform_linux:
+        default: false
+        required: false
+        type: boolean
+      skip_platform_android:
         default: false
         required: false
         type: boolean
@@ -128,12 +140,14 @@ jobs:
       - name: set matrix container
         id: set-matrix-container
         run: |
-          container_linux="valord577/${{ inputs.container_linux }}-cross:${{ inputs.container_linux_vers }}"
+          container_linux="valord577/${{ inputs.container_linux }}:${{ inputs.container_linux_vers }}"
           container_mingw="valord577/${{ inputs.container_mingw }}:${{ inputs.container_mingw_vers }}"
+          container_android="valord577/${{ inputs.container_android }}:${{ inputs.container_android_vers }}"
 
           matrix=$(cat .github/matrix_container.json | jq -c -M)
-          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\"     then . + {image: \"${container_linux}\"} else . end)")
-          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"win-mingw\" then . + {image: \"${container_mingw}\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\"     then . + {image: \"${container_linux}\"}   else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"win-mingw\" then . + {image: \"${container_mingw}\"}   else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"android\"   then . + {image: \"${container_android}\"} else . end)")
 
           [ -n "${jq_expr_plat}" ] && \
             { matrix=$(echo ${matrix} | jq -c -M "map(. | select($jq_expr_plat) )"); }
@@ -142,6 +156,8 @@ jobs:
             { matrix=$(echo ${matrix} | jq -c -M 'map(if .platform == "linux"     then empty else . end)'); }
           ${{ inputs.skip_platform_win32 }} && \
             { matrix=$(echo ${matrix} | jq -c -M 'map(if .platform == "win-mingw" then empty else . end)'); }
+          ${{ inputs.skip_platform_android }} && \
+            { matrix=$(echo ${matrix} | jq -c -M 'map(if .platform == "android"   then empty else . end)'); }
 
 
           matrix_shared='[]'; matrix_static='[]'
@@ -272,6 +288,10 @@ jobs:
           ${{ matrix.platform == 'linux' }} && \
             {
               build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.libc }}'
+            }
+          ${{ matrix.platform == 'android' }} && ${{ matrix.libc != '' }} && \
+            {
+              export ANDROID_FLEXIBLE_PAGE_SIZES=${{ matrix.libc }}
             }
 
           python3 -m venv .env; source .env/bin/activate

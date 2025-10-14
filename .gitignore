@@ -1,6 +1,7 @@
 .cache
 .DS_Store
 .env
+.env.container
 __pycache__
 
 .msvc_env_native.json

@@ -1,28 +1,6 @@
 name: llvm
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/*.py'
-      - '.github/matrix*.json'
-      - '.github/workflows/_matrix.yml'
-      - '.github/workflows/llvm.yml'
-      - 'patches/llvm/**'
-      - 'scripts/llvm.py'
-      - 'build.py'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - '.github/*.py'
-      - '.github/matrix*.json'
-      - '.github/workflows/_matrix.yml'
-      - '.github/workflows/llvm.yml'
-      - 'patches/llvm/**'
-      - 'scripts/llvm.py'
-      - 'build.py'
 
 jobs:
   build:
@@ -31,5 +9,4 @@ jobs:
     uses: ./.github/workflows/_matrix.yml
     with:
       disable_commit: true
-      container_linux: "linux310-gcc7"
       select_platforms: "macosx, linux, win-msvc"

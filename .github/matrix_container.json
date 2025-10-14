@@ -36,5 +36,35 @@
   {
     "platform": "win-mingw",
     "arch": "arm64"
+  },
+  {
+    "platform": "android",
+    "arch": "amd64",
+    "libc": ""
+  },
+  {
+    "platform": "android",
+    "arch": "amd64",
+    "libc": "16k"
+  },
+  {
+    "platform": "android",
+    "arch": "arm64",
+    "libc": ""
+  },
+  {
+    "platform": "android",
+    "arch": "arm64",
+    "libc": "16k"
+  },
+  {
+    "platform": "android",
+    "arch": "armv7",
+    "libc": ""
+  },
+  {
+    "platform": "android",
+    "arch": "armv7",
+    "libc": "16k"
   }
 ]

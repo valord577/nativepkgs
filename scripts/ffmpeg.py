@@ -41,13 +41,14 @@ def _source_dl_3rd_deps():
         _env['FUNC_PKGC'](_ctx, _env, 'sdl2', 'v2.32.8', 'static')
 def _source_download():
     _git_target = 'refs/heads/release/8.0'
-    _ctx['PKG_VERSION'] = f'release{_git_target.split("/")[-1]}'
-
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://git.ffmpeg.org/ffmpeg.git'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
+
+    _git_ver = _env['FUNC_SHELL_STDOUT'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'describe', '--always', '--abbrev=7'])[:-1]
+    _ctx['PKG_VERSION'] = f'v{_git_target.split("/")[-1]}_{_git_ver}'
     if file_ver := os.getenv('DEPS_VER', ''):
         with open(file_ver, 'w') as f:
             f.write(_ctx['PKG_VERSION'])
@@ -141,6 +142,20 @@ def _build_step_00():
             f'--ranlib={_env["RANLIB"]}',
             f'--strip={_env["STRIP"]}',
         ])
+    if _env['PKG_PLATFORM'] == 'android':
+        args.extend([
+            '--enable-cross-compile',
+            '--target-os=android',
+           f'--arch={_env["PKG_ARCH"]}',
+           f'--host-cc={_env["HOSTCC"]}',
+           f'--extra-ldflags={_env["CROSS_LDFLAGS"]}',
+           f'--nm={_env["NM"]}',
+           f'--ar={_env["AR"]}',
+           f'--ranlib={_env["RANLIB"]}',
+           f'--strip={_env["STRIP"]}',
+            '--enable-jni',
+            '--enable-mediacodec',
+        ])
 
     _ctx['BUILD_ENV']['PKG_CONFIG_PATH'] = \
         f"{os.pathsep.join(_ctx['PKG_CONFIG_PATH'])}{os.pathsep}{os.getenv('PKG_CONFIG_PATH', '')}"
@@ -156,7 +171,7 @@ def _build_step_02():
     _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-libs'])
 
 
-    if _env.get('PLATFORM_APPLE', False) or _env['PKG_PLATFORM'] in ['linux', 'win-mingw']:
+    if _env.get('PLATFORM_APPLE', False) or _env['PKG_PLATFORM'] in ['linux', 'win-mingw', 'android']:
         # symbols list
         #_ffmpeg_libs_dir = []
         #with os.scandir(_env['SUBPROJ_SRC']) as it:
@@ -189,7 +204,7 @@ def _build_step_02():
             if _env.get('PLATFORM_APPLE', False):
                 for x in _ffmpeg_mergeso_sym_l:
                     f.write(f'_{x}\n')
-            if _env['PKG_PLATFORM'] == 'linux':
+            if _env['PKG_PLATFORM'] in ['linux', 'android']:
                 f.write('{\n')
                 f.write('  global:\n')
                 for x in _ffmpeg_mergeso_sym_l:
@@ -197,7 +212,7 @@ def _build_step_02():
                 f.write('  local:\n')
                 f.write('    *;\n')
                 f.write('};\n')
-            if _env['PKG_PLATFORM'] == 'win-mingw':
+            if _env['PKG_PLATFORM'] in ['win-mingw']:
                 _dll_sym_arg = f"{_env['NM']} -a lib/*.a | grep ' T ' | cut -d ' ' -f 3"
                 _dll_sym_all = _env['FUNC_SHELL_STDOUT'](cwd=_env['PKG_INST_DIR'], env=_ctx['BUILD_ENV'], shell=True, args=_dll_sym_arg)
                 f.write('LIBRARY libffmpeg\n')
@@ -257,7 +272,7 @@ def _build_step_02():
             _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libstd)
             for x in _ffmpeg_mergeso_libmac:
                 _ffmpeg_mergeso_cmd.extend(['-framework', x])
-        if _env['PKG_PLATFORM'] == 'linux':
+        if _env['PKG_PLATFORM'] in ['linux', 'android']:
             _ffmpeg_mergeso_out = 'lib/libffmpeg.so'
             _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out, f'-Wl,--soname={_ffmpeg_mergeso_out.split("/")[-1]}'])
             _ffmpeg_mergeso_cmd.extend([f'-Wl,--version-script={_ffmpeg_mergeso_sym_v}'])
@@ -267,7 +282,7 @@ def _build_step_02():
             _ffmpeg_mergeso_cmd.extend(['-Wl,--no-whole-archive'])
             _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libext)
             _ffmpeg_mergeso_cmd.extend(_ffmpeg_mergeso_libstd)
-        if _env['PKG_PLATFORM'] == 'win-mingw':
+        if _env['PKG_PLATFORM'] in ['win-mingw']:
             _ffmpeg_mergeso_out = 'lib/libffmpeg.dll'
             _ffmpeg_mergeso_cmd.extend(['-o', _ffmpeg_mergeso_out])
             _ffmpeg_mergeso_cmd.extend([f'-Wl,--Xlink=/DEF:{_ffmpeg_mergeso_sym_v}'])
@@ -285,7 +300,7 @@ def _build_step_02():
             _ffmpeg_mergeso_cmd = [_env.get('STRIP', 'strip')]
             if _env.get('PLATFORM_APPLE', False):
                 _ffmpeg_mergeso_cmd.append('-x')
-            if _env['PKG_PLATFORM'] in ['linux', 'win-mingw']:
+            if _env['PKG_PLATFORM'] in ['linux', 'win-mingw', 'android']:
                 _ffmpeg_mergeso_cmd.append('--strip-all')
             _ffmpeg_mergeso_cmd.append(_ffmpeg_mergeso_out)
             _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_INST_DIR'], env=_ctx['BUILD_ENV'], args=_ffmpeg_mergeso_cmd)

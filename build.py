@@ -10,6 +10,9 @@ import platform
 import shutil
 import subprocess as sp
 import sys
+import tempfile
+
+from pathlib import Path
 from typing import NoReturn, Union
 
 
@@ -386,12 +389,10 @@ def _setctx_apple(
     # meson toolchain file
     CROSS_TOOLCHAIN_FILE_MESON_DST = os.path.abspath(os.path.join(crossfiles_dir, f'toolchain-meson-template.{ctx.target_plat}-{_target_arch}'))
     CROSS_TOOLCHAIN_FILE_MESON_SRC = f'{CROSS_TOOLCHAIN_FILE_MESON_DST}.tmpl'
-    with open(CROSS_TOOLCHAIN_FILE_MESON_SRC, 'r') as src:
-        with open(CROSS_TOOLCHAIN_FILE_MESON_DST, 'w') as dst:
-            while line := src.readline():
-                line = line.replace('__SYSROOT__', sysroot)
-                line = line.replace('__EXTRA_FLAGS__', f"'-m{_min_version_target_flag}-version-min={_min_version_deployment}'")
-                dst.write(line)
+    _content = Path(CROSS_TOOLCHAIN_FILE_MESON_SRC).read_text()
+    _content = _content.replace('__SYSROOT__', sysroot)
+    _content = _content.replace('__EXTRA_FLAGS__', f"'-m{_min_version_target_flag}-version-min={_min_version_deployment}'")
+    Path(CROSS_TOOLCHAIN_FILE_MESON_DST).write_text(_content)
     ctx.extra_meson.extend(["--cross-file", CROSS_TOOLCHAIN_FILE_MESON_DST])
     # cmake toolchain file
     ctx.extra_cmake.extend(['-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE'])
@@ -544,6 +545,104 @@ def _setctx_win32_msvc(
         _msvc_env_native['VCToolsInstallDir'], 'bin', f"host{_msvc_env_native['VSCMD_ARG_HOST_ARCH']}", _msvc_env_native['VSCMD_ARG_HOST_ARCH'], 'cl.exe'
     ))
     ctx.env_passthrough['HOSTCXX'] = ctx.env_passthrough['HOSTCC']
+def _setctx_android(
+    ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
+):
+    if ctx.native_plat != 'linux':
+        raise NotImplementedError(f'unsupported host os: {ctx.native_plat}')
+    if ctx.native_arch != 'amd64':
+        raise NotImplementedError(f'unsupported host arch: {ctx.native_arch}')
+    ctx.env_passthrough['PLATFORM_ANDROID'] = True
+
+
+    ANDROID_API_LEVEL = os.getenv('ANDROID_API_LEVEL')
+    if not ANDROID_API_LEVEL:
+        ANDROID_API_LEVEL = '21'
+
+    ANDROID_FLEXIBLE_PAGE_SIZES = os.getenv('ANDROID_FLEXIBLE_PAGE_SIZES')
+    if not ANDROID_FLEXIBLE_PAGE_SIZES:
+        ANDROID_FLEXIBLE_PAGE_SIZES = ''
+    else:
+        ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED = ['16k']
+        if ANDROID_FLEXIBLE_PAGE_SIZES in ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED:
+            ctx.target_libc = ANDROID_FLEXIBLE_PAGE_SIZES
+            ANDROID_FLEXIBLE_PAGE_SIZES = f'.{ANDROID_FLEXIBLE_PAGE_SIZES}'
+        else:
+            raise GeneratorExit(f'unknown page sizes: `{ANDROID_FLEXIBLE_PAGE_SIZES}`, allowed: `{ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED}`')
+
+    CROSS_TOOLCHAIN_ROOT = os.getenv('CROSS_TOOLCHAIN_ROOT')
+    if not CROSS_TOOLCHAIN_ROOT:
+        raise GeneratorExit('missing required env: `CROSS_TOOLCHAIN_ROOT`')
+    _toolchains_dir = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64'))
+
+
+    ctx.cross_build_enabled = True
+    ctx.target_arch = _tuple[1]
+    if ctx.target_arch == 'arm64':
+        ctx.cross_target_triple = f'aarch64-linux-android'
+        if int(ANDROID_API_LEVEL) < 21: ANDROID_API_LEVEL = '21'
+    if ctx.target_arch == 'armv7':
+        ctx.cross_target_triple = f'armv7a-linux-androideabi'
+    if ctx.target_arch == 'amd64':
+        ctx.cross_target_triple = f'x86_64-linux-android'
+        if int(ANDROID_API_LEVEL) < 21: ANDROID_API_LEVEL = '21'
+    ctx.env_passthrough['SYSROOT'] = sysroot = os.path.abspath(os.path.join(_toolchains_dir, 'sysroot'))
+    ctx.env_passthrough['ANDROID_API_LEVEL'] = ANDROID_API_LEVEL
+
+
+    ctx.env_passthrough['CROSS_LDFLAGS'] = f''
+    if ANDROID_FLEXIBLE_PAGE_SIZES == '.16k':
+        ctx.env_passthrough['CROSS_LDFLAGS'] += ' -Wl,-z,max-page-size=16384'
+    ctx.env_passthrough['CROSS_FLAGS'] = f''
+    if ctx.target_arch == 'armv7':
+        ctx.env_passthrough['CROSS_FLAGS'] += ' -march=armv7-a -mfpu=neon-vfpv4'
+
+    ctx.env_passthrough['HOSTCC']  = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'clang'))
+    ctx.env_passthrough['HOSTCXX'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'clang++'))
+    ctx.env_passthrough['HOSTCPP'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'clang-cpp'))
+    ctx.env_passthrough['CC']  = f"{ctx.ccache} {os.path.abspath(os.path.join(_toolchains_dir, 'bin', f'{ctx.cross_target_triple}{ANDROID_API_LEVEL}-clang'))}   {ctx.env_passthrough['CROSS_FLAGS']}"
+    ctx.env_passthrough['CXX'] = f"{ctx.ccache} {os.path.abspath(os.path.join(_toolchains_dir, 'bin', f'{ctx.cross_target_triple}{ANDROID_API_LEVEL}-clang++'))} {ctx.env_passthrough['CROSS_FLAGS']}"
+
+    ctx.env_passthrough['LD'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'ld.lld'))
+    ctx.env_passthrough['NM'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'llvm-nm'))
+    ctx.env_passthrough['AR'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'llvm-ar'))
+    ctx.env_passthrough['AS'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'llvm-as'))
+    ctx.env_passthrough['RANLIB'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'llvm-ranlib'))
+    ctx.env_passthrough['STRIP']  = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'llvm-strip'))
+
+
+    # pkgconf bin
+    CROSS_TOOLCHAIN_PKGCONF_PREFIX = os.getenv('CROSS_TOOLCHAIN_PKGCONF_PREFIX')
+    if not CROSS_TOOLCHAIN_PKGCONF_PREFIX:
+        CROSS_TOOLCHAIN_PKGCONF_PREFIX = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'pkgconf-wrapper'))
+    ctx.cross_pkgconfig_bin = f'{CROSS_TOOLCHAIN_PKGCONF_PREFIX}.{ctx.cross_target_triple}'
+    # cmake toolchain file
+    CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE')
+    if not CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE:
+        CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'toolchain-cmake-template'))
+    CROSS_TOOLCHAIN_FILE_CMAKE = f'{CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE}{ANDROID_FLEXIBLE_PAGE_SIZES}.{ctx.target_arch}'
+    ctx.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE={CROSS_TOOLCHAIN_FILE_CMAKE}"])
+    # ******* ******* ******* ******* ******* ******* ******* ******* *******
+    #ctx.extra_cmake.extend(["-D", f"CMAKE_SYSTEM_NAME=Android"])
+    #ctx.extra_cmake.extend(["-D", f"CMAKE_SYSTEM_VERSION={ANDROID_API_LEVEL}"])
+    #ctx.extra_cmake.extend(["-D", f"CMAKE_ANDROID_ARCH_ABI=armeabi-v7a"])
+    #ctx.extra_cmake.extend(["-D", f"CMAKE_ANDROID_NDK={CROSS_TOOLCHAIN_ROOT}"])
+    #if ctx.target_arch == 'armv7':
+    #    ctx.extra_cmake.extend(["-D", "CMAKE_ANDROID_ARM_MODE:BOOL=1"])
+    #    ctx.extra_cmake.extend(["-D", "CMAKE_ANDROID_ARM_NEON:BOOL=1"])
+    #ctx.extra_cmake.extend(['-D', f"PKG_CONFIG_EXECUTABLE={ctx.cross_pkgconfig_bin}"])
+    # ******* ******* ******* ******* ******* ******* ******* ******* *******
+    # meson toolchain file
+    CROSS_TOOLCHAIN_FILE_PREFIX_MESON = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_MESON')
+    if not CROSS_TOOLCHAIN_FILE_PREFIX_MESON:
+        CROSS_TOOLCHAIN_FILE_PREFIX_MESON = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'toolchain-meson-template'))
+    CROSS_TOOLCHAIN_FILE_MESON_SRC = f'{CROSS_TOOLCHAIN_FILE_PREFIX_MESON}{ANDROID_FLEXIBLE_PAGE_SIZES}.{ctx.target_arch}.tmpl'
+    CROSS_TOOLCHAIN_FILE_MESON_DST = os.path.abspath(os.path.join(tempfile.gettempdir(), f'{ctx.target_plat}-toolchain-meson-template{ANDROID_FLEXIBLE_PAGE_SIZES}.{ctx.target_arch}'))
+    _content = Path(CROSS_TOOLCHAIN_FILE_MESON_SRC).read_text()
+    _content = _content.replace('__CROSS_TOOLCHAIN_ROOT__', CROSS_TOOLCHAIN_ROOT)
+    _content = _content.replace('__ANDROID_API_LEVEL__', ANDROID_API_LEVEL)
+    Path(CROSS_TOOLCHAIN_FILE_MESON_DST).write_text(_content)
+    ctx.extra_meson.extend(["--cross-file", CROSS_TOOLCHAIN_FILE_MESON_DST])
 
 
 _targets = {
@@ -596,6 +695,15 @@ _targets = {
         'tuples': [
             ('win-mingw', 'arm64'),
             ('win-mingw', 'amd64'),
+        ],
+    },
+    'android': {
+        'native': False,
+        'setctx': _setctx_android,
+        'tuples': [
+            ('android', 'arm64'),
+            ('android', 'armv7'),
+            ('android', 'amd64'),
         ],
     },
 }
