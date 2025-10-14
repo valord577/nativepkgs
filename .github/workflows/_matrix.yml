@@ -289,7 +289,7 @@ jobs:
             {
               build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.libc }}'
             }
-          ${{ matrix.platform == 'android' }} && ${{ matrix.libc != '' }} \
+          ${{ matrix.platform == 'android' }} && ${{ matrix.libc != '' }} && \
             {
               export ANDROID_FLEXIBLE_PAGE_SIZES=${{ matrix.libc }}
             }
