@@ -7,6 +7,8 @@ import os
 import shlex
 import shutil
 
+from pathlib import Path
+
 
 _env: dict = {}
 _ctx: dict = {
@@ -48,10 +50,9 @@ def _source_download():
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
 
     _git_ver = _env['FUNC_SHELL_STDOUT'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'describe', '--always', '--abbrev=7'])[:-1]
-    _ctx['PKG_VERSION'] = f'v{_git_target.split("/")[-1]}_{_git_ver}'
+    _ctx['PKG_VERSION'] = f'v{_git_target.split("/")[-1]}-{_git_ver}'
     if file_ver := os.getenv('DEPS_VER', ''):
-        with open(file_ver, 'w') as f:
-            f.write(_ctx['PKG_VERSION'])
+        Path(file_ver).write_text(_ctx['PKG_VERSION'])
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
@@ -189,15 +190,14 @@ def _build_step_02():
 
         _ffmpeg_mergeso_sym_l = []
         for _v in _ffmpeg_symbol_v:
-            with open(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], _v)), 'r') as f:
-                _x = f.read()
-                _l = _x[_x.index('global:'):_x.index('local:')]
-                for _s in _l.splitlines():
-                    if not _s.endswith(';'):
-                        continue
-                    _ret = _s.strip()[:-1]
-                    if _ret not in _ffmpeg_mergeso_sym_l:
-                        _ffmpeg_mergeso_sym_l.append(_ret)
+            _x = Path(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], _v))).read_text()
+            _l = _x[_x.index('global:'):_x.index('local:')]
+            for _s in _l.splitlines():
+                if not _s.endswith(';'):
+                    continue
+                _ret = _s.strip()[:-1]
+                if _ret not in _ffmpeg_mergeso_sym_l:
+                    _ffmpeg_mergeso_sym_l.append(_ret)
 
         _ffmpeg_mergeso_sym_v = os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'lib', 'libffmpeg.v'))
         with open(_ffmpeg_mergeso_sym_v, 'w') as f:
