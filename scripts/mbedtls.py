@@ -6,6 +6,8 @@ import os
 import shutil
 import sys
 
+from pathlib import Path
+
 
 _env: dict = {}
 _ctx: dict = {
@@ -31,7 +33,7 @@ def module_init(env: dict) -> list:
 
 
 def _source_download():
-    _git_target = 'c765c831e5c2a0971410692f92f7a81d6ec65ec2'
+    _git_target = 'refs/tags/v3.6.5'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/Mbed-TLS/mbedtls.git'])
@@ -42,8 +44,8 @@ def _source_download():
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'submodule', 'update', '--init', '--depth=1', '--single-branch', '-f', '--', 'framework'])
 
     if file_ver := os.getenv('DEPS_VER', ''):
-        with open(file_ver, 'w') as f:
-            f.write(f'{_git_target[:7]}')
+        _git_ver = _env['FUNC_SHELL_STDOUT'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'describe', '--always', '--abbrev=7'])[:-1]
+        Path(file_ver).write_text(f'{_git_ver}')
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
