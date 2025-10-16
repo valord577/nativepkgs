@@ -36,7 +36,7 @@ def _platform_check():
         raise NotImplementedError(f'unsupported PKG_PLATFORM: {_env["PKG_PLATFORM"]}')
 def _source_dl_3rd_deps():
     if not _env.get('PLATFORM_APPLE', False):
-        _env['FUNC_PKGC'](_ctx, _env, 'zlib-ng', '860e4cf', 'static')
+        _env['FUNC_PKGC'](_ctx, _env, 'zlib-ng', '4254390', 'static')
 def _source_download():
     _git_target = 'refs/heads/main'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
