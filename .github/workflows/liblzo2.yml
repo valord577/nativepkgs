@@ -1,6 +1,27 @@
 name: liblzo2
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/*.py'
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/liblzo2.yml'
+      - 'patches/liblzo2/**'
+      - 'scripts/liblzo2.py'
+      - 'build.py'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/*.py'
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/liblzo2.yml'
+      - 'patches/liblzo2/**'
+      - 'scripts/liblzo2.py'
+      - 'build.py'
 
 jobs:
   build:
@@ -10,4 +31,4 @@ jobs:
     with:
       disable_commit: true
       disable_ccache_on_container: true
-      select_platforms: "macosx, linux"
+      select_platforms: "macosx"
