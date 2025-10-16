@@ -19,7 +19,6 @@ _ctx: dict = {
 def module_init(env: dict) -> list:
     global _env; _env = env
     return [
-        _source_dl_3rd_deps,
         _source_download,
         _source_apply_patches,
         _build_step_msvc,
@@ -30,9 +29,6 @@ def module_init(env: dict) -> list:
 
 
 
-def _source_dl_3rd_deps():
-    if not _env.get('PLATFORM_APPLE', False):
-        _env['FUNC_PKGC'](_ctx, _env, 'zlib-ng', '4254390', 'static')
 def _source_download():
     _git_target = 'refs/tags/v1.10.0'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):

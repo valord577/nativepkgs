@@ -11,7 +11,9 @@ from pathlib import Path
 _env: dict = {}
 _ctx: dict = {
     'PKG_INST_STRIP': '',
+    'CMAKE_CMD': 'cmake',
     'BUILD_ENV': os.environ.copy(),
+    'SHELL_REQ': False,
 }
 
 def module_init(env: dict) -> list:
@@ -52,52 +54,51 @@ def _source_apply_patches():
 
 
 def _build_step_msvc():
-    if _env['PKG_PLATFORM'] == 'win-msvc':
-        raise NotImplementedError(f'unsupported PKG_PLATFORM: {_env["PKG_PLATFORM"]}')
+    if _env['PKG_PLATFORM'] != 'win-msvc':
+        return
+    _ctx['BUILD_ENV'] = _env['WIN32_MSVC_ENV_TARGET']
+    _ctx['BUILD_ENV']['CFLAGS']   = '/utf-8'
+    _ctx['BUILD_ENV']['CXXFLAGS'] = _ctx['BUILD_ENV']['CFLAGS']
+    _ctx['SHELL_REQ'] = True
+
+    if _env['LIB_RELEASE'] == '0':
+        raise NotImplementedError(f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')
+    if _env['LIB_RELEASE'] == '1':
+        _env['EXTRA_CMAKE'].extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
 def _build_step_00():
-    _extra_args_configure: list[str] = []
+    _extra_args_cmake: list[str] = _env['EXTRA_CMAKE']
 
     if _env['PKG_TYPE'] == 'static':
-        _extra_args_configure.extend(['--enable-static=yes', '--enable-shared=no'])
+        _extra_args_cmake.extend(['-D', 'BUILD_SHARED_LIBS:BOOL=0', '-D', 'ENABLE_SHARED:BOOL=0'])
+        _extra_args_cmake.extend(['-D', 'BUILD_STATIC_LIBS:BOOL=1', '-D', 'ENABLE_STATIC:BOOL=1'])
     if _env['PKG_TYPE'] == 'shared':
         raise NotImplementedError(f'unsupported pkg type: {_env["PKG_TYPE"]}')
 
+    if _env['LIB_RELEASE'] == '0':
+        _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Debug'])
+    if _env['LIB_RELEASE'] == '1':
+        _ctx['PKG_INST_STRIP'] = '--strip'
+        _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Release'])
+
     args = [
-         os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], 'configure')),
-        f'--prefix={_env["PKG_INST_DIR"]}',
-         '--with-pic=yes',
+        _ctx['CMAKE_CMD'],
+        '-S', f'{_env["SUBPROJ_SRC"]}',
     ]
-    args.extend(_extra_args_configure)
+    args.extend(_extra_args_cmake)
 
-
-    if _cc  := _env.get('CC'):  _ctx['BUILD_ENV']['CC']  = _cc
-    if _cxx := _env.get('CXX'): _ctx['BUILD_ENV']['CXX'] = _cxx
-
-    LIBLZO2_ARCH = _env['PKG_ARCH']
-    if LIBLZO2_ARCH == 'arm64': LIBLZO2_ARCH = 'aarch64'
-    if _env.get('PLATFORM_APPLE', False):
-        _ctx['BUILD_ENV']['LDFLAGS'] = _env['CROSS_FLAGS']
+    if _env['PKG_PLATFORM'] == 'win-msvc':
         args.extend([
-           f'--host={LIBLZO2_ARCH}-apple-darwin',
+            '-D',  'CMAKE_SYSTEM_NAME=Windows',
+            '-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE',
+            '-D', f'CMAKE_SYSTEM_PROCESSOR={_env["PKG_ARCH"]}',
         ])
-    if _env['PKG_PLATFORM'] == 'linux':
-        pass
-    if _env['PKG_PLATFORM'] == 'win-mingw':
-        pass
 
-
-    _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
 def _build_step_01():
-    args = f"make -j {_env['PARALLEL_JOBS']}"
-    if shutil.which('bear'): args = f"bear -- " + args
-    _env['FUNC_SHELL_DEVNUL'](
-        cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], shell=True, args=args
-    )
+    args = [_ctx['CMAKE_CMD'], '--build', _env['PKG_BULD_DIR'], '-j', _env['PARALLEL_JOBS']]
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
 def _build_step_02():
-    _env['FUNC_SHELL_DEVNUL'](
-        cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], shell=True, args='make install'
-    )
-
-    liblzo2_datadir = os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'share')); \
-        shutil.rmtree(liblzo2_datadir, ignore_errors=True)
-    os.remove(os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'lib', 'liblzo2.la')))
+    args = [_ctx['CMAKE_CMD'], '--install', _env['PKG_BULD_DIR']]
+    if _ctx['PKG_INST_STRIP']:
+        args.append( _ctx['PKG_INST_STRIP'])
+    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
