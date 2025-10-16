@@ -5,6 +5,8 @@
 import os
 import shutil
 
+from pathlib import Path
+
 
 _env: dict = {}
 _ctx: dict = {
@@ -29,15 +31,15 @@ def module_init(env: dict) -> list:
 
 
 def _source_download():
-    _git_target = '860e4cff7917d93f54f5d7f0bc1d0e8b1a3cb988'
+    _git_target = 'refs/tags/2.2.5'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/zlib-ng/zlib-ng.git'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
     if file_ver := os.getenv('DEPS_VER', ''):
-        with open(file_ver, 'w') as f:
-            f.write(f'{_git_target[:7]}')
+        _git_ver = _env['FUNC_SHELL_STDOUT'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'describe', '--always', '--abbrev=7'])[:-1]
+        Path(file_ver).write_text(f'{_git_ver}')
 def _source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
