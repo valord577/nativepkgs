@@ -1,0 +1,26 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 98c0a1a..2465734 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -8,7 +8,7 @@
+ # All Rights Reserved.
+ #
+ 
+-cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
+ 
+ #
+ # simple usage example (Unix):
+@@ -56,9 +56,9 @@ option(ENABLE_SHARED "Build shared LZO library." OFF)
+ if(NOT ENABLE_STATIC AND NOT ENABLE_SHARED)
+     set(ENABLE_STATIC ON)
+ endif()
+-if(ENABLE_SHARED AND WIN32)
+-    cmake_minimum_required(VERSION 3.4.3 FATAL_ERROR) # needed for WINDOWS_EXPORT_ALL_SYMBOLS
+-endif()
++#if(ENABLE_SHARED AND WIN32)
++#    cmake_minimum_required(VERSION 3.4.3 FATAL_ERROR) # needed for WINDOWS_EXPORT_ALL_SYMBOLS
++#endif()
+ 
+ # install directories
+ if(NOT CMAKE_INSTALL_PREFIX)

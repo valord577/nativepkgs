@@ -1,0 +1,19 @@
+diff --git a/lzo2.pc.cmakein b/lzo2.pc.cmakein
+index 728c84b..1bd2e82 100644
+--- a/lzo2.pc.cmakein
++++ b/lzo2.pc.cmakein
+@@ -8,10 +8,10 @@
+ #  All Rights Reserved.
+ #
+ 
+-prefix=@CMAKE_INSTALL_PREFIX@
+-exec_prefix=@CMAKE_INSTALL_FULL_BINDIR@
+-includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
+-libdir=@CMAKE_INSTALL_FULL_LIBDIR@
++prefix=${pcfiledir}/../..
++exec_prefix=${prefix}
++includedir=${prefix}/include
++libdir=${exec_prefix}/lib
+ 
+ Name: lzo2
+ Version: @PROJECT_VERSION@

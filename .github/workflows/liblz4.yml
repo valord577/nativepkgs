@@ -1,0 +1,33 @@
+name: liblz4
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/*.py'
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/liblz4.yml'
+      - 'patches/liblz4/**'
+      - 'scripts/liblz4.py'
+      - 'build.py'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/*.py'
+      - '.github/matrix*.json'
+      - '.github/workflows/_matrix.yml'
+      - '.github/workflows/liblz4.yml'
+      - 'patches/liblz4/**'
+      - 'scripts/liblz4.py'
+      - 'build.py'
+
+jobs:
+  build:
+    # if: ${{ false }}
+    secrets: inherit
+    uses: ./.github/workflows/_matrix.yml
+    with:
+      disable_ccache_on_container: true
+      select_platforms: "macosx, linux"
