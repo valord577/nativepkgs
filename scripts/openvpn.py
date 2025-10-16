@@ -57,9 +57,10 @@ def _source_apply_patches():
 
 
 def _build_tools_setup():
-    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[
-        'brew', 'install', 'autoconf', 'automake', 'libtool', 'libltdl'
-    ])
+    if _env.get('PLATFORM_APPLE', False):
+        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[
+            'brew', 'install', 'autoconf', 'automake', 'libtool',
+        ])
 def _build_step_msvc():
     if _env['PKG_PLATFORM'] == 'win-msvc':
         raise NotImplementedError(f'unsupported PKG_PLATFORM: {_env["PKG_PLATFORM"]}')
