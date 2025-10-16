@@ -10,4 +10,4 @@ jobs:
     with:
       disable_commit: true
       disable_ccache_on_container: true
-      select_platforms: "macosx"
+      select_platforms: "macosx, linux"
