@@ -29,5 +29,4 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
-      disable_ccache_on_container: false
       select_platforms: "macosx, win-mingw, win-msvc"

@@ -24,7 +24,7 @@ on:
         required: false
         type: boolean
       disable_ccache_on_container:
-        default: true
+        default: false
         required: false
         type: boolean
 
