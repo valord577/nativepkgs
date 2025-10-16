@@ -14,12 +14,17 @@ on:
         default: false
         required: false
         type: boolean
-      disable_ccache:
+      allow_failure:
         default: true
         required: false
         type: boolean
-      allow_failure:
+
+      disable_ccache_on_host:
         default: true
+        required: false
+        type: boolean
+      disable_ccache_on_container:
+        default: false
         required: false
         type: boolean
 
@@ -217,7 +222,7 @@ jobs:
         run: |
           python3 ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
       - name: ccache get... (s3)
-        if: ${{ (! inputs.disable_ccache) }}
+        if: ${{ (! inputs.disable_ccache_on_host) }}
         run: |
           python3 ./.github/ccache_get.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: library buildx - ${{ env.PKG_NAME }}
@@ -230,7 +235,7 @@ jobs:
           }}
           python3 ./build.py ${{ matrix.platform }} ${{ matrix.arch }} -m ${{ env.PKG_NAME }}
       - name: ccache put... (s3)
-        if: ${{ (! inputs.disable_ccache) }}
+        if: ${{ (! inputs.disable_ccache_on_host) }}
         run: |
           python3 ./.github/ccache_put.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: set required env - 01
@@ -279,7 +284,7 @@ jobs:
         run: |
           ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
       - name: ccache get... (s3)
-        if: ${{ (! inputs.disable_ccache) }}
+        if: ${{ (! inputs.disable_ccache_on_container) }}
         run: |
           ./.github/ccache_get.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: library buildx - ${{ env.PKG_NAME }}
@@ -297,7 +302,7 @@ jobs:
           python3 -m venv .env; source .env/bin/activate
           ./build.py ${build_target_args} -m ${{ env.PKG_NAME }}
       - name: ccache put... (s3)
-        if: ${{ (! inputs.disable_ccache) }}
+        if: ${{ (! inputs.disable_ccache_on_container) }}
         run: |
           ./.github/ccache_put.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: set required env - 01
