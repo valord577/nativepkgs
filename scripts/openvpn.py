@@ -20,6 +20,7 @@ def module_init(env: dict) -> list:
         _source_dl_3rd_deps,
         _source_download,
         _source_apply_patches,
+        _build_tools_setup,
         _build_step_msvc,
         _build_step_00,
         _build_step_01,
@@ -55,6 +56,10 @@ def _source_apply_patches():
                 args=['git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
 
 
+def _build_tools_setup():
+    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[
+        'brew', 'install', 'autoconf', 'automake', 'libtool', 'libltdl'
+    ])
 def _build_step_msvc():
     if _env['PKG_PLATFORM'] == 'win-msvc':
         raise NotImplementedError(f'unsupported PKG_PLATFORM: {_env["PKG_PLATFORM"]}')
