@@ -39,8 +39,10 @@ def _source_dl_3rd_deps():
     _env['FUNC_PKGC'](_ctx, _env, 'mbedtls',
         'e185d7f', 'static'); _ctx['EXTRA_ARGS_CONFIGURE'].append('--enable-mbedtls')
 
-    if _env['PKG_PLATFORM'] == 'macosx':
-        _env['FUNC_PKGC'](_ctx, _env, 'sdl2', '5d24957', 'static')
+    if _env['PKG_PLATFORM'] in ['macosx', 'win-mingw']:
+        _env['FUNC_PKGC'](_ctx, _env, 'sdl2',    '5d24957', 'static')
+    if not _env.get('PLATFORM_APPLE', False):
+        _env['FUNC_PKGC'](_ctx, _env, 'zlib-ng', '4254390', 'static')
 def _source_download():
     _git_target = 'refs/heads/release/8.0'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
