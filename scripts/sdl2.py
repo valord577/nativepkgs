@@ -74,9 +74,9 @@ def _build_step_00():
     _extra_args_cmake: list[str] = _env['EXTRA_CMAKE']
 
     if _env['PKG_TYPE'] == 'static':
-        _extra_args_cmake.extend(['-D', 'BUILD_SHARED_LIBS:BOOL=0'])
+        _extra_args_cmake.extend(['-D', 'SDL_SHARED:BOOL=0', '-D', 'SDL_STATIC:BOOL=1'])
     if _env['PKG_TYPE'] == 'shared':
-        raise NotImplementedError(f'unsupported pkg type: {_env["PKG_TYPE"]}')
+        _extra_args_cmake.extend(['-D', 'SDL_SHARED:BOOL=1', '-D', 'SDL_STATIC:BOOL=0'])
 
     if _env['LIB_RELEASE'] == '0':
         _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Debug'])

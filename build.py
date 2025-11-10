@@ -35,116 +35,9 @@ if PKG_TYPE != 'static': PKG_TYPE = 'shared'
 ON_GITLAB_CI = os.getenv('GITLAB_CI', '')      == 'true'
 ON_GITHUB_CI = os.getenv('GITHUB_ACTIONS', '') == 'true'
 ON_CLANGD_CK = os.getenv('CLANGD_CODE_COMPLETION', '0') == '1'
-
-class _ctx:
-    def __init__(self, module: str):
-        self.module = module
-        self.script = self._lazy_import()
-
-        self.native_plat = platform.system().lower()
-        self.native_arch = platform.machine().lower()
-        if self.native_arch == 'x86_64':  self.native_arch = 'amd64'
-        if self.native_arch == 'aarch64': self.native_arch = 'arm64'
-
-        self.target_plat = ''
-        self.target_arch = ''
-        self.target_libc = ''
-
-        self.env_passthrough = {}
-
-        self.extra_cmake: list[str] = []
-        self.extra_meson: list[str] = []
-        self.cross_build_enabled = False
-        self.cross_target_triple = ''
-        self.cross_pkgconfig_bin = ''
-
-        self.extra_cmake.extend(['-D', 'CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON'])
-        self.extra_cmake.extend(['-D', 'CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON'])
-        self.extra_cmake.extend(['-D', 'CMAKE_INSTALL_LIBDIR:PATH=lib'])
-
-        self.extra_meson.extend(['--pkgconfig.relocatable'])
-        self.extra_meson.extend(['--libdir', 'lib'])
-        self.extra_meson.extend(['--python.install-env', 'venv'])
-        self.extra_meson.extend(['--wrap-mode', 'nofallback'])
-        self.extra_meson.extend(['-Db_pie=true'])
-
-        self.ccache = ''
-        if ccache := shutil.which('ccache'):
-            self.ccache = ccache
-        if self.ccache:
-            self.extra_cmake.extend(['-D', 'CMAKE_C_COMPILER_LAUNCHER=ccache'])
-            self.extra_cmake.extend(['-D', 'CMAKE_CXX_COMPILER_LAUNCHER=ccache'])
-
-        if sys.platform == 'linux':
-            self.nproc = len(os.sched_getaffinity(0))
-        else:
-            self.nproc = os.cpu_count() or 2
-
-
-    def _lazy_import(self):
-        name = self.module
-        path = os.path.abspath(os.path.join(PROJ_ROOT, 'scripts', f'{name}.py'))
-        spec = importlib.util.spec_from_file_location('', path)
-        if not spec:
-            raise ModuleNotFoundError(f'missing module[{name}]: "failed @importlib.util.spec_from_file_location"')
-        module = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(module)  # type: ignore
-        except FileNotFoundError:
-            raise ModuleNotFoundError(f'missing module[{name}]: "no such file [{path}]"')
-        if not hasattr(module, 'module_init'):
-            raise ModuleNotFoundError(f'missing module[{name}]: "no attr [module_init]"')
-        return module
-
-    def getenv(self) -> dict:
-        env = {
-            **self.env_passthrough,
-            **{
-                'PROJ_ROOT': PROJ_ROOT,
-
-                'LIB_RELEASE': LIB_RELEASE,
-                'PARALLEL_JOBS': str(self.nproc),
-                'ON_GITLAB_CI': ON_GITLAB_CI,
-                'ON_GITHUB_CI': ON_GITHUB_CI,
-                'ON_CLANGD_CK': ON_CLANGD_CK,
-
-                'FUNC_PYPI': _util_func__pip_install,
-                'FUNC_PKGC': _util_func__dl_pkgc,
-                'FUNC_SHELL_DEVNUL': _util_func__subprocess_devnul,
-                'FUNC_SHELL_STDOUT': _util_func__subprocess_stdout,
-
-                'PKG_NAME': self.module,
-                'PKG_TYPE': PKG_TYPE,
-                'PKG_PLATFORM': self.target_plat,
-                'PKG_ARCH': self.target_arch,
-                'PKG_LIBC': self.target_libc,
-                'PKG_ARCH_LIBC': self.target_arch,
-
-                'EXTRA_CMAKE': self.extra_cmake,
-                'EXTRA_MESON': self.extra_meson,
-
-                'CROSS_PKGCONFIG_BIN': self.cross_pkgconfig_bin,
-                'CROSS_BUILD_ENABLED': self.cross_build_enabled,
-                'CROSS_TARGET_TRIPLE': self.cross_target_triple,
-            },
-        }
-        if env['PKG_LIBC']:
-            env['PKG_ARCH_LIBC'] = f"{env['PKG_ARCH']}-{env['PKG_LIBC']}"
-        env['PKG_BULD_DIR'] = os.path.abspath(os.path.join(PROJ_ROOT, 'tmp', env['PKG_NAME'], env['PKG_PLATFORM'], env['PKG_ARCH_LIBC']))
-        env['PKG_INST_DIR'] = os.path.abspath(os.path.join(PROJ_ROOT, 'out', env['PKG_NAME'], env['PKG_PLATFORM'], env['PKG_ARCH_LIBC']))
-        if ON_GITLAB_CI or ON_GITHUB_CI:
-            env['PKG_INST_DIR'] = os.getenv('INST_DIR') or env['PKG_INST_DIR']
-
-        self.extra_cmake.extend(['-B', env['PKG_BULD_DIR']])
-        self.extra_cmake.extend(['-D', f'CMAKE_INSTALL_PREFIX={env["PKG_INST_DIR"]}'])
-
-        self.extra_meson.extend(['--prefix', env['PKG_INST_DIR']])
-
-        env['SUBPROJ_SRC'] = os.path.abspath(os.path.join(PROJ_ROOT, '.deps', env['PKG_NAME']))
-        env['SUBPROJ_SRC_PATCHES'] = os.path.abspath(os.path.join(PROJ_ROOT, 'patches', env['PKG_NAME']))
-        return env
-
-
+# ----------------------------
+# >>>> utils functions >>>>
+# ----------------------------
 def _self_func__tree(basepath: str, depth: int = 0):
     # name, path, depth, is_last, is_symlink, is_dir
     _stack = [(basepath, basepath, -1, '-1', os.path.islink(basepath), os.path.isdir(basepath))]
@@ -239,7 +132,119 @@ def _util_func__pip_install(packages: list[str]):
         args.extend(['-i', 'https://mirrors.bfsu.edu.cn/pypi/web/simple'])
     args.extend(packages)
     _util_func__subprocess_devnul(args)
+# ----------------------------
+# <<<< utils functions <<<<
+# ----------------------------
 
+
+class _ctx:
+    def __init__(self, module: str):
+        self.module = module
+        self.script = self._lazy_import()
+
+        self.native_plat = platform.system().lower()
+        self.native_arch = platform.machine().lower()
+        if self.native_arch == 'x86_64':  self.native_arch = 'amd64'
+        if self.native_arch == 'aarch64': self.native_arch = 'arm64'
+
+        self.target_plat = ''
+        self.target_arch = ''
+        self.target_libc = ''
+
+        self.env_passthrough = {}
+
+        self.extra_cmake: list[str] = []
+        self.extra_meson: list[str] = []
+        self.cross_build_enabled = False
+        self.cross_target_triple = ''
+        self.cross_pkgconfig_bin = ''
+
+        self.extra_cmake.extend(['-D', 'CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON'])
+        self.extra_cmake.extend(['-D', 'CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON'])
+        self.extra_cmake.extend(['-D', 'CMAKE_INSTALL_LIBDIR:PATH=lib'])
+
+        self.extra_meson.extend(['--pkgconfig.relocatable'])
+        self.extra_meson.extend(['--libdir', 'lib'])
+        self.extra_meson.extend(['--python.install-env', 'venv'])
+        self.extra_meson.extend(['--wrap-mode', 'nofallback'])
+        self.extra_meson.extend(['-Db_pie=true'])
+        self.extra_meson.extend(['-Db_ndebug=true'])
+
+        self.ccache = ''
+        if ccache := shutil.which('ccache'):
+            self.ccache = ccache
+        if self.ccache:
+            self.extra_cmake.extend(['-D', 'CMAKE_C_COMPILER_LAUNCHER=ccache'])
+            self.extra_cmake.extend(['-D', 'CMAKE_CXX_COMPILER_LAUNCHER=ccache'])
+
+        if sys.platform == 'linux':
+            self.nproc = len(os.sched_getaffinity(0))
+        else:
+            self.nproc = os.cpu_count() or 2
+
+
+    def _lazy_import(self):
+        name = self.module
+        path = os.path.abspath(os.path.join(PROJ_ROOT, 'scripts', f'{name}.py'))
+        spec = importlib.util.spec_from_file_location('', path)
+        if not spec:
+            raise ModuleNotFoundError(f'missing module[{name}]: "failed @importlib.util.spec_from_file_location"')
+        module = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(module)  # type: ignore
+        except FileNotFoundError:
+            raise ModuleNotFoundError(f'missing module[{name}]: "no such file [{path}]"')
+        if not hasattr(module, 'module_init'):
+            raise ModuleNotFoundError(f'missing module[{name}]: "no attr [module_init]"')
+        return module
+
+    def getenv(self) -> dict:
+        env = {
+            **self.env_passthrough,
+            **{
+                'PROJ_ROOT': PROJ_ROOT,
+
+                'LIB_RELEASE': LIB_RELEASE,
+                'PARALLEL_JOBS': str(self.nproc),
+                'ON_GITLAB_CI': ON_GITLAB_CI,
+                'ON_GITHUB_CI': ON_GITHUB_CI,
+                'ON_CLANGD_CK': ON_CLANGD_CK,
+
+                'FUNC_PYPI': _util_func__pip_install,
+                'FUNC_PKGC': _util_func__dl_pkgc,
+                'FUNC_SHELL_DEVNUL': _util_func__subprocess_devnul,
+                'FUNC_SHELL_STDOUT': _util_func__subprocess_stdout,
+
+                'PKG_NAME': self.module,
+                'PKG_TYPE': PKG_TYPE,
+                'PKG_PLATFORM': self.target_plat,
+                'PKG_ARCH': self.target_arch,
+                'PKG_LIBC': self.target_libc,
+                'PKG_ARCH_LIBC': self.target_arch,
+
+                'EXTRA_CMAKE': self.extra_cmake,
+                'EXTRA_MESON': self.extra_meson,
+
+                'CROSS_PKGCONFIG_BIN': self.cross_pkgconfig_bin,
+                'CROSS_BUILD_ENABLED': self.cross_build_enabled,
+                'CROSS_TARGET_TRIPLE': self.cross_target_triple,
+            },
+        }
+        if env['PKG_LIBC']:
+            env['PKG_ARCH_LIBC'] = f"{env['PKG_ARCH']}-{env['PKG_LIBC']}"
+        env['PKG_BULD_DIR'] = os.path.abspath(os.path.join(PROJ_ROOT, 'tmp', env['PKG_NAME'], env['PKG_PLATFORM'], env['PKG_ARCH_LIBC']))
+        env['PKG_INST_DIR'] = os.path.abspath(os.path.join(PROJ_ROOT, 'out', env['PKG_NAME'], env['PKG_PLATFORM'], env['PKG_ARCH_LIBC']))
+        if ON_GITLAB_CI or ON_GITHUB_CI:
+            env['PKG_INST_DIR'] = os.getenv('INST_DIR') or env['PKG_INST_DIR']
+
+        self.extra_cmake.extend(['-B', env['PKG_BULD_DIR']])
+        self.extra_cmake.extend(['-D', f'CMAKE_INSTALL_PREFIX={env["PKG_INST_DIR"]}'])
+
+        self.extra_meson.extend(['--prefix', env['PKG_INST_DIR']])
+
+        env['SUBPROJ_SRC'] = os.path.abspath(os.path.join(PROJ_ROOT, '.deps', env['PKG_NAME']))
+        env['SUBPROJ_SRC_PATCHES'] = os.path.abspath(os.path.join(PROJ_ROOT, 'patches', env['PKG_NAME']))
+        return env
 
 
 def _setctx_linux(
@@ -264,7 +269,7 @@ def _setctx_linux(
     if _native:
         ctx.target_arch = ctx.native_arch
         if not (ctx.target_arch in ['arm64', 'amd64']):
-            raise NotImplementedError(f'unsupported target arch: {ctx.target_arch}')
+            raise NotImplementedError(f'unsupported target arch: {ctx.native_arch}')
 
         ctx.target_libc = _get_linux_libc_type()
         if not ctx.target_libc:
