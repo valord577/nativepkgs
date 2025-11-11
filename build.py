@@ -359,8 +359,8 @@ def _setctx_apple(
     if _target_arch == 'amd64':
         _target_arch = 'x86_64'
 
-    _min_version_deployment = '10.15'
-    if ctx.target_plat == 'macosx':
+    _min_version_deployment = '11'
+    if ctx.target_plat != 'macosx':
         _min_version_deployment = '12'
     _min_version_target_flag = ''
     if False:
