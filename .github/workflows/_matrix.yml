@@ -33,7 +33,7 @@ on:
         required: false
         type: string
       container_linux_vers:
-        default: "5e1cd74dd7892b7e89f135155b7bdaf6bfa49841"
+        default: "627c15642b853fa1d85b5c31c5c78982ea75b7fb"
         required: false
         type: string
       container_mingw:
@@ -41,7 +41,7 @@ on:
         required: false
         type: string
       container_mingw_vers:
-        default: "5e1cd74dd7892b7e89f135155b7bdaf6bfa49841"
+        default: "627c15642b853fa1d85b5c31c5c78982ea75b7fb"
         required: false
         type: string
       container_android:
@@ -49,7 +49,7 @@ on:
         required: false
         type: string
       container_android_vers:
-        default: "9f31af09b0e5452312f259f2eb8a8dd7dd619ada"
+        default: "627c15642b853fa1d85b5c31c5c78982ea75b7fb"
         required: false
         type: string
 
