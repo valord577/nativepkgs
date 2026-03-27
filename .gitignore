@@ -3,6 +3,7 @@
 .env
 .env.container
 __pycache__
+AGENTS.md
 
 .msvc_env_native.json
 .msvc_env_target.json
