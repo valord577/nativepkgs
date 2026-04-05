@@ -3,9 +3,9 @@
     "**/**",
   ],
   "include": [
-    "*.py",
-    ".github/*.py",
-    "scripts/*.py",
+    "./*.py",
+    "./.github/*.py",
+    "./modules/*.py",
   ],
   "venvPath": ".",
   "venv": ".env",

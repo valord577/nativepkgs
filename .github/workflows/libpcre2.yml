@@ -9,7 +9,7 @@ on:
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/libpcre2.yml'
       - 'patches/libpcre2/**'
-      - 'scripts/libpcre2.py'
+      - 'modules/libpcre2.py'
       - 'build.py'
   pull_request:
     branches:
@@ -20,7 +20,7 @@ on:
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/libpcre2.yml'
       - 'patches/libpcre2/**'
-      - 'scripts/libpcre2.py'
+      - 'modules/libpcre2.py'
       - 'build.py'
 
 jobs:

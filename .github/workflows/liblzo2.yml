@@ -9,7 +9,7 @@ on:
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/liblzo2.yml'
       - 'patches/liblzo2/**'
-      - 'scripts/liblzo2.py'
+      - 'modules/liblzo2.py'
       - 'build.py'
   pull_request:
     branches:
@@ -20,7 +20,7 @@ on:
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/liblzo2.yml'
       - 'patches/liblzo2/**'
-      - 'scripts/liblzo2.py'
+      - 'modules/liblzo2.py'
       - 'build.py'
 
 jobs:

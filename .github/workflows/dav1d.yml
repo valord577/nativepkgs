@@ -9,7 +9,7 @@ on:
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/dav1d.yml'
       - 'patches/dav1d/**'
-      - 'scripts/dav1d.py'
+      - 'modules/dav1d.py'
       - 'build.py'
   pull_request:
     branches:
@@ -20,7 +20,7 @@ on:
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/dav1d.yml'
       - 'patches/dav1d/**'
-      - 'scripts/dav1d.py'
+      - 'modules/dav1d.py'
       - 'build.py'
 
 jobs:

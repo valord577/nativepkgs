@@ -185,7 +185,7 @@ class _ctx:
 
     def _lazy_import(self):
         name = self.module
-        path = os.path.abspath(os.path.join(PROJ_ROOT, 'scripts', f'{name}.py'))
+        path = os.path.abspath(os.path.join(PROJ_ROOT, 'modules', f'{name}.py'))
         spec = importlib.util.spec_from_file_location('', path)
         if not spec:
             raise ModuleNotFoundError(f'missing module[{name}]: "failed @importlib.util.spec_from_file_location"')
@@ -562,7 +562,7 @@ def _setctx_android(
 
     ANDROID_API_LEVEL = os.getenv('ANDROID_API_LEVEL')
     if not ANDROID_API_LEVEL:
-        ANDROID_API_LEVEL = '21'
+        ANDROID_API_LEVEL = '30'
 
     ANDROID_FLEXIBLE_PAGE_SIZES = os.getenv('ANDROID_FLEXIBLE_PAGE_SIZES')
     if not ANDROID_FLEXIBLE_PAGE_SIZES:
@@ -584,13 +584,13 @@ def _setctx_android(
     ctx.cross_build_enabled = True
     ctx.target_arch = _tuple[1]
     if ctx.target_arch == 'arm64':
-        ctx.cross_target_triple = f'aarch64-linux-android'
         if int(ANDROID_API_LEVEL) < 21: ANDROID_API_LEVEL = '21'
+        ctx.cross_target_triple = f'aarch64-linux-android{ANDROID_API_LEVEL}'
     if ctx.target_arch == 'armv7':
-        ctx.cross_target_triple = f'armv7a-linux-androideabi'
+        ctx.cross_target_triple = f'armv7a-linux-androideabi{ANDROID_API_LEVEL}'
     if ctx.target_arch == 'amd64':
-        ctx.cross_target_triple = f'x86_64-linux-android'
         if int(ANDROID_API_LEVEL) < 21: ANDROID_API_LEVEL = '21'
+        ctx.cross_target_triple = f'x86_64-linux-android{ANDROID_API_LEVEL}'
     ctx.env_passthrough['SYSROOT'] = sysroot = os.path.abspath(os.path.join(_toolchains_dir, 'sysroot'))
     ctx.env_passthrough['ANDROID_API_LEVEL'] = ANDROID_API_LEVEL
 
@@ -605,8 +605,8 @@ def _setctx_android(
     ctx.env_passthrough['HOSTCC']  = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'clang'))
     ctx.env_passthrough['HOSTCXX'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'clang++'))
     ctx.env_passthrough['HOSTCPP'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'clang-cpp'))
-    ctx.env_passthrough['CC']  = f"{ctx.ccache} {os.path.abspath(os.path.join(_toolchains_dir, 'bin', f'{ctx.cross_target_triple}{ANDROID_API_LEVEL}-clang'))}   {ctx.env_passthrough['CROSS_FLAGS']}"
-    ctx.env_passthrough['CXX'] = f"{ctx.ccache} {os.path.abspath(os.path.join(_toolchains_dir, 'bin', f'{ctx.cross_target_triple}{ANDROID_API_LEVEL}-clang++'))} {ctx.env_passthrough['CROSS_FLAGS']}"
+    ctx.env_passthrough['CC']  = f"{ctx.ccache} {os.path.abspath(os.path.join(_toolchains_dir, 'bin', f'{ctx.cross_target_triple}-clang'))}   {ctx.env_passthrough['CROSS_FLAGS']}"
+    ctx.env_passthrough['CXX'] = f"{ctx.ccache} {os.path.abspath(os.path.join(_toolchains_dir, 'bin', f'{ctx.cross_target_triple}-clang++'))} {ctx.env_passthrough['CROSS_FLAGS']}"
 
     ctx.env_passthrough['LD'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'ld.lld'))
     ctx.env_passthrough['NM'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'llvm-nm'))
