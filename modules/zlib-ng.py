@@ -14,6 +14,7 @@ BUILD_ENV = os.environ.copy()
 _subproj_src = ''
 _subproj_src_patches = ''
 
+_target_pkg_type = ''
 _target_platform = ''
 _target_archlibc = ''
 
@@ -25,6 +26,8 @@ _extra_sysroot = ''
 _extra_args_cmake: list[str] = []
 
 def module_init(env: dict) -> list:
+    global _target_pkg_type; \
+        _target_pkg_type = env['PKG_TYPE']
     global _subproj_src; \
         _subproj_src = env['SUBPROJ_SRC']
     global _subproj_src_patches; \
@@ -43,6 +46,9 @@ def module_init(env: dict) -> list:
         _extra_sysroot = env.get('SYSROOT', '')
     global _extra_args_cmake; \
         _extra_args_cmake = env['EXTRA_CMAKE']
+
+    if _target_pkg_type != 'static':
+        raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
 
 
     global BUILD_ENV

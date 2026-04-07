@@ -39,11 +39,9 @@ PROJ_ROOT = os.path.abspath(os.path.dirname(__file__))
 #if LIB_RELEASE not in ['0']: LIB_RELEASE = '1'
 # ----------------------------
 # static or shared
-#
-# (Modules make their own decisions.)
 # ----------------------------
-#PKG_TYPE = os.getenv('PKG_TYPE', 'static')
-#if PKG_TYPE not in ['static']: PKG_TYPE = 'shared'
+PKG_TYPE = os.getenv('PKG_TYPE', 'static')
+if PKG_TYPE not in ['static']: PKG_TYPE = 'shared'
 # ----------------------------
 # >>>> utils functions >>>>
 # ----------------------------
@@ -161,13 +159,10 @@ class _ctx:
         env = {
             **self.env_passthrough,
             **{
-                'PROJ_ROOT': PROJ_ROOT,
-
-                'PARALLEL_JOBS': str(self.nproc),
-
                 'FUNC_PKGC': _util_func__dl_pkgc,
 
                 'PKG_NAME': self.module,
+                'PKG_TYPE': PKG_TYPE,
                 'PKG_PLATFORM': self.target_plat,
                 'PKG_ARCH': self.target_arch,
                 'PKG_LIBC': self.target_libc,
