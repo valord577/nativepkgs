@@ -22,9 +22,9 @@ from pathlib import Path
 from typing import NoReturn, Union
 
 if sys.version_info < (3, 6):
-    raise GeneratorExit(f'Required Python Interpreter ≥ 3.6')
+    raise RuntimeError(f'Required Python Interpreter ≥ 3.6')
 if sys.prefix == sys.base_prefix:
-    raise GeneratorExit(f'Please run this script in a [virtual environment](https://docs.python.org/3/library/venv.html)')
+    raise RuntimeError(f'Please run this script in a [virtual environment](https://docs.python.org/3/library/venv.html)')
 
 
 
@@ -225,7 +225,7 @@ def _setctx_linux(
 
         ctx.target_libc = _get_linux_libc_type()
         if not ctx.target_libc:
-            raise GeneratorExit('unknown native libc type')
+            raise RuntimeError('unknown native libc type')
 
         if ctx.ccache:
             for cc  in ['cc',  'clang',   'gcc']:
@@ -239,7 +239,7 @@ def _setctx_linux(
     else:
         CROSS_TOOLCHAIN_ROOT = os.getenv('CROSS_TOOLCHAIN_ROOT')
         if not CROSS_TOOLCHAIN_ROOT:
-            raise GeneratorExit('missing required env: `CROSS_TOOLCHAIN_ROOT`')
+            raise RuntimeError('missing required env: `CROSS_TOOLCHAIN_ROOT`')
 
         ctx.cross_build_enabled = True
         ctx.target_arch = _tuple[2]
@@ -373,7 +373,7 @@ def _setctx_win32_mingw(
 
     CROSS_TOOLCHAIN_ROOT = os.getenv('CROSS_TOOLCHAIN_ROOT')
     if not CROSS_TOOLCHAIN_ROOT:
-        raise GeneratorExit('missing required env: `CROSS_TOOLCHAIN_ROOT`')
+        raise RuntimeError('missing required env: `CROSS_TOOLCHAIN_ROOT`')
 
     ctx.cross_build_enabled = True
     ctx.target_arch = _tuple[1]
@@ -525,11 +525,11 @@ def _setctx_android(
             ctx.target_libc = ANDROID_FLEXIBLE_PAGE_SIZES
             ANDROID_FLEXIBLE_PAGE_SIZES = f'.{ANDROID_FLEXIBLE_PAGE_SIZES}'
         else:
-            raise GeneratorExit(f'unknown page sizes: `{ANDROID_FLEXIBLE_PAGE_SIZES}`, allowed: `{ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED}`')
+            raise RuntimeError(f'unknown page sizes: `{ANDROID_FLEXIBLE_PAGE_SIZES}`, allowed: `{ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED}`')
 
     CROSS_TOOLCHAIN_ROOT = os.getenv('CROSS_TOOLCHAIN_ROOT')
     if not CROSS_TOOLCHAIN_ROOT:
-        raise GeneratorExit('missing required env: `CROSS_TOOLCHAIN_ROOT`')
+        raise RuntimeError('missing required env: `CROSS_TOOLCHAIN_ROOT`')
     _toolchains_dir = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64'))
 
 
@@ -699,7 +699,7 @@ if __name__ == "__main__":
         else:
             argv_tgt.append(arg)
     if not argv_mod:
-        raise GeneratorExit(f'Please declare the module to be built')
+        raise RuntimeError(f'Please declare the module to be built')
 
     argc_tgt = len(argv_tgt)
     ctx = _ctx(module=argv_mod)
