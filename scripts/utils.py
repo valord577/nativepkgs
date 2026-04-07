@@ -12,10 +12,10 @@ from pathlib import Path
 from typing import Union
 
 
-PROJ_ROOT = (Path(__file__) / '..').resolve().as_posix()
+PROJ_ROOT = (Path(__file__).parent / '..').resolve().as_posix()
 # ----------------------------
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', line_buffering=True)
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
 # ----------------------------
 # ci runtime
 # ----------------------------
