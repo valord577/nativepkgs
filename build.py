@@ -443,8 +443,7 @@ def _setctx_win32_msvc(
         _pwsh_script_blk  = f'Import-Module "{_vs_devshell_dll}"; '
         _pwsh_script_blk += f'Enter-VsDevShell -VsInstallPath "{vs_path}" -SkipAutomaticLocation -DevCmdArguments "{_vs_devshell_arg}"; '
         _pwsh_script_blk += f'Get-ChildItem Env: | Select-Object -Property Name,Value | ConvertTo-Json -Depth 1  1>{dst}; '
-        _util_func__subprocess_devnul([
-            shutil.which('pwsh') or 'pwsh',
+        x._util_func__subprocess(['pwsh',
             '-WorkingDirectory', PROJ_ROOT,
             '-NonInteractive',
             '-NoProfileLoadTime',

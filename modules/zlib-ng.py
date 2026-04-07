@@ -101,6 +101,7 @@ def _build_step_00():
         '-D',  'WITH_GTEST:BOOL=0',
         '-D',  'WITH_GZFILEOP:BOOL=0',
         '-D',  'WITH_OPTIM:BOOL=1',
+        '-D',  'WITH_INFLATE_STRICT:BOOL=1',
         '-D',  'ZLIB_ENABLE_TESTS:BOOL=0',
         '-D',  'ZLIBNG_ENABLE_TESTS:BOOL=0',
     ]
