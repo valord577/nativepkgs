@@ -6,14 +6,10 @@ from scripts import utils as x
 
 import os
 import shlex
-import shutil
-
 
 
 CMAKE_CMD = 'cmake'
-SHELL_REQ = False
 BUILD_ENV = os.environ.copy()
-
 
 _subproj_src = ''
 _subproj_src_patches = ''
@@ -105,10 +101,10 @@ def _build_step_00():
         '-D',  'ZLIB_ENABLE_TESTS:BOOL=0',
         '-D',  'ZLIBNG_ENABLE_TESTS:BOOL=0',
     ]
-    x._util_func__subprocess(env=BUILD_ENV, shell=SHELL_REQ, args=args)
+    x._util_func__subprocess(env=BUILD_ENV, args=args)
 def _build_step_01():
     args = f"{CMAKE_CMD} --build {_pkg_buld_dir} -j {x.CPU_COUNT}"
-    x._util_func__subprocess(env=BUILD_ENV, shell=SHELL_REQ, args=shlex.split(args))
+    x._util_func__subprocess(env=BUILD_ENV, args=shlex.split(args))
 def _build_step_02():
     args = f"{CMAKE_CMD} --install {_pkg_buld_dir}"
-    x._util_func__subprocess(env=BUILD_ENV, shell=SHELL_REQ, args=shlex.split(args))
+    x._util_func__subprocess(env=BUILD_ENV, args=shlex.split(args))

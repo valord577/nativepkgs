@@ -183,9 +183,9 @@ class _ctx:
         }
         if env['PKG_LIBC']:
             env['PKG_ARCH_LIBC'] = f"{env['PKG_ARCH']}-{env['PKG_LIBC']}"
-        env['3RD_DEPS_DIR'] = os.path.abspath(os.path.join(PROJ_ROOT, f".lib.{env['PKG_PLATFORM']}.{env['PKG_ARCH_LIBC']}"))
-        env['PKG_BULD_DIR'] = os.path.abspath(os.path.join(PROJ_ROOT, 'tmp', env['PKG_NAME'], env['PKG_PLATFORM'], env['PKG_ARCH_LIBC']))
-        env['PKG_INST_DIR'] = os.path.abspath(os.path.join(PROJ_ROOT, 'out', env['PKG_NAME'], env['PKG_PLATFORM'], env['PKG_ARCH_LIBC']))
+        env['3RD_DEPS_DIR'] = (Path(x.PROJ_ROOT) / f".lib.{env['PKG_PLATFORM']}.{env['PKG_ARCH_LIBC']}").resolve().as_posix()
+        env['PKG_BULD_DIR'] = (Path(x.PROJ_ROOT) / 'tmp' / env['PKG_NAME'] / env['PKG_PLATFORM'] / env['PKG_ARCH_LIBC']).resolve().as_posix()
+        env['PKG_INST_DIR'] = (Path(x.PROJ_ROOT) / 'out' / env['PKG_NAME'] / env['PKG_PLATFORM'] / env['PKG_ARCH_LIBC']).resolve().as_posix()
         if x.ON_GITLAB_CI or x.ON_GITHUB_CI:
             env['PKG_INST_DIR'] = os.getenv('INST_DIR') or env['PKG_INST_DIR']
 
@@ -473,15 +473,15 @@ def _setctx_win32_msvc(
 
     _vs_path = ''; _vs_devshell_dll = ''
     for _dir in _vs_search_path:
-        _dll = os.path.abspath(os.path.join(_dir, 'Common7', 'Tools', 'Microsoft.VisualStudio.DevShell.dll'))
+        _dll = (Path(_dir) / 'Common7' / 'Tools' / 'Microsoft.VisualStudio.DevShell.dll').resolve().as_posix()
         if os.path.exists(_dll):
             _vs_path = _dir; _vs_devshell_dll = _dll
             break
     if (not _vs_path) or (not _vs_devshell_dll):
         raise NotImplementedError('Failed to search MSVC environment')
 
-    _msvc_env_json_native = os.path.abspath(os.path.join(PROJ_ROOT, '.msvc_env_native.json'))
-    _msvc_env_json_target = os.path.abspath(os.path.join(PROJ_ROOT, '.msvc_env_target.json'))
+    _msvc_env_json_native = (Path(PROJ_ROOT) / '.msvc_env_native.json').resolve().as_posix()
+    _msvc_env_json_target = (Path(PROJ_ROOT) / '.msvc_env_target.json').resolve().as_posix()
     _msvc_env_json_dump(_msvc_env_json_native, _vs_path, _vs_devshell_dll, ctx.native_arch)
     _msvc_env_json_dump(_msvc_env_json_target, _vs_path, _vs_devshell_dll, ctx.target_arch)
 
