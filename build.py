@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 
+import sys
+sys.dont_write_bytecode = True
+
 # fmt: off
+
+from scripts import utils as x
+
 
 import datetime as dt
 import importlib.util
@@ -15,56 +21,32 @@ import tempfile
 from pathlib import Path
 from typing import NoReturn, Union
 
+if sys.version_info < (3, 6):
+    raise GeneratorExit(f'Required Python Interpreter ≥ 3.6')
+if sys.prefix == sys.base_prefix:
+    raise GeneratorExit(f'Please run this script in a [virtual environment](https://docs.python.org/3/library/venv.html)')
+
+
 
 PROJ_ROOT = os.path.abspath(os.path.dirname(__file__))
 # ----------------------------
 # optimize
-#  - 0 DEBUG
-#  - 1 RELEASE (default)
+#  - RelWithDebInfo (default)
+#
+# (Modules make their own decisions.)
 # ----------------------------
-LIB_RELEASE = os.getenv('LIB_RELEASE', '1')
-if LIB_RELEASE != '0': LIB_RELEASE = '1'
+#LIB_RELEASE = os.getenv('LIB_RELEASE', '1')
+#if LIB_RELEASE not in ['0']: LIB_RELEASE = '1'
 # ----------------------------
 # static or shared
+#
+# (Modules make their own decisions.)
 # ----------------------------
-PKG_TYPE = os.getenv('PKG_TYPE', 'static')
-if PKG_TYPE != 'static': PKG_TYPE = 'shared'
-# ----------------------------
-# ci runtime
-# ----------------------------
-ON_GITLAB_CI = os.getenv('GITLAB_CI', '')      == 'true'
-ON_GITHUB_CI = os.getenv('GITHUB_ACTIONS', '') == 'true'
-ON_CLANGD_CK = os.getenv('CLANGD_CODE_COMPLETION', '0') == '1'
+#PKG_TYPE = os.getenv('PKG_TYPE', 'static')
+#if PKG_TYPE not in ['static']: PKG_TYPE = 'shared'
 # ----------------------------
 # >>>> utils functions >>>>
 # ----------------------------
-def _self_func__tree(basepath: str, depth: int = 0):
-    # name, path, depth, is_last, is_symlink, is_dir
-    _stack = [(basepath, basepath, -1, '-1', os.path.islink(basepath), os.path.isdir(basepath))]
-    while _stack:
-        _name, _path, _depth, _is_last, _is_symlink, _is_dir = _entry = _stack.pop()
-        if _depth == -1:
-            print(_name, file=sys.stderr)
-        else:
-            print(f"{'│   ' * _depth}{'└── ' if _is_last == '1' else '├── '}{_name}{f' -> {os.readlink(_path)}' if _is_symlink else ''}", file=sys.stderr)
-
-        if (not _is_dir) or (depth > 0 and _depth + 1 >= depth):
-            continue
-        with os.scandir(_path) as it:
-            entries = sorted(it, key=lambda e: e.name)
-            entries_dir_first = [ d for d in entries if d.is_dir() ]
-            entries_dir_first.extend([ f for f in entries if not f.is_dir() ])
-            for i, entry in enumerate(reversed(entries_dir_first)):
-                _stack.append(
-                    (
-                        entry.name,
-                        entry.path,
-                        _depth + 1,
-                        '1' if i == 0 else '0',
-                        entry.is_symlink(),
-                        entry.is_dir(follow_symlinks=False),
-                    )
-                )
 def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
     pkg_name: str, pkg_version: str, pkg_type: str, pkg_extra='',
 ):
@@ -73,9 +55,9 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
     os.makedirs(_3rd_deps_dir, exist_ok=True)
     if False:
         pass
-    elif ON_GITLAB_CI:
+    elif x.ON_GITLAB_CI:
         pass
-    elif ON_GITHUB_CI:
+    elif x.ON_GITHUB_CI:
         _pkg_dl_name = f"{pkg_name}_{_env['PKG_PLATFORM']}_{_env['PKG_ARCH_LIBC']}_{pkg_version}_{pkg_type}"
         if pkg_extra:
             _pkg_dl_name += f"_{pkg_extra}"
@@ -109,29 +91,6 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
         _ctx['PKG_3RD_DEPS_SHARED'].append(_this_lib_dir)
     if pkg_type == 'static':
         _ctx['PKG_3RD_DEPS_STATIC'].append(_this_lib_dir)
-def _util_func__subprocess_stdout(args: Union[str, list[str]],
-    cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
-) -> str:
-    print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
-    proc = sp.run(args=args, cwd=cwd, env=env, shell=shell, stdout=sp.PIPE, text=True)
-    if proc.returncode != 0:
-        print(f'>>>> subprocess exitcode: {proc.returncode}', file=sys.stderr)
-        sys.exit(proc.returncode)
-    return proc.stdout
-def _util_func__subprocess_devnul(args: Union[str, list[str]],
-    cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
-):
-    print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
-    proc = sp.run(args=args, cwd=cwd, env=env, shell=shell)
-    if proc.returncode != 0:
-        print(f'>>>> subprocess exitcode: {proc.returncode}', file=sys.stderr)
-        sys.exit(proc.returncode)
-def _util_func__pip_install(packages: list[str]):
-    args = [sys.executable, '-m', 'pip', 'install', '--upgrade']
-    if not ON_GITHUB_CI:
-        args.extend(['-i', 'https://mirrors.bfsu.edu.cn/pypi/web/simple'])
-    args.extend(packages)
-    _util_func__subprocess_devnul(args)
 # ----------------------------
 # <<<< utils functions <<<<
 # ----------------------------
@@ -204,19 +163,11 @@ class _ctx:
             **{
                 'PROJ_ROOT': PROJ_ROOT,
 
-                'LIB_RELEASE': LIB_RELEASE,
                 'PARALLEL_JOBS': str(self.nproc),
-                'ON_GITLAB_CI': ON_GITLAB_CI,
-                'ON_GITHUB_CI': ON_GITHUB_CI,
-                'ON_CLANGD_CK': ON_CLANGD_CK,
 
-                'FUNC_PYPI': _util_func__pip_install,
                 'FUNC_PKGC': _util_func__dl_pkgc,
-                'FUNC_SHELL_DEVNUL': _util_func__subprocess_devnul,
-                'FUNC_SHELL_STDOUT': _util_func__subprocess_stdout,
 
                 'PKG_NAME': self.module,
-                'PKG_TYPE': PKG_TYPE,
                 'PKG_PLATFORM': self.target_plat,
                 'PKG_ARCH': self.target_arch,
                 'PKG_LIBC': self.target_libc,
@@ -232,9 +183,10 @@ class _ctx:
         }
         if env['PKG_LIBC']:
             env['PKG_ARCH_LIBC'] = f"{env['PKG_ARCH']}-{env['PKG_LIBC']}"
+        env['3RD_DEPS_DIR'] = os.path.abspath(os.path.join(PROJ_ROOT, f".lib.{env['PKG_PLATFORM']}.{env['PKG_ARCH_LIBC']}"))
         env['PKG_BULD_DIR'] = os.path.abspath(os.path.join(PROJ_ROOT, 'tmp', env['PKG_NAME'], env['PKG_PLATFORM'], env['PKG_ARCH_LIBC']))
         env['PKG_INST_DIR'] = os.path.abspath(os.path.join(PROJ_ROOT, 'out', env['PKG_NAME'], env['PKG_PLATFORM'], env['PKG_ARCH_LIBC']))
-        if ON_GITLAB_CI or ON_GITHUB_CI:
+        if x.ON_GITLAB_CI or x.ON_GITHUB_CI:
             env['PKG_INST_DIR'] = os.getenv('INST_DIR') or env['PKG_INST_DIR']
 
         self.extra_cmake.extend(['-B', env['PKG_BULD_DIR']])
@@ -734,12 +686,6 @@ def show_help(exitcode = 1) -> NoReturn:
 
 
 if __name__ == "__main__":
-    if sys.version_info < (3, 6):
-        raise GeneratorExit(f'Required Python Interpreter ≥ 3.6')
-    if sys.prefix == sys.base_prefix:
-        raise GeneratorExit(f'Please run this script in a [virtual environment](https://docs.python.org/3/library/venv.html)')
-
-
     argv_tgt: list[str] = []; argv_mod: str = ''
     argv = sys.argv[1:]; argc = len(argv); i = 0
     while i < argc:
@@ -797,6 +743,8 @@ if __name__ == "__main__":
     build_steps = ctx.script.module_init(build_env)
     for func in build_steps:
         func()
-    if not ON_CLANGD_CK:
-        _self_func__tree(build_env['PKG_INST_DIR'], depth=3)
+    if not x.ON_CODE_EDIT:
+        x._util_func__subprocess(args=[sys.executable,
+            os.path.join(PROJ_ROOT, 'scripts', 'tree.py'), build_env['PKG_INST_DIR'], '3'
+        ])
     print(f'──── Build Done @{dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")} ────', file=sys.stderr)

@@ -2,27 +2,66 @@
 
 # fmt: off
 
+from scripts import utils as x
+
 import os
+import shlex
 import shutil
 
-from pathlib import Path
 
 
-_env: dict = {}
-_ctx: dict = {
-    'PKG_INST_STRIP': '',
-    'CMAKE_CMD': 'cmake',
-    'BUILD_ENV': os.environ.copy(),
-    'SHELL_REQ': False,
-}
+CMAKE_CMD = 'cmake'
+SHELL_REQ = False
+BUILD_ENV = os.environ.copy()
+
+
+_subproj_src = ''
+_subproj_src_patches = ''
+
+_target_platform = ''
+_target_archlibc = ''
+
+_3rd_deps_dir = ''
+_pkg_buld_dir = ''
+_pkg_inst_dir = ''
+
+_extra_sysroot = ''
+_extra_args_cmake: list[str] = []
 
 def module_init(env: dict) -> list:
-    global _env; _env = env
+    global _subproj_src; \
+        _subproj_src = env['SUBPROJ_SRC']
+    global _subproj_src_patches; \
+        _subproj_src_patches = env['SUBPROJ_SRC_PATCHES']
+    global _target_platform; \
+        _target_platform = env['PKG_PLATFORM']
+    global _target_archlibc; \
+        _target_archlibc = env['PKG_ARCH_LIBC']
+    global _3rd_deps_dir; \
+        _3rd_deps_dir = env['3RD_DEPS_DIR']
+    global _pkg_buld_dir; \
+        _pkg_buld_dir = env['PKG_BULD_DIR']
+    global _pkg_inst_dir; \
+        _pkg_inst_dir = env['PKG_INST_DIR']
+    global _extra_sysroot; \
+        _extra_sysroot = env.get('SYSROOT', '')
+    global _extra_args_cmake; \
+        _extra_args_cmake = env['EXTRA_CMAKE']
+
+
+    global BUILD_ENV
+
+    if _target_platform == 'android':
+        BUILD_ENV['ANDROID_API_LEVEL'] = env['ANDROID_API_LEVEL']
+    elif _target_platform == 'win-msvc':
+        BUILD_ENV = env['WIN32_MSVC_ENV_TARGET']
+        BUILD_ENV['CFLAGS']   = '/utf-8 /wd5105'
+        BUILD_ENV['CXXFLAGS'] = BUILD_ENV['CFLAGS']
+        _extra_args_cmake.extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
+
     return [
         _source_download,
         _source_apply_patches,
-        _build_step_msvc,
-        _build_step_android,
         _build_step_00,
         _build_step_01,
         _build_step_02,
@@ -32,74 +71,43 @@ def module_init(env: dict) -> list:
 
 def _source_download():
     _git_target = 'refs/tags/2.2.5'
-    if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/zlib-ng/zlib-ng.git'])
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
-    if file_ver := os.getenv('DEPS_VER', ''):
-        _git_ver = _env['FUNC_SHELL_STDOUT'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'describe', '--always', '--abbrev=7'])[:-1]
-        Path(file_ver).write_text(f'{_git_ver}')
+    if not os.path.exists(os.path.join(_subproj_src, '.git')):
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'init'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'remote', 'add', 'x', 'https://github.com/zlib-ng/zlib-ng.git'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'checkout', 'FETCH_HEAD'])
+    x._util_put_pkg_version_desc(x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
 def _source_apply_patches():
-    if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
+    if not os.path.exists(_subproj_src_patches):
         return
-    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'reset', '--hard', 'HEAD'])
-    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'clean', '-d', '-f', '-q'])
-    with os.scandir(_env['SUBPROJ_SRC_PATCHES']) as it:
+    x._util_func__subprocess(cwd=_subproj_src, args=['git', 'reset', '--hard', 'HEAD'])
+    x._util_func__subprocess(cwd=_subproj_src, args=['git', 'clean', '-d', '-f', '-q'])
+    with os.scandir(_subproj_src_patches) as it:
         entries = sorted(it, key=lambda e: e.name)
         for entry in entries:
             if not entry.is_file():
                 continue
-            _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'],
-                args=[shutil.which('git'), 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
+            x._util_func__subprocess(cwd=_subproj_src, args=[
+                'git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path,
+            ])
 
 
-def _build_step_msvc():
-    if _env['PKG_PLATFORM'] != 'win-msvc':
-        return
-    _ctx['BUILD_ENV'] = _env['WIN32_MSVC_ENV_TARGET']
-    _ctx['BUILD_ENV']['CFLAGS']   = '/utf-8 /wd5105'
-    _ctx['BUILD_ENV']['CXXFLAGS'] = _ctx['BUILD_ENV']['CFLAGS']
-    _ctx['SHELL_REQ'] = True
-
-    if _env['LIB_RELEASE'] == '0':
-        raise NotImplementedError(f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')
-    if _env['LIB_RELEASE'] == '1':
-        _env['EXTRA_CMAKE'].extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
-def _build_step_android():
-    if _env['PKG_PLATFORM'] != 'android':
-        return
-    _ctx['BUILD_ENV']['ANDROID_API_LEVEL'] = _env['ANDROID_API_LEVEL']
 def _build_step_00():
-    _extra_args_cmake: list[str] = _env['EXTRA_CMAKE']
-
-    if _env['PKG_TYPE'] == 'static':
-        _extra_args_cmake.extend(['-D', 'BUILD_SHARED_LIBS:BOOL=0'])
-    if _env['PKG_TYPE'] == 'shared':
-        _extra_args_cmake.extend(['-D', 'BUILD_SHARED_LIBS:BOOL=1'])
-
-    if _env['LIB_RELEASE'] == '0':
-        _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Debug', '-D', 'WITH_OPTIM:BOOL=0'])
-    if _env['LIB_RELEASE'] == '1':
-        _ctx['PKG_INST_STRIP'] = '--strip'
-        _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Release', '-D', 'WITH_OPTIM:BOOL=1'])
-
-    args = [
-        _ctx['CMAKE_CMD'],
-        '-S',  _env['SUBPROJ_SRC'],
+    args = [CMAKE_CMD, *_extra_args_cmake,
+        '-S',   _subproj_src,
+        '-D',  'CMAKE_BUILD_TYPE=RelWithDebInfo',
+        '-D',  'BUILD_SHARED_LIBS:BOOL=0',
         '-D',  'ZLIB_COMPAT:BOOL=1',
         '-D',  'WITH_GTEST:BOOL=0',
         '-D',  'WITH_GZFILEOP:BOOL=0',
+        '-D',  'WITH_OPTIM:BOOL=1',
         '-D',  'ZLIB_ENABLE_TESTS:BOOL=0',
         '-D',  'ZLIBNG_ENABLE_TESTS:BOOL=0',
     ]
-    args.extend(_extra_args_cmake)
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    x._util_func__subprocess(env=BUILD_ENV, shell=SHELL_REQ, args=args)
 def _build_step_01():
-    args = [_ctx['CMAKE_CMD'], '--build', _env['PKG_BULD_DIR'], '-j', _env['PARALLEL_JOBS']]
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    args = f"{CMAKE_CMD} --build {_pkg_buld_dir} -j {x.CPU_COUNT}"
+    x._util_func__subprocess(env=BUILD_ENV, shell=SHELL_REQ, args=shlex.split(args))
 def _build_step_02():
-    args = [_ctx['CMAKE_CMD'], '--install', _env['PKG_BULD_DIR']]
-    if _ctx['PKG_INST_STRIP']:
-        args.append( _ctx['PKG_INST_STRIP'])
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    args = f"{CMAKE_CMD} --install {_pkg_buld_dir}"
+    x._util_func__subprocess(env=BUILD_ENV, shell=SHELL_REQ, args=shlex.split(args))
