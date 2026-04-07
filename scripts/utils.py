@@ -3,6 +3,7 @@
 # fmt: off
 
 import importlib.util
+import io
 import subprocess as sp
 import os
 import sys
@@ -11,7 +12,10 @@ from pathlib import Path
 from typing import Union
 
 
-PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+PROJ_ROOT = (Path(__file__) / '..').resolve().as_posix()
+# ----------------------------
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 # ----------------------------
 # ci runtime
 # ----------------------------
