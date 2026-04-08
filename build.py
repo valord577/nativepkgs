@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
+# fmt: off
+
 import sys
 sys.dont_write_bytecode = True
 
-# fmt: off
-
 from scripts import utils as x
+# ----------------------------
 
 
 import datetime as dt

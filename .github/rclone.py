@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# fmt: off
+
 import sys
 from pathlib import Path
 
@@ -7,10 +9,8 @@ sys.dont_write_bytecode = True
 sys.path.append(
     (Path(__file__).parent / '..').resolve().as_posix()
 )
-
-# fmt: off
-
 from scripts import utils as x
+# ----------------------------
 
 import glob
 import os

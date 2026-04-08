@@ -71,3 +71,6 @@ def _util_get_pkg_version_desc() -> str:
     if not PKG_VER_DESC:
         return ''
     return Path(PKG_VER_DESC).read_text(encoding='utf-8').strip()
+
+def _util_append_ci_env(f: io.TextIOWrapper, k, v):
+    print_stderr(f'{k}: {v}'); f.write(f'{k}={v}\n')
