@@ -39,7 +39,7 @@ with open(_github_env, 'a') as f:
     x._util_append_ci_env(f, 'TARGET_ARCH_LIBC', _target_arch_libc)
 
     # ccache
-    _inst_dir = (Path(x.PROJ_ROOT) / '.ccache').resolve().as_posix()
+    _ccache_dir = (Path(x.PROJ_ROOT) / '.ccache').resolve().as_posix()
     x._util_append_ci_env(f, 'CCACHE_DIR', _ccache_dir)
     _ccache_key = f'{_pkg_name}-{_pkg_type}-{_pkg_plat}-{_target_arch_libc}'
     x._util_append_ci_env(f, 'CCACHE_KEY', _ccache_key)
