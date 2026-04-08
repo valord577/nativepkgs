@@ -66,7 +66,6 @@ def module_init(env: dict) -> list:
 
     return [
         _source_download,
-        _source_apply_patches,
         _build_step_00,
         _build_step_01,
         _build_step_02,
@@ -75,38 +74,25 @@ def module_init(env: dict) -> list:
 
 
 def _source_download():
-    _git_target = 'refs/tags/2.2.5'
+    _git_target = 'refs/tags/2.3.3'
     if not (Path(_subproj_src) / '.git').exists():
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'init'])
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'remote', 'add', 'x', 'https://github.com/zlib-ng/zlib-ng.git'])
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'checkout', 'FETCH_HEAD'])
     x._util_put_pkg_version_desc(x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
-def _source_apply_patches():
-    if not (Path(_subproj_src_patches)).exists():
-        return
-    x._util_func__subprocess(cwd=_subproj_src, args=['git', 'reset', '--hard', 'HEAD'])
-    x._util_func__subprocess(cwd=_subproj_src, args=['git', 'clean', '-d', '-f', '-q'])
-    for it in Path(_subproj_src_patches).iterdir():
-        if not it.is_file():
-            continue
-        x._util_func__subprocess(cwd=_subproj_src, args=[
-            'git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', it.absolute().as_posix(),
-        ])
-
-
+    x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
 def _build_step_00():
     args = [BUILD_CMD, *_extra_args_build,
         '-S',   _subproj_src,
-        '-D',  'CMAKE_BUILD_TYPE=RelWithDebInfo',
         '-D',  'BUILD_SHARED_LIBS:BOOL=0',
+        '-D',  'CMAKE_BUILD_TYPE=RelWithDebInfo',
         '-D',  'ZLIB_COMPAT:BOOL=1',
         '-D',  'WITH_GTEST:BOOL=0',
         '-D',  'WITH_GZFILEOP:BOOL=0',
         '-D',  'WITH_OPTIM:BOOL=1',
         '-D',  'WITH_INFLATE_STRICT:BOOL=1',
-        '-D',  'ZLIB_ENABLE_TESTS:BOOL=0',
-        '-D',  'ZLIBNG_ENABLE_TESTS:BOOL=0',
+        '-D',  'BUILD_TESTING:BOOL=0',
     ]
     x._util_func__subprocess(env=BUILD_ENV, args=args)
 def _build_step_01():

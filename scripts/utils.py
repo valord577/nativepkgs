@@ -76,3 +76,15 @@ def _util_get_pkg_version_desc() -> str:
 
 def _util_append_ci_env(f: io.TextIOWrapper, k, v):
     print_stderr(f'{k}: {v}'); f.write(f'{k}={v}\n')
+
+def _util_source_apply_patches(cwd: str, patches_dir: str):
+    if not (Path(patches_dir)).exists():
+        return
+    _util_func__subprocess(cwd=cwd, args=['git', 'reset', '--hard', 'HEAD'])
+    _util_func__subprocess(cwd=cwd, args=['git', 'clean', '-d', '-f', '-q'])
+    for it in Path(patches_dir).iterdir():
+        if not it.is_file():
+            continue
+        _util_func__subprocess(cwd=cwd, args=[
+            'git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', it.absolute().as_posix(),
+        ])
