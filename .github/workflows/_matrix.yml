@@ -251,6 +251,7 @@ jobs:
           name: ${{ env.PKG_ZIPNAME }}
           path: ${{ env.PKG_ZIPNAME }}.zip
           compression-level: 0
+        working-directory: ${{ github.workspace }}/.gh.out
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
@@ -318,6 +319,7 @@ jobs:
           name: ${{ env.PKG_ZIPNAME }}
           path: ${{ env.PKG_ZIPNAME }}.zip
           compression-level: 0
+        working-directory: ${{ github.workspace }}/.gh.out
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
