@@ -23,17 +23,14 @@ import urllib.request
 _rclone_ver = 'current'
 _rclone_dir = (Path(x.PROJ_ROOT) / '.github').absolute().as_posix()
 
-plat = platform.system().lower()
+plat = x.NATIVE_PLAT
 if plat == 'darwin':
     plat = 'osx'
 if not (plat in ['linux', 'windows', 'osx']):
     raise RuntimeError(f'unsupported plat: {plat}')
 fext = ('.exe' if plat == 'windows' else '')
 
-arch = platform.machine().lower()
-if plat == 'linux':
-    if arch == 'aarch64': arch = 'arm64'
-    if arch == 'x86_64':  arch = 'amd64'
+arch = x.NATIVE_ARCH
 if not (arch in ['amd64', 'arm64']):
     raise RuntimeError(f'unsupported arch: {arch}')
 

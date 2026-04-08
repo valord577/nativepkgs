@@ -10,12 +10,8 @@ from scripts import utils as x
 
 
 import datetime as dt
-import importlib.util
-import json
 import os
-import platform
 import shutil
-import subprocess as sp
 import sys
 import tempfile
 
@@ -98,11 +94,6 @@ class _ctx:
     def __init__(self, module: str):
         self.module = module
 
-        self.native_plat = platform.system().lower()
-        self.native_arch = platform.machine().lower()
-        if self.native_arch == 'x86_64':  self.native_arch = 'amd64'
-        if self.native_arch == 'aarch64': self.native_arch = 'arm64'
-
         self.target_plat = ''
         self.target_arch = ''
         self.target_libc = ''
@@ -180,10 +171,6 @@ class _ctx:
 def _setctx_linux(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
-    if ctx.native_plat != 'linux':
-        raise NotImplementedError(f'unsupported host os: {ctx.native_plat}')
-    ctx.env_passthrough['PLATFORM_LINUX'] = True
-
     def _get_linux_libc_type() -> str:
         import mmap
 
@@ -192,18 +179,17 @@ def _setctx_linux(
             with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as m:
                 if -1 != m.find(b'GLIBC_'):
                     _libc_type = 'gnu'
-                if -1 != m.find(b'musl-'):
+                elif -1 != m.find(b'musl-'):
                     _libc_type = 'musl'
+        if not _libc_type:
+            raise NotImplementedError(f'unknown the implementation of libc')
         return _libc_type
 
     if _native:
-        ctx.target_arch = ctx.native_arch
+        ctx.target_arch = x.NATIVE_PLAT
         if not (ctx.target_arch in ['arm64', 'amd64']):
-            raise NotImplementedError(f'unsupported target arch: {ctx.native_arch}')
-
+            raise NotImplementedError(f'unsupported target arch: {ctx.target_arch}')
         ctx.target_libc = _get_linux_libc_type()
-        if not ctx.target_libc:
-            raise RuntimeError('unknown native libc type')
 
         if ctx.ccache:
             for cc  in ['cc',  'clang',   'gcc']:
@@ -215,9 +201,7 @@ def _setctx_linux(
                     ctx.env_passthrough['CXX'] = f'{ctx.ccache} {_cxx}'
                     break
     else:
-        CROSS_TOOLCHAIN_ROOT = os.getenv('CROSS_TOOLCHAIN_ROOT')
-        if not CROSS_TOOLCHAIN_ROOT:
-            raise RuntimeError('missing required env: `CROSS_TOOLCHAIN_ROOT`')
+        CROSS_TOOLCHAIN_ROOT = x._util_get_cross_toolchain_dir()
 
         ctx.cross_build_enabled = True
         ctx.target_arch = _tuple[2]
@@ -228,7 +212,7 @@ def _setctx_linux(
             ctx.cross_target_triple = f'x86_64-pc-linux-{ctx.target_libc}'
         if ctx.target_arch == 'armv7':
             ctx.cross_target_triple = f'arm-unknown-linux-{ctx.target_libc}'
-        ctx.env_passthrough['SYSROOT'] = sysroot = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, ctx.cross_target_triple))
+        ctx.env_passthrough['SYSROOT'] = sysroot = (Path(CROSS_TOOLCHAIN_ROOT) / ctx.cross_target_triple).absolute().as_posix()
 
         ctx.env_passthrough['CROSS_LDFLAGS'] = f'-fuse-ld=lld --sysroot={sysroot}'
         ctx.env_passthrough['CROSS_FLAGS'] = f'--target={ctx.cross_target_triple} --gcc-toolchain={sysroot}/usr --sysroot={sysroot}'
@@ -252,39 +236,36 @@ def _setctx_linux(
         # cmake toolchain file
         CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE')
         if not CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE:
-            CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'toolchain-cmake-template'))
+            CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = (Path(CROSS_TOOLCHAIN_ROOT) / 'toolchain-cmake-template').absolute().as_posix()
         CROSS_TOOLCHAIN_FILE_CMAKE = f'{CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE}.{ctx.cross_target_triple}'
         ctx.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE={CROSS_TOOLCHAIN_FILE_CMAKE}"])
         # meson toolchain file
         CROSS_TOOLCHAIN_FILE_PREFIX_MESON = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_MESON')
         if not CROSS_TOOLCHAIN_FILE_PREFIX_MESON:
-            CROSS_TOOLCHAIN_FILE_PREFIX_MESON = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'toolchain-meson-template'))
+            CROSS_TOOLCHAIN_FILE_PREFIX_MESON = (Path(CROSS_TOOLCHAIN_ROOT) / 'toolchain-meson-template').absolute().as_posix()
         CROSS_TOOLCHAIN_FILE_MESON = f'{CROSS_TOOLCHAIN_FILE_PREFIX_MESON}.{ctx.cross_target_triple}'
         ctx.extra_meson.extend(["--cross-file", CROSS_TOOLCHAIN_FILE_MESON])
         # pkgconf bin
         CROSS_TOOLCHAIN_PKGCONF_PREFIX = os.getenv('CROSS_TOOLCHAIN_PKGCONF_PREFIX')
         if not CROSS_TOOLCHAIN_PKGCONF_PREFIX:
-            CROSS_TOOLCHAIN_PKGCONF_PREFIX = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'pkgconf-wrapper'))
+            CROSS_TOOLCHAIN_PKGCONF_PREFIX = (Path(CROSS_TOOLCHAIN_ROOT) / 'pkgconf-wrapper').absolute().as_posix()
         ctx.cross_pkgconfig_bin = f'{CROSS_TOOLCHAIN_PKGCONF_PREFIX}.{ctx.cross_target_triple}'
 def _setctx_apple(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
-    if ctx.native_plat != 'darwin':
-        raise NotImplementedError(f'unsupported host os: {ctx.native_plat}')
-    ctx.env_passthrough['PLATFORM_APPLE'] = True
-
     if ctx.ccache:
         ctx.extra_cmake.extend(['-D', 'CMAKE_OBJC_COMPILER_LAUNCHER=ccache'])
         ctx.extra_cmake.extend(['-D', 'CMAKE_OBJCXX_COMPILER_LAUNCHER=ccache'])
 
     if _native:
-        ctx.target_arch = ctx.native_arch
+        ctx.target_arch = x.NATIVE_PLAT
         if not (ctx.target_arch in ['arm64', 'amd64']):
             raise NotImplementedError(f'unsupported target arch: {ctx.target_arch}')
-    if not _native:
+    else:
         ctx.target_plat = _tuple[0]
         ctx.target_arch = _tuple[1]
         ctx.cross_build_enabled = True
+
     _target_arch = ctx.target_arch
     if _target_arch == 'amd64':
         _target_arch = 'x86_64'
@@ -292,10 +273,9 @@ def _setctx_apple(
     _min_version_deployment = '11'
     if ctx.target_plat != 'macosx':
         _min_version_deployment = '12'
+
     _min_version_target_flag = ''
-    if False:
-        pass
-    elif ctx.target_plat == 'macosx':
+    if ctx.target_plat == 'macosx':
         _min_version_target_flag = 'macosx'
         ctx.extra_cmake.extend(['-D', 'CMAKE_SYSTEM_NAME=Darwin'])
     elif ctx.target_plat == 'iphoneos':
@@ -304,25 +284,23 @@ def _setctx_apple(
     elif ctx.target_plat == 'iphonesimulator':
         _min_version_target_flag = 'ios-simulator'
         ctx.extra_cmake.extend(['-D', 'CMAKE_SYSTEM_NAME=iOS'])
-    else:
-        raise NotImplementedError(f'unsupported target platform: {ctx.target_plat}')
 
     ctx.env_passthrough['SYSROOT'] = sysroot = \
-        _util_func__subprocess_stdout([shutil.which('xcrun') or 'xcrun', '--sdk', ctx.target_plat, '--show-sdk-path'])[:-1]
+        x._util_func__subprocess(['xcrun', '--sdk', ctx.target_plat, '--show-sdk-path'])[:-1]
     ctx.env_passthrough['CROSS_FLAGS'] = f'-arch {_target_arch} -m{_min_version_target_flag}-version-min={_min_version_deployment}'
-    ctx.env_passthrough['HOSTCC']  = _util_func__subprocess_stdout([shutil.which('xcrun') or 'xcrun', '-f', 'clang'])[:-1]
-    ctx.env_passthrough['HOSTCXX'] = _util_func__subprocess_stdout([shutil.which('xcrun') or 'xcrun', '-f', 'clang++'])[:-1]
+    ctx.env_passthrough['HOSTCC']  = x._util_func__subprocess(['xcrun', '-f', 'clang'])[:-1]
+    ctx.env_passthrough['HOSTCXX'] = x._util_func__subprocess(['xcrun', '-f', 'clang++'])[:-1]
     ctx.env_passthrough['CC']  = f"{ctx.ccache} {ctx.env_passthrough['HOSTCC']}  {ctx.env_passthrough['CROSS_FLAGS']} -isysroot {sysroot}"
     ctx.env_passthrough['CXX'] = f"{ctx.ccache} {ctx.env_passthrough['HOSTCXX']} {ctx.env_passthrough['CROSS_FLAGS']} -isysroot {sysroot}"
     ctx.env_passthrough['OBJC']   = ctx.env_passthrough['CC']
     ctx.env_passthrough['OBJCXX'] = ctx.env_passthrough['CXX']
 
 
-    crossfiles_dir = os.path.abspath(os.path.join(x.PROJ_ROOT, 'crossfiles', 'apple'))
+    crossfiles_dir = (Path(x.PROJ_ROOT / 'crossfiles' / 'apple')).absolute().as_posix()
     # pkgconf bin
-    ctx.cross_pkgconfig_bin = os.path.abspath(os.path.join(crossfiles_dir, 'pkgconf-wrapper'))
+    ctx.cross_pkgconfig_bin = (Path(crossfiles_dir / 'pkgconf-wrapper')).absolute().as_posix()
     # meson toolchain file
-    CROSS_TOOLCHAIN_FILE_MESON_DST = os.path.abspath(os.path.join(crossfiles_dir, f'toolchain-meson-template.{ctx.target_plat}-{_target_arch}'))
+    CROSS_TOOLCHAIN_FILE_MESON_DST = (Path(crossfiles_dir / f'toolchain-meson-template.{ctx.target_plat}-{_target_arch}')).absolute().as_posix()
     CROSS_TOOLCHAIN_FILE_MESON_SRC = f'{CROSS_TOOLCHAIN_FILE_MESON_DST}.tmpl'
     _content = Path(CROSS_TOOLCHAIN_FILE_MESON_SRC).read_text()
     _content = _content.replace('__SYSROOT__', sysroot)
@@ -345,13 +323,7 @@ def _setctx_apple(
 def _setctx_win32_mingw(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
-    if ctx.native_plat != 'linux':
-        raise NotImplementedError(f'unsupported host os: {ctx.native_plat}')
-    ctx.env_passthrough['PLATFORM_WIN32'] = True
-
-    CROSS_TOOLCHAIN_ROOT = os.getenv('CROSS_TOOLCHAIN_ROOT')
-    if not CROSS_TOOLCHAIN_ROOT:
-        raise RuntimeError('missing required env: `CROSS_TOOLCHAIN_ROOT`')
+    CROSS_TOOLCHAIN_ROOT = x._util_get_cross_toolchain_dir()
 
     ctx.cross_build_enabled = True
     ctx.target_arch = _tuple[1]
@@ -360,63 +332,59 @@ def _setctx_win32_mingw(
     if ctx.target_arch == 'amd64':
         ctx.cross_target_triple = f'x86_64-w64-mingw32'
     _target_arch = ctx.cross_target_triple[:-len('-w64-mingw32')]
-    ctx.env_passthrough['SYSROOT'] = sysroot = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, ctx.cross_target_triple))
+    ctx.env_passthrough['SYSROOT'] = (Path(CROSS_TOOLCHAIN_ROOT) / ctx.cross_target_triple).absolute().as_posix()
 
-    ctx.env_passthrough['HOSTCC']  = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'bin', 'clang'))
-    ctx.env_passthrough['HOSTCXX'] = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'bin', 'clang++'))
-    ctx.env_passthrough['HOSTCPP'] = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'bin', 'clang-cpp'))
-    ctx.env_passthrough['CC']  = f"{ctx.ccache} {os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'bin', f'{ctx.cross_target_triple}-clang'))}"
-    ctx.env_passthrough['CXX'] = f"{ctx.ccache} {os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'bin', f'{ctx.cross_target_triple}-clang++'))}"
-    ctx.env_passthrough['WINDRES'] = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'bin', f'{ctx.cross_target_triple}-windres'))
+    ctx.env_passthrough['HOSTCC']  = (Path(CROSS_TOOLCHAIN_ROOT) / 'bin' / 'clang').absolute().as_posix()
+    ctx.env_passthrough['HOSTCXX'] = (Path(CROSS_TOOLCHAIN_ROOT) / 'bin' / 'clang++').absolute().as_posix()
+    ctx.env_passthrough['HOSTCPP'] = (Path(CROSS_TOOLCHAIN_ROOT) / 'bin' / 'clang-cpp').absolute().as_posix()
+    ctx.env_passthrough['CC']  = f"{ctx.ccache} {(Path(CROSS_TOOLCHAIN_ROOT) / 'bin' / f'{ctx.cross_target_triple}-clang').absolute().as_posix()}"
+    ctx.env_passthrough['CXX'] = f"{ctx.ccache} {(Path(CROSS_TOOLCHAIN_ROOT) / 'bin' / f'{ctx.cross_target_triple}-clang++').absolute().as_posix()}"
+    ctx.env_passthrough['WINDRES'] = (Path(CROSS_TOOLCHAIN_ROOT) / 'bin' / f'{ctx.cross_target_triple}-windres').absolute().as_posix()
 
-    ctx.env_passthrough['LD'] = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'bin', f'{ctx.cross_target_triple}-ld'))
-    ctx.env_passthrough['NM'] = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'bin', f'{ctx.cross_target_triple}-nm'))
-    ctx.env_passthrough['AR'] = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'bin', f'{ctx.cross_target_triple}-ar'))
-    ctx.env_passthrough['AS'] = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'bin', f'{ctx.cross_target_triple}-as'))
-    ctx.env_passthrough['RANLIB'] = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'bin', f'{ctx.cross_target_triple}-ranlib'))
-    ctx.env_passthrough['STRIP']  = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'bin', f'{ctx.cross_target_triple}-strip'))
+    ctx.env_passthrough['LD'] = (Path(CROSS_TOOLCHAIN_ROOT) / 'bin' / f'{ctx.cross_target_triple}-ld').absolute().as_posix()
+    ctx.env_passthrough['NM'] = (Path(CROSS_TOOLCHAIN_ROOT) / 'bin' / f'{ctx.cross_target_triple}-nm').absolute().as_posix()
+    ctx.env_passthrough['AR'] = (Path(CROSS_TOOLCHAIN_ROOT) / 'bin' / f'{ctx.cross_target_triple}-ar').absolute().as_posix()
+    ctx.env_passthrough['AS'] = (Path(CROSS_TOOLCHAIN_ROOT) / 'bin' / f'{ctx.cross_target_triple}-as').absolute().as_posix()
+    ctx.env_passthrough['RANLIB'] = (Path(CROSS_TOOLCHAIN_ROOT) / 'bin' / f'{ctx.cross_target_triple}-ranlib').absolute().as_posix()
+    ctx.env_passthrough['STRIP']  = (Path(CROSS_TOOLCHAIN_ROOT) / 'bin' / f'{ctx.cross_target_triple}-strip').absolute().as_posix()
 
 
     # cmake toolchain file
     CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE')
     if not CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE:
-        CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'toolchain-cmake-template'))
+        CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = (Path(CROSS_TOOLCHAIN_ROOT) / 'toolchain-cmake-template').absolute().as_posix()
     CROSS_TOOLCHAIN_FILE_CMAKE = f'{CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE}.{_target_arch}'
     ctx.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE={CROSS_TOOLCHAIN_FILE_CMAKE}"])
     # meson toolchain file
     CROSS_TOOLCHAIN_FILE_PREFIX_MESON = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_MESON')
     if not CROSS_TOOLCHAIN_FILE_PREFIX_MESON:
-        CROSS_TOOLCHAIN_FILE_PREFIX_MESON = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'toolchain-meson-template'))
+        CROSS_TOOLCHAIN_FILE_PREFIX_MESON = (Path(CROSS_TOOLCHAIN_ROOT) / 'toolchain-meson-template').absolute().as_posix()
     CROSS_TOOLCHAIN_FILE_MESON = f'{CROSS_TOOLCHAIN_FILE_PREFIX_MESON}.{_target_arch}'
     ctx.extra_meson.extend(["--cross-file", CROSS_TOOLCHAIN_FILE_MESON])
     # pkgconf bin
     CROSS_TOOLCHAIN_PKGCONF_PREFIX = os.getenv('CROSS_TOOLCHAIN_PKGCONF_PREFIX')
     if not CROSS_TOOLCHAIN_PKGCONF_PREFIX:
-        CROSS_TOOLCHAIN_PKGCONF_PREFIX = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'pkgconf-wrapper'))
+        CROSS_TOOLCHAIN_PKGCONF_PREFIX = (Path(CROSS_TOOLCHAIN_ROOT) / 'pkgconf-wrapper').absolute().as_posix()
     ctx.cross_pkgconfig_bin = f'{CROSS_TOOLCHAIN_PKGCONF_PREFIX}.{_target_arch}'
 def _setctx_win32_msvc(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
-    if ctx.native_plat != 'windows':
-        raise NotImplementedError(f'unsupported host os: {ctx.native_plat}')
-    ctx.env_passthrough['PLATFORM_WIN32'] = True
+    ctx.extra_cmake.extend(['-G', 'Ninja'])
 
-    ctx.target_arch = ctx.native_arch
+    ctx.target_arch = x.NATIVE_ARCH
     if not _native:
         ctx.target_arch = _tuple[1]
-    ctx.cross_build_enabled = (ctx.target_arch != ctx.native_arch)
+    ctx.cross_build_enabled = (ctx.target_arch != x.NATIVE_ARCH)
     if ctx.target_arch == 'arm64':
         ctx.cross_target_triple = f'aarch64-pc-windows-msvc'
     if ctx.target_arch == 'amd64':
         ctx.cross_target_triple = f'x86_64-pc-windows-msvc'
-    ctx.env_passthrough['SYSROOT'] = ''
 
-    ctx.extra_cmake.extend(['-G', 'Ninja'])
 
     def _msvc_env_json_dump(dst: str, vs_path: str, _vs_devshell_dll: str, target_arch: str):
         # Only supports access to the VS DevShell from PowerShell
         #  - https://learn.microsoft.com/visualstudio/ide/reference/command-prompt-powershell#developer-powershell
-        _vs_devshell_arg = f'-host_arch={ctx.native_arch} -arch={target_arch}'
+        _vs_devshell_arg = f'-host_arch={x.NATIVE_ARCH} -arch={target_arch}'
 
         _pwsh_script_blk  = f'Import-Module "{_vs_devshell_dll}"; '
         _pwsh_script_blk += f'Enter-VsDevShell -VsInstallPath "{vs_path}" -SkipAutomaticLocation -DevCmdArguments "{_vs_devshell_arg}"; '
@@ -430,7 +398,7 @@ def _setctx_win32_msvc(
         ])
 
     _vs_search_path: list[str] = []
-    if _user_def := os.getenv('MSVC_INSTALL_DIR', ''):
+    if _user_def := os.getenv('MSVC_INSTALL_DIR'):
         _vs_search_path.append(_user_def)
     else:
         # auto search vs install dir
@@ -451,52 +419,38 @@ def _setctx_win32_msvc(
 
     _vs_path = ''; _vs_devshell_dll = ''
     for _dir in _vs_search_path:
-        _dll = (Path(_dir) / 'Common7' / 'Tools' / 'Microsoft.VisualStudio.DevShell.dll').absolute().as_posix()
-        if os.path.exists(_dll):
-            _vs_path = _dir; _vs_devshell_dll = _dll
+        _dll = (Path(_dir) / 'Common7' / 'Tools' / 'Microsoft.VisualStudio.DevShell.dll')
+        if _dll.exists():
+            _vs_path = _dir; _vs_devshell_dll = _dll.absolute().as_posix()
             break
     if (not _vs_path) or (not _vs_devshell_dll):
         raise NotImplementedError('Failed to search MSVC environment')
 
     _msvc_env_json_native = (Path(x.PROJ_ROOT) / '.msvc_env_native.json').absolute().as_posix()
     _msvc_env_json_target = (Path(x.PROJ_ROOT) / '.msvc_env_target.json').absolute().as_posix()
-    _msvc_env_json_dump(_msvc_env_json_native, _vs_path, _vs_devshell_dll, ctx.native_arch)
+    _msvc_env_json_dump(_msvc_env_json_native, _vs_path, _vs_devshell_dll, x.NATIVE_ARCH)
     _msvc_env_json_dump(_msvc_env_json_target, _vs_path, _vs_devshell_dll, ctx.target_arch)
 
 
     def _msvc_env_json2dict(envkey: str, src: str):
         _dict: dict[str, str] = {}
-        with open(src, 'r') as f:
-            _list = json.load(f)
-            for _kv in _list:
-                _dict[_kv['Name']] = _kv['Value']
+        _list = x._util_load_json_from_file(src)
+        for _kv in _list:
+            _dict[_kv['Name']] = _kv['Value']
         ctx.env_passthrough[envkey] = _dict
     _msvc_env_json2dict('WIN32_MSVC_ENV_NATIVE', _msvc_env_json_native)
     _msvc_env_json2dict('WIN32_MSVC_ENV_TARGET', _msvc_env_json_target)
 
     _msvc_env_native = ctx.env_passthrough['WIN32_MSVC_ENV_NATIVE']
-    ctx.env_passthrough['HOSTCC'] = os.path.abspath(os.path.join(
-        _msvc_env_native['VCToolsInstallDir'], 'bin', f"host{_msvc_env_native['VSCMD_ARG_HOST_ARCH']}", _msvc_env_native['VSCMD_ARG_HOST_ARCH'], 'cl.exe'
-    ))
+    ctx.env_passthrough['HOSTCC'] = (
+        Path(_msvc_env_native['VCToolsInstallDir']) / 'bin' / f"host{_msvc_env_native['VSCMD_ARG_HOST_ARCH']}" / _msvc_env_native['VSCMD_ARG_HOST_ARCH'] / 'cl.exe'
+    ).absolute().as_posix()
     ctx.env_passthrough['HOSTCXX'] = ctx.env_passthrough['HOSTCC']
 def _setctx_android(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
-    if ctx.native_plat != 'linux':
-        raise NotImplementedError(f'unsupported host os: {ctx.native_plat}')
-    if ctx.native_arch != 'amd64':
-        raise NotImplementedError(f'unsupported host arch: {ctx.native_arch}')
-    ctx.env_passthrough['PLATFORM_ANDROID'] = True
-
-
-    ANDROID_API_LEVEL = os.getenv('ANDROID_API_LEVEL')
-    if not ANDROID_API_LEVEL:
-        ANDROID_API_LEVEL = '30'
-
-    ANDROID_FLEXIBLE_PAGE_SIZES = os.getenv('ANDROID_FLEXIBLE_PAGE_SIZES')
-    if not ANDROID_FLEXIBLE_PAGE_SIZES:
-        ANDROID_FLEXIBLE_PAGE_SIZES = ''
-    else:
+    ANDROID_FLEXIBLE_PAGE_SIZES = os.getenv('ANDROID_FLEXIBLE_PAGE_SIZES', '')
+    if ANDROID_FLEXIBLE_PAGE_SIZES:
         ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED = ['16k']
         if ANDROID_FLEXIBLE_PAGE_SIZES in ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED:
             ctx.target_libc = ANDROID_FLEXIBLE_PAGE_SIZES
@@ -504,11 +458,11 @@ def _setctx_android(
         else:
             raise RuntimeError(f'unknown page sizes: `{ANDROID_FLEXIBLE_PAGE_SIZES}`, allowed: `{ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED}`')
 
-    CROSS_TOOLCHAIN_ROOT = os.getenv('CROSS_TOOLCHAIN_ROOT')
-    if not CROSS_TOOLCHAIN_ROOT:
-        raise RuntimeError('missing required env: `CROSS_TOOLCHAIN_ROOT`')
-    _toolchains_dir = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64'))
+    CROSS_TOOLCHAIN_ROOT = x._util_get_cross_toolchain_dir()
+    _toolchains_dir = (Path(CROSS_TOOLCHAIN_ROOT) / 'toolchains' / 'llvm' / 'prebuilt' / 'linux-x86_64').absolute().as_posix()
 
+
+    ANDROID_API_LEVEL = os.getenv('ANDROID_API_LEVEL') or '30'
 
     ctx.cross_build_enabled = True
     ctx.target_arch = _tuple[1]
@@ -520,7 +474,7 @@ def _setctx_android(
     if ctx.target_arch == 'amd64':
         if int(ANDROID_API_LEVEL) < 21: ANDROID_API_LEVEL = '21'
         ctx.cross_target_triple = f'x86_64-linux-android{ANDROID_API_LEVEL}'
-    ctx.env_passthrough['SYSROOT'] = sysroot = os.path.abspath(os.path.join(_toolchains_dir, 'sysroot'))
+    ctx.env_passthrough['SYSROOT'] = (Path(_toolchains_dir) / 'sysroot').absolute().as_posix()
     ctx.env_passthrough['ANDROID_API_LEVEL'] = ANDROID_API_LEVEL
 
 
@@ -531,29 +485,29 @@ def _setctx_android(
     if ctx.target_arch == 'armv7':
         ctx.env_passthrough['CROSS_FLAGS'] += ' -march=armv7-a -mfpu=neon-vfpv4'
 
-    ctx.env_passthrough['HOSTCC']  = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'clang'))
-    ctx.env_passthrough['HOSTCXX'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'clang++'))
-    ctx.env_passthrough['HOSTCPP'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'clang-cpp'))
-    ctx.env_passthrough['CC']  = f"{ctx.ccache} {os.path.abspath(os.path.join(_toolchains_dir, 'bin', f'{ctx.cross_target_triple}-clang'))}   {ctx.env_passthrough['CROSS_FLAGS']}"
-    ctx.env_passthrough['CXX'] = f"{ctx.ccache} {os.path.abspath(os.path.join(_toolchains_dir, 'bin', f'{ctx.cross_target_triple}-clang++'))} {ctx.env_passthrough['CROSS_FLAGS']}"
+    ctx.env_passthrough['HOSTCC']  = (Path(_toolchains_dir) / 'bin' / 'clang').absolute().as_posix()
+    ctx.env_passthrough['HOSTCXX'] = (Path(_toolchains_dir) / 'bin' / 'clang++').absolute().as_posix()
+    ctx.env_passthrough['HOSTCPP'] = (Path(_toolchains_dir) / 'bin' / 'clang-cpp').absolute().as_posix()
+    ctx.env_passthrough['CC']  = f"{ctx.ccache} {(Path(_toolchains_dir) / 'bin' / f'{ctx.cross_target_triple}-clang').absolute().as_posix()}   {ctx.env_passthrough['CROSS_FLAGS']}"
+    ctx.env_passthrough['CXX'] = f"{ctx.ccache} {(Path(_toolchains_dir) / 'bin' / f'{ctx.cross_target_triple}-clang++').absolute().as_posix()} {ctx.env_passthrough['CROSS_FLAGS']}"
 
-    ctx.env_passthrough['LD'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'ld.lld'))
-    ctx.env_passthrough['NM'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'llvm-nm'))
-    ctx.env_passthrough['AR'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'llvm-ar'))
-    ctx.env_passthrough['AS'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'llvm-as'))
-    ctx.env_passthrough['RANLIB'] = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'llvm-ranlib'))
-    ctx.env_passthrough['STRIP']  = os.path.abspath(os.path.join(_toolchains_dir, 'bin', 'llvm-strip'))
+    ctx.env_passthrough['LD'] = (Path(_toolchains_dir) / 'bin' / 'ld.lld').absolute().as_posix()
+    ctx.env_passthrough['NM'] = (Path(_toolchains_dir) / 'bin' / 'llvm-nm').absolute().as_posix()
+    ctx.env_passthrough['AR'] = (Path(_toolchains_dir) / 'bin' / 'llvm-ar').absolute().as_posix()
+    ctx.env_passthrough['AS'] = (Path(_toolchains_dir) / 'bin' / 'llvm-as').absolute().as_posix()
+    ctx.env_passthrough['RANLIB'] = (Path(_toolchains_dir) / 'bin' / 'llvm-ranlib').absolute().as_posix()
+    ctx.env_passthrough['STRIP']  = (Path(_toolchains_dir) / 'bin' / 'llvm-strip').absolute().as_posix()
 
 
     # pkgconf bin
     CROSS_TOOLCHAIN_PKGCONF_PREFIX = os.getenv('CROSS_TOOLCHAIN_PKGCONF_PREFIX')
     if not CROSS_TOOLCHAIN_PKGCONF_PREFIX:
-        CROSS_TOOLCHAIN_PKGCONF_PREFIX = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'pkgconf-wrapper'))
+        CROSS_TOOLCHAIN_PKGCONF_PREFIX = (Path(CROSS_TOOLCHAIN_ROOT) / 'pkgconf-wrapper').absolute().as_posix()
     ctx.cross_pkgconfig_bin = f'{CROSS_TOOLCHAIN_PKGCONF_PREFIX}.{ctx.cross_target_triple}'
     # cmake toolchain file
     CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE')
     if not CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE:
-        CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'toolchain-cmake-template'))
+        CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = (Path(CROSS_TOOLCHAIN_ROOT) / 'toolchain-cmake-template').absolute().as_posix()
     CROSS_TOOLCHAIN_FILE_CMAKE = f'{CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE}{ANDROID_FLEXIBLE_PAGE_SIZES}.{ctx.target_arch}'
     ctx.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE={CROSS_TOOLCHAIN_FILE_CMAKE}"])
     # ******* ******* ******* ******* ******* ******* ******* ******* *******
@@ -569,9 +523,9 @@ def _setctx_android(
     # meson toolchain file
     CROSS_TOOLCHAIN_FILE_PREFIX_MESON = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_MESON')
     if not CROSS_TOOLCHAIN_FILE_PREFIX_MESON:
-        CROSS_TOOLCHAIN_FILE_PREFIX_MESON = os.path.abspath(os.path.join(CROSS_TOOLCHAIN_ROOT, 'toolchain-meson-template'))
+        CROSS_TOOLCHAIN_FILE_PREFIX_MESON = (Path(CROSS_TOOLCHAIN_ROOT) / 'toolchain-meson-template').absolute().as_posix()
     CROSS_TOOLCHAIN_FILE_MESON_SRC = f'{CROSS_TOOLCHAIN_FILE_PREFIX_MESON}{ANDROID_FLEXIBLE_PAGE_SIZES}.{ctx.target_arch}.tmpl'
-    CROSS_TOOLCHAIN_FILE_MESON_DST = os.path.abspath(os.path.join(tempfile.gettempdir(), f'{ctx.target_plat}-toolchain-meson-template{ANDROID_FLEXIBLE_PAGE_SIZES}.{ctx.target_arch}'))
+    CROSS_TOOLCHAIN_FILE_MESON_DST = (Path(tempfile.gettempdir()) / f'{ctx.target_plat}-toolchain-meson-template{ANDROID_FLEXIBLE_PAGE_SIZES}.{ctx.target_arch}').absolute().as_posix()
     _content = Path(CROSS_TOOLCHAIN_FILE_MESON_SRC).read_text()
     _content = _content.replace('__CROSS_TOOLCHAIN_ROOT__', CROSS_TOOLCHAIN_ROOT)
     _content = _content.replace('__ANDROID_API_LEVEL__', ANDROID_API_LEVEL)
@@ -582,6 +536,7 @@ def _setctx_android(
 _targets = {
     'linux': {
         'native': True,
+        'hostos': ('linux', ),
         'setctx': _setctx_linux,
         'tuples': [
             ('linux', 'crossbuild', 'amd64', 'gnu'),
@@ -594,6 +549,7 @@ _targets = {
     },
     'macosx': {
         'native': True,
+        'hostos': ('darwin', ),
         'setctx': _setctx_apple,
         'tuples': [
             ('macosx', 'arm64'),
@@ -602,6 +558,7 @@ _targets = {
     },
     'iphoneos': {
         'native': False,
+        'hostos': ('darwin', ),
         'setctx': _setctx_apple,
         'tuples': [
             ('iphoneos', 'arm64'),
@@ -609,6 +566,7 @@ _targets = {
     },
     'iphonesimulator': {
         'native': False,
+        'hostos': ('darwin', ),
         'setctx': _setctx_apple,
         'tuples': [
             ('iphonesimulator', 'arm64'),
@@ -617,6 +575,7 @@ _targets = {
     },
     'win-msvc': {
         'native': True,
+        'hostos': ('windows', ),
         'setctx': _setctx_win32_msvc,
         'tuples': [
             ('win-msvc', 'arm64'),
@@ -625,6 +584,7 @@ _targets = {
     },
     'win-mingw': {
         'native': False,
+        'hostos': ('linux', ),
         'setctx': _setctx_win32_mingw,
         'tuples': [
             ('win-mingw', 'arm64'),
@@ -633,6 +593,7 @@ _targets = {
     },
     'android': {
         'native': False,
+        'hostos': ('linux', 'amd64'),
         'setctx': _setctx_android,
         'tuples': [
             ('android', 'arm64'),
@@ -658,7 +619,7 @@ def show_help(exitcode = 1) -> NoReturn:
     help_str  = f'Usage: {sys.argv[0]} -h|--help\n'
     help_str += f'Usage: {sys.argv[0]} [target] -m|--module <module>\n\n'
     help_str += f'Target Options:\n{_targets_help_str}\n'
-    print(help_str[:-1], file=sys.stderr)
+    x.print_stderr(help_str[:-1])
     sys.exit(exitcode)
 
 
@@ -679,23 +640,35 @@ if __name__ == "__main__":
         raise RuntimeError(f'Please declare the module to be built')
 
     argc_tgt = len(argv_tgt)
-    ctx = _ctx(module=argv_mod)
     if argc_tgt < 1:
         if False:
             pass
-        elif ctx.native_plat == 'linux':
+        elif x.NATIVE_PLAT == 'linux':
             argc_tgt +=1; argv_tgt.append('linux')
-        elif ctx.native_plat == 'darwin':
+        elif x.NATIVE_PLAT == 'darwin':
             argc_tgt +=1; argv_tgt.append('macosx')
-        elif ctx.native_plat == 'windows':
+        elif x.NATIVE_PLAT == 'windows':
             argc_tgt +=1; argv_tgt.append('win-msvc')
-        else:
-            raise NotImplementedError(f'unsupported native platform: {ctx.native_plat}')
 
+    ctx = _ctx(module=argv_mod)
     ctx.target_plat = argv_tgt[0]
     _target = _targets.get(ctx.target_plat)
     if not _target:
         raise NotImplementedError(f'unsupported target platform: {ctx.target_plat}')
+    _hostos = _target['hostos']
+    if not isinstance(_hostos, tuple) \
+        or \
+        (len(_hostos) not in [1, 2]) \
+        or \
+        ((len(_hostos) == 1) and (
+            _hostos[0] != x.NATIVE_PLAT
+        )) \
+        or \
+        ((len(_hostos) == 2) and (
+            _hostos[0] != x.NATIVE_PLAT or _hostos[1] != x.NATIVE_ARCH
+        )):
+        raise NotImplementedError(f'unsupported host os: {_hostos}')
+
 
     _tuple: Union[tuple[str, ...], None] = None
     if argc_tgt > 1:
@@ -724,4 +697,4 @@ if __name__ == "__main__":
         x._util_func__exec_python([
             (Path(x.PROJ_ROOT) / 'scripts' / 'tree.py').absolute().as_posix(), build_env['PKG_INST_DIR'], '3'
         ])
-    print(f'──── Build Done @{dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")} ────', file=sys.stderr)
+    x.print_stderr(f'──── Build Done @{dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")} ────')

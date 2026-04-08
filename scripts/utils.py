@@ -4,8 +4,10 @@
 
 import importlib.util
 import io
+import json
 import subprocess as sp
 import os
+import platform
 import sys
 
 from pathlib import Path
@@ -28,6 +30,13 @@ PKG_VER_DESC = os.getenv('DEPS_VER', '')
 CPU_COUNT = os.cpu_count() or 2
 if sys.platform == 'linux':
     CPU_COUNT = len(os.sched_getaffinity(0))
+# ----------------------------
+NATIVE_PLAT = platform.system().lower()
+if NATIVE_PLAT not in ['linux', 'darwin', 'windows']:
+    raise NotImplementedError(f'unsupported native platform: {NATIVE_PLAT}')
+NATIVE_ARCH = platform.machine().lower()
+if NATIVE_ARCH == 'x86_64':  NATIVE_ARCH = 'amd64'
+if NATIVE_ARCH == 'aarch64': NATIVE_ARCH = 'arm64'
 # ----------------------------
 # >>>> utils functions >>>>
 # ----------------------------
@@ -88,3 +97,12 @@ def _util_source_apply_patches(cwd: str, patches_dir: str):
         _util_func__subprocess(cwd=cwd, args=[
             'git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', it.absolute().as_posix(),
         ])
+
+def _util_get_cross_toolchain_dir():
+    env = 'CROSS_TOOLCHAIN_ROOT'
+    if dir := os.getenv(env):
+        return dir
+    raise RuntimeError(f'missing required env: `{env}`')
+
+def _util_load_json_from_file(filepath: str) -> dict:
+    return json.loads(Path(filepath).read_text())
