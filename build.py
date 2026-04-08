@@ -286,10 +286,10 @@ def _setctx_apple(
         ctx.extra_cmake.extend(['-D', 'CMAKE_SYSTEM_NAME=iOS'])
 
     ctx.env_passthrough['SYSROOT'] = sysroot = \
-        x._util_func__subprocess(['xcrun', '--sdk', ctx.target_plat, '--show-sdk-path'])[:-1]
+        x._util_func__subprocess(collect_stdout=True, args=['xcrun', '--sdk', ctx.target_plat, '--show-sdk-path'])[:-1]
     ctx.env_passthrough['CROSS_FLAGS'] = f'-arch {_target_arch} -m{_min_version_target_flag}-version-min={_min_version_deployment}'
-    ctx.env_passthrough['HOSTCC']  = x._util_func__subprocess(['xcrun', '-f', 'clang'])[:-1]
-    ctx.env_passthrough['HOSTCXX'] = x._util_func__subprocess(['xcrun', '-f', 'clang++'])[:-1]
+    ctx.env_passthrough['HOSTCC']  = x._util_func__subprocess(collect_stdout=True, args=['xcrun', '-f', 'clang'])[:-1]
+    ctx.env_passthrough['HOSTCXX'] = x._util_func__subprocess(collect_stdout=True, args=['xcrun', '-f', 'clang++'])[:-1]
     ctx.env_passthrough['CC']  = f"{ctx.ccache} {ctx.env_passthrough['HOSTCC']}  {ctx.env_passthrough['CROSS_FLAGS']} -isysroot {sysroot}"
     ctx.env_passthrough['CXX'] = f"{ctx.ccache} {ctx.env_passthrough['HOSTCXX']} {ctx.env_passthrough['CROSS_FLAGS']} -isysroot {sysroot}"
     ctx.env_passthrough['OBJC']   = ctx.env_passthrough['CC']
