@@ -55,13 +55,15 @@ def _util_load_pyfile(file: str, attrs: Union[list[str], None] = None):
         getattr(module, attr)
     return module
 
+def _util_func__exec_python(args: list[str]):
+    _util_func__subprocess([(Path(sys.executable)).as_posix(), *args])
 def _util_func__pip_install(packages: list[str]):
-    args = [sys.executable, '-m', 'pip', 'install', '--upgrade']
+    args = ['-m', 'pip', 'install', '--upgrade']
     if not ON_GITHUB_CI:
         args.extend(['--trusted-host', 'repo.huaweicloud.com'])
         args.extend(['-i', 'https://repo.huaweicloud.com/repository/pypi/simple'])
     args.extend(packages)
-    _util_func__subprocess(args)
+    _util_func__exec_python(args)
 
 def _util_put_pkg_version_desc(ver: str):
     if not PKG_VER_DESC:

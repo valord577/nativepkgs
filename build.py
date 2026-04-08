@@ -721,7 +721,7 @@ if __name__ == "__main__":
     for func in build_steps:
         func()
     if not x.ON_CODE_EDIT:
-        x._util_func__subprocess(args=[sys.executable,
+        x._util_func__exec_python([
             (Path(x.PROJ_ROOT) / 'scripts' / 'tree.py').resolve().as_posix(), build_env['PKG_INST_DIR'], '3'
         ])
     print(f'──── Build Done @{dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")} ────', file=sys.stderr)
