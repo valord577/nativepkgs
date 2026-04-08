@@ -28,7 +28,7 @@ _pkg_type = sys.argv[5]
 with open(_github_env, 'a') as f:
     x._util_append_ci_env(f, 'PKG_TYPE', _pkg_type)
 
-    _inst_dir = (Path(x.PROJ_ROOT) / '.gh.out' / _pkg_name).resolve().as_posix()
+    _inst_dir = (Path(x.PROJ_ROOT) / _pkg_name).resolve().as_posix()
     x._util_append_ci_env(f, 'INST_DIR', _inst_dir)
     _deps_ver = f'{_inst_dir}.ver'
     x._util_append_ci_env(f, 'DEPS_VER', _deps_ver)
