@@ -97,7 +97,6 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
 class _ctx:
     def __init__(self, module: str):
         self.module = module
-        self.script = self._lazy_import()
 
         self.native_plat = platform.system().lower()
         self.native_arch = platform.machine().lower()
@@ -139,22 +138,6 @@ class _ctx:
         else:
             self.nproc = os.cpu_count() or 2
 
-
-    def _lazy_import(self):
-        name = self.module
-        path = os.path.abspath(os.path.join(x.PROJ_ROOT, 'modules', f'{name}.py'))
-        spec = importlib.util.spec_from_file_location('', path)
-        if not spec:
-            raise ModuleNotFoundError(f'missing module[{name}]: "failed @importlib.util.spec_from_file_location"')
-        module = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(module)  # type: ignore
-        except FileNotFoundError:
-            raise ModuleNotFoundError(f'missing module[{name}]: "no such file [{path}]"')
-        if not hasattr(module, 'module_init'):
-            raise ModuleNotFoundError(f'missing module[{name}]: "no attr [module_init]"')
-        return module
-
     def getenv(self) -> dict:
         env = {
             **self.env_passthrough,
@@ -189,8 +172,8 @@ class _ctx:
 
         self.extra_meson.extend(['--prefix', env['PKG_INST_DIR']])
 
-        env['SUBPROJ_SRC'] = os.path.abspath(os.path.join(x.PROJ_ROOT, '.deps', env['PKG_NAME']))
-        env['SUBPROJ_SRC_PATCHES'] = os.path.abspath(os.path.join(x.PROJ_ROOT, 'patches', env['PKG_NAME']))
+        env['SUBPROJ_SRC'] = (Path(x.PROJ_ROOT) / '.deps' / env['PKG_NAME']).resolve().as_posix()
+        env['SUBPROJ_SRC_PATCHES'] = (Path(x.PROJ_ROOT) / 'patches' / env['PKG_NAME']).resolve().as_posix()
         return env
 
 
@@ -734,7 +717,7 @@ if __name__ == "__main__":
     shutil.rmtree(build_env['PKG_INST_DIR'], ignore_errors=True); \
         os.makedirs(build_env['PKG_INST_DIR'], exist_ok=True)
 
-    build_steps = ctx.script.module_init(build_env)
+    build_steps = x._util_load_module(f'modules.{argv_mod}', ['module_init']).module_init(build_env)
     for func in build_steps:
         func()
     if not x.ON_CODE_EDIT:

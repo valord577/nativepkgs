@@ -8,6 +8,8 @@ from scripts import utils as x
 import os
 import shlex
 
+from pathlib import Path
+
 
 CMAKE_CMD = 'cmake'
 BUILD_ENV = os.environ.copy()
@@ -74,25 +76,23 @@ def module_init(env: dict) -> list:
 
 def _source_download():
     _git_target = 'refs/tags/2.2.5'
-    if not os.path.exists(os.path.join(_subproj_src, '.git')):
+    if not (Path(_subproj_src) / '.git').exists():
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'init'])
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'remote', 'add', 'x', 'https://github.com/zlib-ng/zlib-ng.git'])
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'checkout', 'FETCH_HEAD'])
     x._util_put_pkg_version_desc(x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
 def _source_apply_patches():
-    if not os.path.exists(_subproj_src_patches):
+    if not (Path(_subproj_src_patches)).exists():
         return
     x._util_func__subprocess(cwd=_subproj_src, args=['git', 'reset', '--hard', 'HEAD'])
     x._util_func__subprocess(cwd=_subproj_src, args=['git', 'clean', '-d', '-f', '-q'])
-    with os.scandir(_subproj_src_patches) as it:
-        entries = sorted(it, key=lambda e: e.name)
-        for entry in entries:
-            if not entry.is_file():
-                continue
-            x._util_func__subprocess(cwd=_subproj_src, args=[
-                'git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path,
-            ])
+    for it in Path(_subproj_src_patches).iterdir():
+        if not it.is_file():
+            continue
+        x._util_func__subprocess(cwd=_subproj_src, args=[
+            'git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', it.resolve().as_posix(),
+        ])
 
 
 def _build_step_00():
