@@ -296,11 +296,11 @@ def _setctx_apple(
     ctx.env_passthrough['OBJCXX'] = ctx.env_passthrough['CXX']
 
 
-    crossfiles_dir = (Path(x.PROJ_ROOT / 'crossfiles' / 'apple')).absolute().as_posix()
+    crossfiles_dir = (Path(x.PROJ_ROOT) / 'crossfiles' / 'apple').absolute().as_posix()
     # pkgconf bin
-    ctx.cross_pkgconfig_bin = (Path(crossfiles_dir / 'pkgconf-wrapper')).absolute().as_posix()
+    ctx.cross_pkgconfig_bin = (Path(crossfiles_dir) / 'pkgconf-wrapper').absolute().as_posix()
     # meson toolchain file
-    CROSS_TOOLCHAIN_FILE_MESON_DST = (Path(crossfiles_dir / f'toolchain-meson-template.{ctx.target_plat}-{_target_arch}')).absolute().as_posix()
+    CROSS_TOOLCHAIN_FILE_MESON_DST = (Path(crossfiles_dir) / f'toolchain-meson-template.{ctx.target_plat}-{_target_arch}').absolute().as_posix()
     CROSS_TOOLCHAIN_FILE_MESON_SRC = f'{CROSS_TOOLCHAIN_FILE_MESON_DST}.tmpl'
     _content = Path(CROSS_TOOLCHAIN_FILE_MESON_SRC).read_text()
     _content = _content.replace('__SYSROOT__', sysroot)
