@@ -246,12 +246,12 @@ jobs:
           # keep file permissions and case sensitivity
           python3 ./.github/library_packed.py
       - name: library upload - ${{ env.PKG_NAME }}
+        working-directory: ${{ github.workspace }}/.gh.out
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.PKG_ZIPNAME }}
           path: ${{ env.PKG_ZIPNAME }}.zip
           compression-level: 0
-        working-directory: ${{ github.workspace }}/.gh.out
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
@@ -314,12 +314,12 @@ jobs:
           # keep file permissions and case sensitivity
           ./.github/library_packed.py
       - name: library upload - ${{ env.PKG_NAME }}
+        working-directory: ${{ github.workspace }}/.gh.out
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.PKG_ZIPNAME }}
           path: ${{ env.PKG_ZIPNAME }}.zip
           compression-level: 0
-        working-directory: ${{ github.workspace }}/.gh.out
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
