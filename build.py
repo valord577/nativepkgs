@@ -28,7 +28,6 @@ if sys.prefix == sys.base_prefix:
 
 
 
-PROJ_ROOT = os.path.abspath(os.path.dirname(__file__))
 # ----------------------------
 # optimize
 #  - RelWithDebInfo (default)
@@ -48,7 +47,7 @@ if PKG_TYPE not in ['static']: PKG_TYPE = 'shared'
 def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
     pkg_name: str, pkg_version: str, pkg_type: str, pkg_extra='',
 ):
-    _3rd_deps_dir = os.path.abspath(os.path.join(PROJ_ROOT, f".lib.{_env['PKG_PLATFORM']}.{_env['PKG_ARCH_LIBC']}"))
+    _3rd_deps_dir = os.path.abspath(os.path.join(x.PROJ_ROOT, f".lib.{_env['PKG_PLATFORM']}.{_env['PKG_ARCH_LIBC']}"))
     _this_lib_dir = os.path.abspath(os.path.join(_3rd_deps_dir, pkg_name))
     os.makedirs(_3rd_deps_dir, exist_ok=True)
     if False:
@@ -60,7 +59,7 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
         if pkg_extra:
             _pkg_dl_name += f"_{pkg_extra}"
 
-        _rclone = os.path.abspath(os.path.join(PROJ_ROOT, '.github', 'rclone'))
+        _rclone = os.path.abspath(os.path.join(x.PROJ_ROOT, '.github', 'rclone'))
         _rclone_src = f'r2:{os.getenv("S3_R2_STORAGE_BUCKET", "")}/packages/{pkg_name}/{pkg_version}/{_pkg_dl_name}.zip'
         _util_func__subprocess_devnul([_rclone, 'copy', _rclone_src , _3rd_deps_dir])
 
@@ -71,7 +70,7 @@ def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
             os.remove(_this_lib_dir)
         except:
             pass
-        _src = os.path.abspath(os.path.join(PROJ_ROOT, 'out', pkg_name, _env['PKG_PLATFORM'], _env['PKG_ARCH_LIBC']))
+        _src = os.path.abspath(os.path.join(x.PROJ_ROOT, 'out', pkg_name, _env['PKG_PLATFORM'], _env['PKG_ARCH_LIBC']))
         os.symlink(_src, _this_lib_dir, target_is_directory=True)
 
 
@@ -142,7 +141,7 @@ class _ctx:
 
     def _lazy_import(self):
         name = self.module
-        path = os.path.abspath(os.path.join(PROJ_ROOT, 'modules', f'{name}.py'))
+        path = os.path.abspath(os.path.join(x.PROJ_ROOT, 'modules', f'{name}.py'))
         spec = importlib.util.spec_from_file_location('', path)
         if not spec:
             raise ModuleNotFoundError(f'missing module[{name}]: "failed @importlib.util.spec_from_file_location"')
@@ -189,8 +188,8 @@ class _ctx:
 
         self.extra_meson.extend(['--prefix', env['PKG_INST_DIR']])
 
-        env['SUBPROJ_SRC'] = os.path.abspath(os.path.join(PROJ_ROOT, '.deps', env['PKG_NAME']))
-        env['SUBPROJ_SRC_PATCHES'] = os.path.abspath(os.path.join(PROJ_ROOT, 'patches', env['PKG_NAME']))
+        env['SUBPROJ_SRC'] = os.path.abspath(os.path.join(x.PROJ_ROOT, '.deps', env['PKG_NAME']))
+        env['SUBPROJ_SRC_PATCHES'] = os.path.abspath(os.path.join(x.PROJ_ROOT, 'patches', env['PKG_NAME']))
         return env
 
 
@@ -335,7 +334,7 @@ def _setctx_apple(
     ctx.env_passthrough['OBJCXX'] = ctx.env_passthrough['CXX']
 
 
-    crossfiles_dir = os.path.abspath(os.path.join(PROJ_ROOT, 'crossfiles', 'apple'))
+    crossfiles_dir = os.path.abspath(os.path.join(x.PROJ_ROOT, 'crossfiles', 'apple'))
     # pkgconf bin
     ctx.cross_pkgconfig_bin = os.path.abspath(os.path.join(crossfiles_dir, 'pkgconf-wrapper'))
     # meson toolchain file
@@ -439,7 +438,7 @@ def _setctx_win32_msvc(
         _pwsh_script_blk += f'Enter-VsDevShell -VsInstallPath "{vs_path}" -SkipAutomaticLocation -DevCmdArguments "{_vs_devshell_arg}"; '
         _pwsh_script_blk += f'Get-ChildItem Env: | Select-Object -Property Name,Value | ConvertTo-Json -Depth 1  1>{dst}; '
         x._util_func__subprocess(['pwsh',
-            '-WorkingDirectory', PROJ_ROOT,
+            '-WorkingDirectory', x.PROJ_ROOT,
             '-NonInteractive',
             '-NoProfileLoadTime',
             '-ExecutionPolicy', 'Bypass',
@@ -475,8 +474,8 @@ def _setctx_win32_msvc(
     if (not _vs_path) or (not _vs_devshell_dll):
         raise NotImplementedError('Failed to search MSVC environment')
 
-    _msvc_env_json_native = (Path(PROJ_ROOT) / '.msvc_env_native.json').resolve().as_posix()
-    _msvc_env_json_target = (Path(PROJ_ROOT) / '.msvc_env_target.json').resolve().as_posix()
+    _msvc_env_json_native = (Path(x.PROJ_ROOT) / '.msvc_env_native.json').resolve().as_posix()
+    _msvc_env_json_target = (Path(x.PROJ_ROOT) / '.msvc_env_target.json').resolve().as_posix()
     _msvc_env_json_dump(_msvc_env_json_native, _vs_path, _vs_devshell_dll, ctx.native_arch)
     _msvc_env_json_dump(_msvc_env_json_target, _vs_path, _vs_devshell_dll, ctx.target_arch)
 
@@ -739,6 +738,6 @@ if __name__ == "__main__":
         func()
     if not x.ON_CODE_EDIT:
         x._util_func__subprocess(args=[sys.executable,
-            os.path.join(PROJ_ROOT, 'scripts', 'tree.py'), build_env['PKG_INST_DIR'], '3'
+            (Path(x.PROJ_ROOT) / 'scripts' / 'tree.py').resolve().as_posix(), build_env['PKG_INST_DIR'], '3'
         ])
     print(f'──── Build Done @{dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")} ────', file=sys.stderr)
