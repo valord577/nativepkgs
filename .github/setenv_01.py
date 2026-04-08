@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 sys.path.append(
-    (Path(__file__).parent / '..').resolve().as_posix()
+    (Path(__file__).parent / '..').absolute().as_posix()
 )
 from scripts import utils as x
 # ----------------------------

@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 sys.path.append(
-    (Path(__file__).parent / '..').resolve().as_posix()
+    (Path(__file__).parent / '..').absolute().as_posix()
 )
 from scripts import utils as x
 # ----------------------------
@@ -28,7 +28,7 @@ _pkg_type = sys.argv[5]
 with open(_github_env, 'a') as f:
     x._util_append_ci_env(f, 'PKG_TYPE', _pkg_type)
 
-    _inst_dir = (Path(x.PROJ_ROOT) / _pkg_name).resolve().as_posix()
+    _inst_dir = (Path(x.PROJ_ROOT) / _pkg_name).absolute().as_posix()
     x._util_append_ci_env(f, 'INST_DIR', _inst_dir)
     _deps_ver = f'{_inst_dir}.ver'
     x._util_append_ci_env(f, 'DEPS_VER', _deps_ver)
@@ -39,7 +39,7 @@ with open(_github_env, 'a') as f:
     x._util_append_ci_env(f, 'TARGET_ARCH_LIBC', _target_arch_libc)
 
     # ccache
-    _ccache_dir = (Path(x.PROJ_ROOT) / '.ccache').resolve().as_posix()
+    _ccache_dir = (Path(x.PROJ_ROOT) / '.ccache').absolute().as_posix()
     x._util_append_ci_env(f, 'CCACHE_DIR', _ccache_dir)
     _ccache_key = f'{_pkg_name}-{_pkg_type}-{_pkg_plat}-{_target_arch_libc}'
     x._util_append_ci_env(f, 'CCACHE_KEY', _ccache_key)

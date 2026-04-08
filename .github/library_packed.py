@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 sys.path.append(
-    (Path(__file__).parent / '..').resolve().as_posix()
+    (Path(__file__).parent / '..').absolute().as_posix()
 )
 from scripts import utils as x
 # ----------------------------
@@ -19,7 +19,7 @@ _inst_dir = os.getenv('INST_DIR', '')
 _pkg_zipname = os.getenv('PKG_ZIPNAME', '')
 
 _sh = 'bash'
-_cwd = (Path(_inst_dir).parent).resolve().as_posix()
+_cwd = (Path(_inst_dir).parent).absolute().as_posix()
 if sys.platform == 'win32':
     _sh = 'C:/msys64/usr/bin/bash.exe'
     _cwd = f'$(cygpath -u "{_cwd}")'

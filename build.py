@@ -161,9 +161,9 @@ class _ctx:
         }
         if env['PKG_LIBC']:
             env['PKG_ARCH_LIBC'] = f"{env['PKG_ARCH']}-{env['PKG_LIBC']}"
-        env['3RD_DEPS_DIR'] = (Path(x.PROJ_ROOT) / f".lib.{env['PKG_PLATFORM']}.{env['PKG_ARCH_LIBC']}").resolve().as_posix()
-        env['PKG_BULD_DIR'] = (Path(x.PROJ_ROOT) / 'tmp' / env['PKG_NAME'] / env['PKG_PLATFORM'] / env['PKG_ARCH_LIBC']).resolve().as_posix()
-        env['PKG_INST_DIR'] = (Path(x.PROJ_ROOT) / 'out' / env['PKG_NAME'] / env['PKG_PLATFORM'] / env['PKG_ARCH_LIBC']).resolve().as_posix()
+        env['3RD_DEPS_DIR'] = (Path(x.PROJ_ROOT) / f".lib.{env['PKG_PLATFORM']}.{env['PKG_ARCH_LIBC']}").absolute().as_posix()
+        env['PKG_BULD_DIR'] = (Path(x.PROJ_ROOT) / 'tmp' / env['PKG_NAME'] / env['PKG_PLATFORM'] / env['PKG_ARCH_LIBC']).absolute().as_posix()
+        env['PKG_INST_DIR'] = (Path(x.PROJ_ROOT) / 'out' / env['PKG_NAME'] / env['PKG_PLATFORM'] / env['PKG_ARCH_LIBC']).absolute().as_posix()
         if x.ON_GITLAB_CI or x.ON_GITHUB_CI:
             env['PKG_INST_DIR'] = os.getenv('INST_DIR') or env['PKG_INST_DIR']
 
@@ -172,8 +172,8 @@ class _ctx:
 
         self.extra_meson.extend(['--prefix', env['PKG_INST_DIR']])
 
-        env['SUBPROJ_SRC'] = (Path(x.PROJ_ROOT) / '.deps' / env['PKG_NAME']).resolve().as_posix()
-        env['SUBPROJ_SRC_PATCHES'] = (Path(x.PROJ_ROOT) / 'patches' / env['PKG_NAME']).resolve().as_posix()
+        env['SUBPROJ_SRC'] = (Path(x.PROJ_ROOT) / '.deps' / env['PKG_NAME']).absolute().as_posix()
+        env['SUBPROJ_SRC_PATCHES'] = (Path(x.PROJ_ROOT) / 'patches' / env['PKG_NAME']).absolute().as_posix()
         return env
 
 
@@ -451,15 +451,15 @@ def _setctx_win32_msvc(
 
     _vs_path = ''; _vs_devshell_dll = ''
     for _dir in _vs_search_path:
-        _dll = (Path(_dir) / 'Common7' / 'Tools' / 'Microsoft.VisualStudio.DevShell.dll').resolve().as_posix()
+        _dll = (Path(_dir) / 'Common7' / 'Tools' / 'Microsoft.VisualStudio.DevShell.dll').absolute().as_posix()
         if os.path.exists(_dll):
             _vs_path = _dir; _vs_devshell_dll = _dll
             break
     if (not _vs_path) or (not _vs_devshell_dll):
         raise NotImplementedError('Failed to search MSVC environment')
 
-    _msvc_env_json_native = (Path(x.PROJ_ROOT) / '.msvc_env_native.json').resolve().as_posix()
-    _msvc_env_json_target = (Path(x.PROJ_ROOT) / '.msvc_env_target.json').resolve().as_posix()
+    _msvc_env_json_native = (Path(x.PROJ_ROOT) / '.msvc_env_native.json').absolute().as_posix()
+    _msvc_env_json_target = (Path(x.PROJ_ROOT) / '.msvc_env_target.json').absolute().as_posix()
     _msvc_env_json_dump(_msvc_env_json_native, _vs_path, _vs_devshell_dll, ctx.native_arch)
     _msvc_env_json_dump(_msvc_env_json_target, _vs_path, _vs_devshell_dll, ctx.target_arch)
 
@@ -722,6 +722,6 @@ if __name__ == "__main__":
         func()
     if not x.ON_CODE_EDIT:
         x._util_func__exec_python([
-            (Path(x.PROJ_ROOT) / 'scripts' / 'tree.py').resolve().as_posix(), build_env['PKG_INST_DIR'], '3'
+            (Path(x.PROJ_ROOT) / 'scripts' / 'tree.py').absolute().as_posix(), build_env['PKG_INST_DIR'], '3'
         ])
     print(f'──── Build Done @{dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")} ────', file=sys.stderr)

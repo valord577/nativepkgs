@@ -11,7 +11,7 @@ import shlex
 from pathlib import Path
 
 
-CMAKE_CMD = 'cmake'
+BUILD_CMD = 'cmake'
 BUILD_ENV = os.environ.copy()
 
 _subproj_src = ''
@@ -26,7 +26,7 @@ _pkg_buld_dir = ''
 _pkg_inst_dir = ''
 
 _extra_sysroot = ''
-_extra_args_cmake: list[str] = []
+_extra_args_build: list[str] = []
 
 def module_init(env: dict) -> list:
     global _target_pkg_type; \
@@ -47,8 +47,8 @@ def module_init(env: dict) -> list:
         _pkg_inst_dir = env['PKG_INST_DIR']
     global _extra_sysroot; \
         _extra_sysroot = env.get('SYSROOT', '')
-    global _extra_args_cmake; \
-        _extra_args_cmake = env['EXTRA_CMAKE']
+    global _extra_args_build; \
+        _extra_args_build = env[f'EXTRA_{BUILD_CMD.upper()}']
 
     if _target_pkg_type != 'static':
         raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
@@ -62,7 +62,7 @@ def module_init(env: dict) -> list:
         BUILD_ENV = env['WIN32_MSVC_ENV_TARGET']
         BUILD_ENV['CFLAGS']   = '/utf-8 /wd5105'
         BUILD_ENV['CXXFLAGS'] = BUILD_ENV['CFLAGS']
-        _extra_args_cmake.extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
+        _extra_args_build.extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
 
     return [
         _source_download,
@@ -91,12 +91,12 @@ def _source_apply_patches():
         if not it.is_file():
             continue
         x._util_func__subprocess(cwd=_subproj_src, args=[
-            'git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', it.resolve().as_posix(),
+            'git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', it.absolute().as_posix(),
         ])
 
 
 def _build_step_00():
-    args = [CMAKE_CMD, *_extra_args_cmake,
+    args = [BUILD_CMD, *_extra_args_build,
         '-S',   _subproj_src,
         '-D',  'CMAKE_BUILD_TYPE=RelWithDebInfo',
         '-D',  'BUILD_SHARED_LIBS:BOOL=0',
@@ -110,8 +110,8 @@ def _build_step_00():
     ]
     x._util_func__subprocess(env=BUILD_ENV, args=args)
 def _build_step_01():
-    args = f"{CMAKE_CMD} --build {_pkg_buld_dir} -j {x.CPU_COUNT}"
+    args = f"{BUILD_CMD} --build {_pkg_buld_dir} -j {x.CPU_COUNT}"
     x._util_func__subprocess(env=BUILD_ENV, args=shlex.split(args))
 def _build_step_02():
-    args = f"{CMAKE_CMD} --install {_pkg_buld_dir}"
+    args = f"{BUILD_CMD} --install {_pkg_buld_dir}"
     x._util_func__subprocess(env=BUILD_ENV, args=shlex.split(args))
