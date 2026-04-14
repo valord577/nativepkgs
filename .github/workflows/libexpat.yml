@@ -9,7 +9,7 @@ on:
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/libexpat.yml'
       - 'patches/libexpat/**'
-      - 'scripts/libexpat.py'
+      - 'modules/libexpat.py'
       - 'build.py'
   pull_request:
     branches:
@@ -20,12 +20,12 @@ on:
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/libexpat.yml'
       - 'patches/libexpat/**'
-      - 'scripts/libexpat.py'
+      - 'modules/libexpat.py'
       - 'build.py'
 
 jobs:
   build:
-    # if: ${{ false }}
+    if: ${{ false }}
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:

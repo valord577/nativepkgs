@@ -2,7 +2,9 @@
 
 # fmt: off
 
-import glob
+from scripts import utils as x
+# ----------------------------
+
 import os
 import shlex
 import shutil
@@ -10,17 +12,231 @@ import shutil
 from pathlib import Path
 
 
-_env: dict = {}
-_ctx: dict = {
-    'PKG_VERSION': 'unknown',
-    'PKG_INST_STRIP': '',
-    'BUILD_ENV': os.environ.copy(),
+BUILD_ENV = os.environ.copy()
 
-    'EXTRA_ARGS_CONFIGURE': [],
-}
+_subproj_src = ''
+_subproj_src_patches = ''
+
+_target_pkg_name = ''
+_target_pkg_type = ''
+_target_platform = ''
+_target_arch = ''
+_target_archlibc = ''
+
+_3rd_deps_dir = ''
+_pkg_buld_dir = ''
+_pkg_inst_dir = ''
+
+_extra_sysroot = ''
+_extra_args_build: list[str] = []
+
+_cc = ''
+_cxx = ''
+
+_cross_build_on_linux = False
+_host_cc = ''
+_windres = ''
+_pkgconf_bin = ''
+_cross_ldflags = ''
+_nm = ''
+_ar = ''
+_ranlib = ''
+_strip = ''
 
 def module_init(env: dict) -> list:
-    global _env; _env = env
+    global _target_pkg_name; \
+        _target_pkg_name = env['PKG_NAME']
+    global _target_pkg_type; \
+        _target_pkg_type = env['PKG_TYPE']
+    global _subproj_src; \
+        _subproj_src = env['SUBPROJ_SRC']
+    global _subproj_src_patches; \
+        _subproj_src_patches = env['SUBPROJ_SRC_PATCHES']
+    global _target_platform; \
+        _target_platform = env['PKG_PLATFORM']
+    global _target_arch; \
+        _target_arch = env['PKG_ARCH']
+    global _target_archlibc; \
+        _target_archlibc = env['PKG_ARCH_LIBC']
+    global _3rd_deps_dir; \
+        _3rd_deps_dir = env['3RD_DEPS_DIR']
+    global _pkg_buld_dir; \
+        _pkg_buld_dir = env['PKG_BULD_DIR']
+    global _pkg_inst_dir; \
+        _pkg_inst_dir = env['PKG_INST_DIR']
+    global _extra_sysroot; \
+        _extra_sysroot = env.get('SYSROOT', '')
+
+    global _cc; \
+        _cc = env['CC']
+    global _cxx; \
+        _cxx = env['CXX']
+
+    if _target_platform == 'linux':
+        global _cross_build_on_linux; \
+            _cross_build_on_linux = env['CROSS_BUILD_ENABLED']
+    global _host_cc; \
+        _host_cc = env.get('HOSTCC', '')
+    global _windres; \
+        _windres = env.get('WINDRES', '')
+    global _pkgconf_bin; \
+        _pkgconf_bin = env.get('CROSS_PKGCONFIG_BIN', '')
+    global _cross_ldflags; \
+        _cross_ldflags = env.get('CROSS_LDFLAGS', '')
+    global _nm; \
+        _nm = env.get('NM', '')
+    global _ar; \
+        _ar = env.get('AR', '')
+    global _ranlib; \
+        _ranlib = env.get('RANLIB', '')
+    global _strip; \
+        _strip = env.get('STRIP', '')
+
+    if _target_pkg_type != 'shared':
+        raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
+
+
+    return [
+        _source_dl_3rd_deps,
+        _source_download,
+        _build_on_code_edit,
+        _build_step_00,
+        _build_step_01,
+        # _build_step_02,
+    ]
+
+
+
+def _source_dl_3rd_deps():
+    _3rd_deps = [
+        {
+            'name': 'dav1d',
+            'type': 'static',
+            'vers': '',
+            'args': '--enable-libdav1d',
+        },
+        {
+            'name': 'mbedtls3',
+            'type': 'static',
+            'vers': '',
+            'args': '--enable-mbedtls',
+        },
+    ]
+    if _target_platform in ['linux', 'win-mingw', 'android']:
+        _3rd_deps.extend([
+            {
+                'name': 'zlib-ng',
+                'type': 'static',
+                'vers': '',
+                'args': '',
+            },
+        ])
+    if _target_platform in ['macosx', 'win-mingw']:
+        _3rd_deps.extend([
+            {
+                'name': 'sdl2',
+                'type': 'static',
+                'vers': '',
+                'args': '',
+            },
+        ])
+
+    _get_prebuilt_script = (Path(x.PROJ_ROOT) / 'scripts' / 'get_prebuilt.py').absolute().as_posix()
+    for dep in _3rd_deps:
+        _name = dep['name']; _type = dep['type']; _vers = dep['vers']; _args = dep['args']
+        x._util_func__exec_python([_get_prebuilt_script, _target_archlibc, _name, _target_platform, _vers, _type, '', _3rd_deps_dir])
+
+        if _args: _extra_args_build.append(_args)
+
+        old_pkgconf_path = BUILD_ENV.get('PKG_CONFIG_PATH', '')
+        new_pkgconf_path = (Path(_3rd_deps_dir) / _name / 'lib' / 'pkgconfig').absolute().as_posix()
+        BUILD_ENV['PKG_CONFIG_PATH'] = new_pkgconf_path + os.pathsep + old_pkgconf_path
+def _source_download():
+    _git_target = 'refs/heads/release/8.1'
+    if not (Path(_subproj_src) / '.git').exists():
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'init'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'remote', 'add', 'x', 'https://git.ffmpeg.org/ffmpeg.git'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'checkout', 'FETCH_HEAD'])
+    x._util_put_pkg_version_desc(_target_pkg_name, x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
+    x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
+def _build_on_code_edit():
+    if x.ON_CODE_EDIT:
+        global _pkg_buld_dir; \
+            _pkg_buld_dir = _subproj_src
+def _build_step_00():
+    args = [(Path(_subproj_src) / 'configure').absolute().as_posix(),
+        f'--prefix={_pkg_inst_dir}', *_extra_args_build,
+        '--disable-stripping',
+        '--enable-version3',
+        '--fatal-warnings',
+        '--disable-doc',
+        '--disable-devices',
+        '--enable-indev=lavfi',
+        '--enable-pic',
+        '--disable-libxcb',
+        '--disable-xlib',
+        '--disable-vaapi',
+        f'--cc={_cc}', f'--cxx={_cxx}',
+    ]
+    if _pkgconf_bin:
+        args.append(f'--pkg-config={_pkgconf_bin}')
+
+    if _target_platform in ['linux', 'android']:
+        _rpath = '\\$\\$ORIGIN:\\$\\$ORIGIN/../lib'
+        args.extend([
+            f"--extra-ldsoflags=-Wl,-rpath,'{_rpath}'",
+            f"--extra-ldexeflags=-Wl,-rpath,'{_rpath}'",
+        ])
+
+    _ffmpeg_target_os = _target_platform
+    if _target_platform == 'win-mingw':
+        _ffmpeg_target_os = 'mingw64'
+    elif _target_platform in ['macosx', 'iphoneos', 'iphonesimulator']:
+        _ffmpeg_target_os = 'darwin'
+        args.append('--disable-coreimage')
+
+    if _target_platform != 'linux' or _cross_build_on_linux:
+        args.extend([
+            '--enable-cross-compile',
+            f'--target-os={_ffmpeg_target_os}',
+            f'--arch={_target_arch}',
+        ])
+        if _target_platform in ['linux', 'win-mingw', 'android']:
+            args.extend([
+                f'--host-cc={_host_cc}',
+                f'--nm={_nm}',
+                f'--ar={_ar}',
+                f'--ranlib={_ranlib}',
+                f'--strip={_strip}',
+            ])
+        if _target_platform == 'android':
+            args.extend([
+                '--enable-jni',
+                '--enable-mediacodec',
+            ])
+        if _target_platform == 'win-mingw':
+            args.extend([
+                f'--windres={_windres}',
+            ])
+        else:
+            args.extend([
+                f'--extra-ldflags={_cross_ldflags}',
+            ])
+
+    x._util_func__subprocess(cwd=_pkg_buld_dir, env=BUILD_ENV, args=args)
+def _build_step_01():
+    args = f"make -j {x.CPU_COUNT} 1>/dev/null"
+    if bear := shutil.which('bear'): args = f"{bear} -- " + args
+    x._util_func__subprocess(cwd=_pkg_buld_dir, env=BUILD_ENV, args=args, shell=True)
+
+
+
+
+
+
+
+def _module_init(env: dict) -> list:
     return [
         _source_dl_3rd_deps,
         _source_download,
@@ -33,7 +249,7 @@ def module_init(env: dict) -> list:
 
 
 
-def _source_dl_3rd_deps():
+def __source_dl_3rd_deps():
     _env['FUNC_PKGC'](_ctx, _env, 'dav1d',
         '42b2b24', 'static'); _ctx['EXTRA_ARGS_CONFIGURE'].append('--enable-libdav1d')
     _env['FUNC_PKGC'](_ctx, _env, 'mbedtls',
@@ -43,7 +259,7 @@ def _source_dl_3rd_deps():
         _env['FUNC_PKGC'](_ctx, _env, 'sdl2',    '5d24957', 'static')
     if not _env.get('PLATFORM_APPLE', False):
         _env['FUNC_PKGC'](_ctx, _env, 'zlib-ng', '4254390', 'static')
-def _source_download():
+def __source_download():
     _git_target = 'refs/heads/release/8.0'
     if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
@@ -55,7 +271,7 @@ def _source_download():
     _ctx['PKG_VERSION'] = f'v{_git_target.split("/")[-1]}-{_git_ver}'
     if file_ver := os.getenv('DEPS_VER', ''):
         Path(file_ver).write_text(_ctx['PKG_VERSION'])
-def _source_apply_patches():
+def __source_apply_patches():
     if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
         return
     _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'reset', '--hard', 'HEAD'])
@@ -69,10 +285,10 @@ def _source_apply_patches():
                 args=[shutil.which('git'), 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
 
 
-def _build_clangd_dev():
-    if _env['ON_CLANGD_CK']:
+def __build_clangd_dev():
+    if x.ON_CODE_EDIT:
         _env['PKG_BULD_DIR'] = _env['SUBPROJ_SRC']
-def _build_step_00():
+def __build_step_00():
     _extra_args_configure: list[str] = _ctx['EXTRA_ARGS_CONFIGURE']
 
     # if _env['PKG_TYPE'] == 'static':
@@ -163,11 +379,11 @@ def _build_step_00():
     _ctx['BUILD_ENV']['PKG_CONFIG_PATH'] = \
         f"{os.pathsep.join(_ctx['PKG_CONFIG_PATH'])}{os.pathsep}{os.getenv('PKG_CONFIG_PATH', '')}"
     _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=args)
-def _build_step_01():
+def __build_step_01():
     args = f"{shutil.which('make')} -j {_env['PARALLEL_JOBS']} 1>/dev/null"
     if bear := shutil.which('bear'): args = f"{bear} -- " + args
     _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], shell=True, args=args)
-def _build_step_02():
+def __build_step_02():
     if not (_env['PKG_PLATFORM'] in ['iphoneos', 'iphonesimulator']):
         _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-progs'])
     _env['FUNC_SHELL_DEVNUL'](cwd=_env['PKG_BULD_DIR'], env=_ctx['BUILD_ENV'], args=[shutil.which('make'), 'install-headers'])

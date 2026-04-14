@@ -1,4 +1,4 @@
-name: dav1d
+name: mbedtls4
 on:
   push:
     branches:
@@ -7,9 +7,9 @@ on:
       - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
-      - '.github/workflows/dav1d.yml'
-      - 'patches/dav1d/**'
-      - 'modules/dav1d.py'
+      - '.github/workflows/mbedtls4.yml'
+      - 'patches/mbedtls4/**'
+      - 'modules/mbedtls4.py'
       - 'build.py'
   pull_request:
     branches:
@@ -18,9 +18,9 @@ on:
       - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
-      - '.github/workflows/dav1d.yml'
-      - 'patches/dav1d/**'
-      - 'modules/dav1d.py'
+      - '.github/workflows/mbedtls4.yml'
+      - 'patches/mbedtls4/**'
+      - 'modules/mbedtls4.py'
       - 'build.py'
 
 jobs:
@@ -28,5 +28,3 @@ jobs:
     # if: ${{ false }}
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
-    with:
-      select_platforms: "macosx, linux, win-mingw, android"

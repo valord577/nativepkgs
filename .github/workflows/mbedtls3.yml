@@ -1,4 +1,4 @@
-name: mbedtls
+name: mbedtls3
 on:
   push:
     branches:
@@ -7,9 +7,9 @@ on:
       - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
-      - '.github/workflows/mbedtls.yml'
-      - 'patches/mbedtls/**'
-      - 'scripts/mbedtls.py'
+      - '.github/workflows/mbedtls3.yml'
+      - 'patches/mbedtls3/**'
+      - 'modules/mbedtls3.py'
       - 'build.py'
   pull_request:
     branches:
@@ -18,9 +18,9 @@ on:
       - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
-      - '.github/workflows/mbedtls.yml'
-      - 'patches/mbedtls/**'
-      - 'scripts/mbedtls.py'
+      - '.github/workflows/mbedtls3.yml'
+      - 'patches/mbedtls3/**'
+      - 'modules/mbedtls3.py'
       - 'build.py'
 
 jobs:

@@ -2,40 +2,29 @@
 
 # fmt: off
 
+import sys
+from pathlib import Path
+
+sys.dont_write_bytecode = True
+sys.path.append(
+    (Path(__file__).parent / '..').absolute().as_posix()
+)
+from scripts import utils as x
+# ----------------------------
+
 import os
 import shutil
-import subprocess as sp
-import sys
-from typing import NoReturn, Union
 
 
-_basedir = os.path.abspath(os.path.dirname(__file__))
-_rclone = os.path.abspath(os.path.join(_basedir, 'rclone'))
+_rclone = (Path(x.PROJ_ROOT) / '.github' / 'rclone').absolute().as_posix()
 _s3_storage_bucket = os.getenv('S3_R2_STORAGE_BUCKET', '')
 
-def _print(msg: str):
-    print(msg, file=sys.stderr)
-def show_errmsg(errmsg: str) -> NoReturn:
-    _print(f'[e] {errmsg}')
-    sys.exit(1)
 
+_ccache_dir = sys.argv[1]
+_ccache_key = sys.argv[2]
 
-def _util_func__subprocess_devnul(args: list[str],
-    cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False
-):
-    print(f'>>>> subprocess cmdline: {args}', file=sys.stderr)
-    proc = sp.run(args=args, cwd=cwd, env=env, shell=shell)
-    if proc.returncode != 0:
-        print(f'>>>> subprocess exitcode: {proc.returncode}', file=sys.stderr)
-        sys.exit(proc.returncode)
-
-
-if __name__ == "__main__":
-    _ccache_dir = sys.argv[1]
-    _ccache_key = sys.argv[2]
-
-    _src = f'r2:{_s3_storage_bucket}/ccache/{_ccache_key}.tar.xz'
-    _dst = os.path.abspath(os.path.join(_basedir, f'{_ccache_key}.tar.xz'))
-    _util_func__subprocess_devnul(args=[_rclone, 'copyto', _src, _dst])
-    if os.path.exists(_dst):
-        shutil.unpack_archive(_dst, extract_dir=os.path.abspath(os.path.dirname(_ccache_dir)))
+_src = f'r2:{_s3_storage_bucket}/ccache/{_ccache_key}.tar.xz'
+_dst = (Path(x.PROJ_ROOT) / f'{_ccache_key}.tar.xz').absolute().as_posix()
+x._util_func__subprocess(args=[_rclone, 'copyto', _src, _dst])
+if (Path(_dst)).exists():
+    shutil.unpack_archive(_dst, extract_dir=(Path(_ccache_dir).parent).absolute().as_posix())

@@ -9,7 +9,7 @@ on:
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/zlib-ng.yml'
       - 'patches/zlib-ng/**'
-      - 'scripts/zlib-ng.py'
+      - 'modules/zlib-ng.py'
       - 'build.py'
   pull_request:
     branches:
@@ -20,7 +20,7 @@ on:
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/zlib-ng.yml'
       - 'patches/zlib-ng/**'
-      - 'scripts/zlib-ng.py'
+      - 'modules/zlib-ng.py'
       - 'build.py'
 
 jobs:
