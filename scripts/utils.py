@@ -25,7 +25,6 @@ ON_GITLAB_CI = os.getenv('GITLAB_CI', '')      == 'true'
 ON_GITHUB_CI = os.getenv('GITHUB_ACTIONS', '') == 'true'
 ON_CODE_EDIT = (not ON_GITLAB_CI) and (not ON_GITHUB_CI) \
     and (os.getenv('CLANGD_CODE_COMPLETION', '0') == '1')
-PKG_VER_DESC = os.getenv('DEPS_VER', '')
 # ----------------------------
 CPU_COUNT = os.cpu_count() or 2
 if sys.platform == 'linux':
@@ -74,29 +73,40 @@ def _util_func__pip_install(packages: list[str]):
     args.extend(packages)
     _util_func__exec_python(args)
 
-def _util_put_pkg_version_desc(ver: str):
-    if not PKG_VER_DESC:
-        return
-    Path(PKG_VER_DESC).write_text(ver, encoding='utf-8')
-def _util_get_pkg_version_desc() -> str:
-    if not PKG_VER_DESC:
-        return ''
-    return Path(PKG_VER_DESC).read_text(encoding='utf-8').strip()
+def _util_put_pkg_version_desc(pkg_name: str, ver: str):
+    (Path(PROJ_ROOT) / '.deps' / f'{pkg_name}.ver') \
+        .write_text(ver, encoding='utf-8')
+def _util_get_pkg_version_desc(pkg_name: str) -> str:
+    return (Path(PROJ_ROOT) / '.deps' / f'{pkg_name}.ver') \
+        .read_text(encoding='utf-8').strip()
 
 def _util_append_ci_env(f: io.TextIOWrapper, k, v):
     print_stderr(f'{k}: {v}'); f.write(f'{k}={v}\n')
 
+def _util_source_cleanup(cwd: str):
+    _util_func__subprocess(cwd=cwd, args=['git', 'reset', '--hard', 'HEAD'])
+    _util_func__subprocess(cwd=cwd, args=['git', 'clean', '-d', '-f', '-q'])
 def _util_source_apply_patches(cwd: str, patches_dir: str):
     if not (Path(patches_dir)).exists():
         return
-    _util_func__subprocess(cwd=cwd, args=['git', 'reset', '--hard', 'HEAD'])
-    _util_func__subprocess(cwd=cwd, args=['git', 'clean', '-d', '-f', '-q'])
+    _util_source_cleanup(cwd)
+
+    patches: list[Path] = []
     for it in Path(patches_dir).iterdir():
         if not it.is_file():
             continue
+        patches.append(it)
+    patches_sorted = sorted(patches, key=lambda p: p.name)
+    for it in patches_sorted:
         _util_func__subprocess(cwd=cwd, args=[
             'git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', it.absolute().as_posix(),
         ])
+def _util_source_sync_submodules(submodules: list[dict[str, str]]):
+    for _submodule in submodules:
+        repo = _submodule['repo']; path = _submodule['path']; cwd  = _submodule['cwd']; url  = _submodule['url']
+        _util_func__subprocess(cwd=cwd, args=['git', 'config', '--local', f'submodule.{repo}.url', url])
+        _util_func__subprocess(cwd=cwd, args=['git', 'submodule', 'sync', '--', path])
+        _util_func__subprocess(cwd=cwd, args=['git', 'submodule', 'update', '--init', '--depth=1', '--single-branch', '-f', '--', path])
 
 def _util_get_cross_toolchain_dir():
     env = 'CROSS_TOOLCHAIN_ROOT'

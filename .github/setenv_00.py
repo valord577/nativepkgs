@@ -25,13 +25,12 @@ _pkg_arch = sys.argv[3]
 _pkg_libc = sys.argv[4]
 _pkg_type = sys.argv[5]
 
+
 with open(_github_env, 'a') as f:
     x._util_append_ci_env(f, 'PKG_TYPE', _pkg_type)
 
     _inst_dir = (Path(x.PROJ_ROOT) / _pkg_name).absolute().as_posix()
     x._util_append_ci_env(f, 'INST_DIR', _inst_dir)
-    _deps_ver = f'{_inst_dir}.ver'
-    x._util_append_ci_env(f, 'DEPS_VER', _deps_ver)
 
     _target_arch_libc = f'{_pkg_arch}'
     if _pkg_plat in ['linux', 'android'] and _pkg_libc:

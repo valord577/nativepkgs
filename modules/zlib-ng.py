@@ -17,6 +17,7 @@ BUILD_ENV = os.environ.copy()
 _subproj_src = ''
 _subproj_src_patches = ''
 
+_target_pkg_name = ''
 _target_pkg_type = ''
 _target_platform = ''
 _target_archlibc = ''
@@ -29,6 +30,8 @@ _extra_sysroot = ''
 _extra_args_build: list[str] = []
 
 def module_init(env: dict) -> list:
+    global _target_pkg_name; \
+        _target_pkg_name = env['PKG_NAME']
     global _target_pkg_type; \
         _target_pkg_type = env['PKG_TYPE']
     global _subproj_src; \
@@ -80,7 +83,7 @@ def _source_download():
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'remote', 'add', 'x', 'https://github.com/zlib-ng/zlib-ng.git'])
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'checkout', 'FETCH_HEAD'])
-    x._util_put_pkg_version_desc(x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
+    x._util_put_pkg_version_desc(_target_pkg_name, x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
     x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
 def _build_step_00():
     args = [BUILD_CMD, *_extra_args_build,

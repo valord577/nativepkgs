@@ -22,6 +22,8 @@ if sys.version_info < (3, 6):
     raise RuntimeError(f'Required Python Interpreter ≥ 3.6')
 if sys.prefix == sys.base_prefix:
     raise RuntimeError(f'Please run this script in a [virtual environment](https://docs.python.org/3/library/venv.html)')
+if not os.getenv('VIRTUAL_ENV'):
+    raise RuntimeError(f'Please activate the virtual environment first')
 
 
 

@@ -1,0 +1,228 @@
+diff --git a/library/CMakeLists.txt b/library/CMakeLists.txt
+index f1b7c74..4400e05 100644
+--- a/library/CMakeLists.txt
++++ b/library/CMakeLists.txt
+@@ -263,113 +263,113 @@ if(USE_STATIC_MBEDTLS_LIBRARY AND USE_SHARED_MBEDTLS_LIBRARY)
+     add_dependencies(${lib_target} ${mbedx509_static_target} ${mbedtls_static_target})
+ endif()
+ 
+-foreach(target IN LISTS tf_psa_crypto_library_targets)
+-    get_target_property(target_type ${target} TYPE)
+-    if (target_type STREQUAL STATIC_LIBRARY)
+-        add_custom_command(
+-            TARGET ${mbedtls_target} POST_BUILD
+-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+-                    $<TARGET_FILE:${target}>
+-                    $<TARGET_FILE_NAME:${target}>
+-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+-                    $<TARGET_FILE:${target}>
+-                    "libmbedcrypto.a"
+-        )
+-        install(FILES $<TARGET_FILE:${target}>
+-                DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-                RENAME "libmbedcrypto.a"
+-        )
+-    else()
+-        # Copy the crypto shared library from tf-psa-crypto:
+-        # - ".so.<VERSION>" on Unix
+-        # - ".dylib" on macOS
+-        # - ".dll" on Windows
+-        # The full path to the file is given by $<TARGET_FILE:${target}>.
+-        #
+-        # On systems that use .so versioning, also create the symbolic links
+-        # ".so.<SOVERSION>" and ".so", which correspond to
+-        # $<TARGET_SONAME_FILE_NAME:${target}> and $<TARGET_LINKER_FILE_NAME:${target}>,
+-        # respectively.
+-        #
+-        # On Windows, also copy the ".lib" file, whose full path is
+-        # $<TARGET_LINKER_FILE:${target}>.
+-        #
+-        # Provide also the crypto libraries under their historical names:
+-        # "libmbedcrypto.*"
+-        add_custom_command(
+-            TARGET ${mbedtls_target} POST_BUILD
+-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+-                    $<TARGET_FILE:${target}>
+-                    $<TARGET_FILE_NAME:${target}>
+-        )
+-        if(APPLE)
+-            add_custom_command(
+-                TARGET ${mbedtls_target} POST_BUILD
+-                COMMAND ${CMAKE_COMMAND} -E create_symlink
+-                $<TARGET_FILE_NAME:${target}>
+-                libmbedcrypto.dylib
+-            )
+-            install(FILES $<TARGET_FILE:${target}>
+-                    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-                    RENAME "libmbedcrypto.dylib"
+-            )
+-        elseif(WIN32 AND NOT CYGWIN)
+-            add_custom_command(
+-                TARGET ${mbedtls_target} POST_BUILD
+-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+-                        $<TARGET_FILE:${target}>
+-                        libmbedcrypto.dll
+-            )
+-            add_custom_command(
+-                TARGET ${mbedtls_target} POST_BUILD
+-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+-                        $<TARGET_LINKER_FILE:${target}>
+-                        $<TARGET_LINKER_FILE_NAME:${target}>
+-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+-                        $<TARGET_LINKER_FILE:${target}>
+-                        libmbedcrypto.lib
+-            )
+-            install(FILES $<TARGET_FILE:${target}>
+-                    DESTINATION ${CMAKE_INSTALL_BINDIR}
+-                    RENAME "libmbedcrypto.dll"
+-            )
+-            install(FILES $<TARGET_LINKER_FILE:${target}>
+-                    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-                    RENAME "libmbedcrypto.lib"
+-            )
+-        else()
+-            add_custom_command(
+-              TARGET ${mbedtls_target} POST_BUILD
+-              COMMAND ${CMAKE_COMMAND} -E create_symlink
+-                      $<TARGET_FILE_NAME:${target}>
+-                      $<TARGET_SONAME_FILE_NAME:${target}>
+-              COMMAND ${CMAKE_COMMAND} -E create_symlink
+-                      $<TARGET_SONAME_FILE_NAME:${target}>
+-                      $<TARGET_LINKER_FILE_NAME:${target}>
+-              COMMAND ${CMAKE_COMMAND} -E create_symlink
+-                      $<TARGET_FILE_NAME:${target}>
+-                      libmbedcrypto.so.${MBEDTLS_VERSION}
+-              COMMAND ${CMAKE_COMMAND} -E create_symlink
+-                      libmbedcrypto.so.${MBEDTLS_VERSION}
+-                      libmbedcrypto.so.${MBEDTLS_CRYPTO_SOVERSION}
+-              COMMAND ${CMAKE_COMMAND} -E create_symlink
+-                      libmbedcrypto.so.${MBEDTLS_CRYPTO_SOVERSION}
+-                      libmbedcrypto.so
+-            )
+-            install(FILES $<TARGET_FILE:${target}>
+-                    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-                    RENAME "libmbedcrypto.so.${MBEDTLS_VERSION}"
+-            )
+-            install(CODE "
+-                set(_libdir \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}\")
+-
+-                execute_process(COMMAND \"\${CMAKE_COMMAND}\" -E create_symlink
+-                                \"libmbedcrypto.so.${MBEDTLS_VERSION}\"
+-                                \${_libdir}/libmbedcrypto.so.${MBEDTLS_CRYPTO_SOVERSION})
+-                execute_process(COMMAND \"\${CMAKE_COMMAND}\" -E create_symlink
+-                                \"libmbedcrypto.so.${MBEDTLS_CRYPTO_SOVERSION}\"
+-                                \${_libdir}/libmbedcrypto.so)
+-            ")
+-        endif()
+-    endif()
+-endforeach(target)
++#foreach(target IN LISTS tf_psa_crypto_library_targets)
++#    get_target_property(target_type ${target} TYPE)
++#    if (target_type STREQUAL STATIC_LIBRARY)
++#        add_custom_command(
++#            TARGET ${mbedtls_target} POST_BUILD
++#            COMMAND ${CMAKE_COMMAND} -E copy_if_different
++#                    $<TARGET_FILE:${target}>
++#                    $<TARGET_FILE_NAME:${target}>
++#            COMMAND ${CMAKE_COMMAND} -E copy_if_different
++#                    $<TARGET_FILE:${target}>
++#                    "libmbedcrypto.a"
++#        )
++#        install(FILES $<TARGET_FILE:${target}>
++#                DESTINATION ${CMAKE_INSTALL_LIBDIR}
++#                RENAME "libmbedcrypto.a"
++#        )
++#    else()
++#        # Copy the crypto shared library from tf-psa-crypto:
++#        # - ".so.<VERSION>" on Unix
++#        # - ".dylib" on macOS
++#        # - ".dll" on Windows
++#        # The full path to the file is given by $<TARGET_FILE:${target}>.
++#        #
++#        # On systems that use .so versioning, also create the symbolic links
++#        # ".so.<SOVERSION>" and ".so", which correspond to
++#        # $<TARGET_SONAME_FILE_NAME:${target}> and $<TARGET_LINKER_FILE_NAME:${target}>,
++#        # respectively.
++#        #
++#        # On Windows, also copy the ".lib" file, whose full path is
++#        # $<TARGET_LINKER_FILE:${target}>.
++#        #
++#        # Provide also the crypto libraries under their historical names:
++#        # "libmbedcrypto.*"
++#        add_custom_command(
++#            TARGET ${mbedtls_target} POST_BUILD
++#            COMMAND ${CMAKE_COMMAND} -E copy_if_different
++#                    $<TARGET_FILE:${target}>
++#                    $<TARGET_FILE_NAME:${target}>
++#        )
++#        if(APPLE)
++#            add_custom_command(
++#                TARGET ${mbedtls_target} POST_BUILD
++#                COMMAND ${CMAKE_COMMAND} -E create_symlink
++#                $<TARGET_FILE_NAME:${target}>
++#                libmbedcrypto.dylib
++#            )
++#            install(FILES $<TARGET_FILE:${target}>
++#                    DESTINATION ${CMAKE_INSTALL_LIBDIR}
++#                    RENAME "libmbedcrypto.dylib"
++#            )
++#        elseif(WIN32 AND NOT CYGWIN)
++#            add_custom_command(
++#                TARGET ${mbedtls_target} POST_BUILD
++#                COMMAND ${CMAKE_COMMAND} -E copy_if_different
++#                        $<TARGET_FILE:${target}>
++#                        libmbedcrypto.dll
++#            )
++#            add_custom_command(
++#                TARGET ${mbedtls_target} POST_BUILD
++#                COMMAND ${CMAKE_COMMAND} -E copy_if_different
++#                        $<TARGET_LINKER_FILE:${target}>
++#                        $<TARGET_LINKER_FILE_NAME:${target}>
++#                COMMAND ${CMAKE_COMMAND} -E copy_if_different
++#                        $<TARGET_LINKER_FILE:${target}>
++#                        libmbedcrypto.lib
++#            )
++#            install(FILES $<TARGET_FILE:${target}>
++#                    DESTINATION ${CMAKE_INSTALL_BINDIR}
++#                    RENAME "libmbedcrypto.dll"
++#            )
++#            install(FILES $<TARGET_LINKER_FILE:${target}>
++#                    DESTINATION ${CMAKE_INSTALL_LIBDIR}
++#                    RENAME "libmbedcrypto.lib"
++#            )
++#        else()
++#            add_custom_command(
++#              TARGET ${mbedtls_target} POST_BUILD
++#              COMMAND ${CMAKE_COMMAND} -E create_symlink
++#                      $<TARGET_FILE_NAME:${target}>
++#                      $<TARGET_SONAME_FILE_NAME:${target}>
++#              COMMAND ${CMAKE_COMMAND} -E create_symlink
++#                      $<TARGET_SONAME_FILE_NAME:${target}>
++#                      $<TARGET_LINKER_FILE_NAME:${target}>
++#              COMMAND ${CMAKE_COMMAND} -E create_symlink
++#                      $<TARGET_FILE_NAME:${target}>
++#                      libmbedcrypto.so.${MBEDTLS_VERSION}
++#              COMMAND ${CMAKE_COMMAND} -E create_symlink
++#                      libmbedcrypto.so.${MBEDTLS_VERSION}
++#                      libmbedcrypto.so.${MBEDTLS_CRYPTO_SOVERSION}
++#              COMMAND ${CMAKE_COMMAND} -E create_symlink
++#                      libmbedcrypto.so.${MBEDTLS_CRYPTO_SOVERSION}
++#                      libmbedcrypto.so
++#            )
++#            install(FILES $<TARGET_FILE:${target}>
++#                    DESTINATION ${CMAKE_INSTALL_LIBDIR}
++#                    RENAME "libmbedcrypto.so.${MBEDTLS_VERSION}"
++#            )
++#            install(CODE "
++#                set(_libdir \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}\")
++#
++#                execute_process(COMMAND \"\${CMAKE_COMMAND}\" -E create_symlink
++#                                \"libmbedcrypto.so.${MBEDTLS_VERSION}\"
++#                                \${_libdir}/libmbedcrypto.so.${MBEDTLS_CRYPTO_SOVERSION})
++#                execute_process(COMMAND \"\${CMAKE_COMMAND}\" -E create_symlink
++#                                \"libmbedcrypto.so.${MBEDTLS_CRYPTO_SOVERSION}\"
++#                                \${_libdir}/libmbedcrypto.so)
++#            ")
++#        endif()
++#    endif()
++#endforeach(target)
