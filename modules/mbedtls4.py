@@ -66,7 +66,7 @@ def module_init(env: dict) -> list:
         BUILD_ENV['ANDROID_API_LEVEL'] = env['ANDROID_API_LEVEL']
     elif _target_platform == 'win-msvc':
         BUILD_ENV = env['WIN32_MSVC_ENV_TARGET']
-        BUILD_ENV['CFLAGS']   = '/utf-8 /wd5105'
+        BUILD_ENV['CFLAGS']   = '/utf-8 /wd4146'
         BUILD_ENV['CXXFLAGS'] = BUILD_ENV['CFLAGS']
         _extra_args_build.extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
 
@@ -126,7 +126,7 @@ def _source_set_features():
     _config_script = (Path(_subproj_src) / 'scripts' / 'config.py').absolute().as_posix()
 
     x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_HAVE_SSE2'])
-    if _target_arch == 'arm64':
+    if _target_arch == 'arm64' and _target_platform != 'win-msvc':
         x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_SHA256_USE_ARMV8_A_CRYPTO_ONLY'])
         x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_SHA512_USE_A64_CRYPTO_ONLY'])
 
