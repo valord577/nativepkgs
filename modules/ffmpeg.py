@@ -112,13 +112,13 @@ def _source_dl_3rd_deps():
         {
             'name': 'dav1d',
             'type': 'static',
-            'vers': '',
+            'vers': 'b546257',
             'args': '--enable-libdav1d',
         },
         {
             'name': 'mbedtls3',
             'type': 'static',
-            'vers': '',
+            'vers': '0bebf8b',
             'args': '--enable-mbedtls',
         },
     ]
@@ -127,8 +127,7 @@ def _source_dl_3rd_deps():
             {
                 'name': 'zlib-ng',
                 'type': 'static',
-                'vers': '',
-                'args': '',
+                'vers': '1273109',
             },
         ])
     if _target_platform in ['macosx', 'win-mingw']:
@@ -136,14 +135,13 @@ def _source_dl_3rd_deps():
             {
                 'name': 'sdl2',
                 'type': 'static',
-                'vers': '',
-                'args': '',
+                'vers': '1c4ea7d',
             },
         ])
 
     _get_prebuilt_script = (Path(x.PROJ_ROOT) / 'scripts' / 'get_prebuilt.py').absolute().as_posix()
     for dep in _3rd_deps:
-        _name = dep['name']; _type = dep['type']; _vers = dep['vers']; _args = dep['args']
+        _name = dep['name']; _type = dep['type']; _vers = dep['vers']; _args = dep.get('args', '')
         x._util_func__exec_python([_get_prebuilt_script, _target_archlibc, _name, _target_platform, _vers, _type, '', _3rd_deps_dir])
 
         if _args: _extra_args_build.append(_args)
