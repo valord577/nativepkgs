@@ -126,13 +126,13 @@ def _source_set_features():
     _config_script = (Path(_subproj_src) / 'scripts' / 'config.py').absolute().as_posix()
 
     x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_HAVE_SSE2'])
-    x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_DEPRECATED_WARNING'])
-
-    #x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_PSA_P256M_DRIVER_ENABLED'])
-    x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_ECDH_VARIANT_EVEREST_ENABLED'])
     if _target_arch == 'arm64':
         x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_SHA256_USE_ARMV8_A_CRYPTO_ONLY'])
         x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_SHA512_USE_A64_CRYPTO_ONLY'])
+
+    #x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_PSA_P256M_DRIVER_ENABLED'])
+    if _target_arch != 'armv7':
+        x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_ECDH_VARIANT_EVEREST_ENABLED'])
 
     x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_SSL_PROTO_TLS1_3'])
     x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_SSL_TLS1_3_COMPATIBILITY_MODE'])
@@ -141,21 +141,8 @@ def _source_set_features():
     x._util_func__exec_python([_config_script, 'unset', 'MBEDTLS_SELF_TEST'])
     x._util_func__exec_python([_config_script, 'unset', 'MBEDTLS_SSL_RENEGOTIATION'])
 
-
-    # if _env['PKG_PLATFORM'] == 'win-msvc':
-    #     _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_DEPRECATED_WARNING'])
-    #     _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT'])
-    #     _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_SHA512_USE_A64_CRYPTO_IF_PRESENT'])
-    # if _env['PKG_PLATFORM'] == 'win-mingw':
-    #     _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_SHA256_USE_A64_CRYPTO_IF_PRESENT'])
-    #     _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_SHA512_USE_A64_CRYPTO_IF_PRESENT'])
-    # if _env['PKG_PLATFORM'] == 'linux':
-    #     if _env['PKG_ARCH'] == 'armv7':
-    #         _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_ECDH_VARIANT_EVEREST_ENABLED'])
-    # if _env['PKG_PLATFORM'] == 'android':
-    #     if _env['PKG_ARCH'] == 'armv7':
-    #         _env['FUNC_SHELL_DEVNUL'](args=[sys.executable, _config_script, 'unset', 'MBEDTLS_ECDH_VARIANT_EVEREST_ENABLED'])
-
+    if _target_platform != 'win-msvc':
+        x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_DEPRECATED_WARNING'])
 def _build_step_00():
     args = [BUILD_CMD, *_extra_args_build,
         '-S',   _subproj_src,
