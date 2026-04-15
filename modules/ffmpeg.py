@@ -105,8 +105,8 @@ def module_init(env: dict) -> list:
         _source_dl_3rd_deps,
         _source_download,
         _build_on_code_edit,
-        # _build_step_00,
-        # _build_step_01,
+        _build_step_00,
+        _build_step_01,
         _build_step_02,
     ]
 
