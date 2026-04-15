@@ -12,19 +12,14 @@ sys.path.append(
 from scripts import utils as x
 # ----------------------------
 
-import os
 import shutil
 
 
-_rclone = (Path(x.PROJ_ROOT) / '.github' / 'rclone').absolute().as_posix()
-_s3_storage_bucket = os.getenv('S3_R2_STORAGE_BUCKET', '')
-
-
-_ccache_dir = sys.argv[1]
+_ccache_dir = Path(sys.argv[1])
 _ccache_key = sys.argv[2]
 
-_src = f'r2:{_s3_storage_bucket}/ccache/{_ccache_key}.tar.xz'
+_src = f'r2:{x.S3_R2_STORAGE_BUCKET}/ccache/{_ccache_key}.tar.xz'
 _dst = (Path(x.PROJ_ROOT) / f'{_ccache_key}.tar.xz').absolute().as_posix()
-x._util_func__subprocess(args=[_rclone, 'copyto', _src, _dst])
+x._util_func__subprocess(args=[x.RCLONE_EXEC.absolute().as_posix(), 'copyto', _src, _dst])
 if (Path(_dst)).exists():
-    shutil.unpack_archive(_dst, extract_dir=(Path(_ccache_dir).parent).absolute().as_posix())
+    shutil.unpack_archive(_dst, extract_dir=(_ccache_dir.parent).absolute().as_posix())

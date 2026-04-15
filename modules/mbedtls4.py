@@ -52,7 +52,7 @@ def module_init(env: dict) -> list:
     global _pkg_inst_dir; \
         _pkg_inst_dir = env['PKG_INST_DIR']
     global _extra_sysroot; \
-        _extra_sysroot = env.get('SYSROOT', '')
+        _extra_sysroot = env['SYSROOT']
     global _extra_args_build; \
         _extra_args_build = env[f'EXTRA_{BUILD_CMD.upper()}']
 

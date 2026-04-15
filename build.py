@@ -108,6 +108,23 @@ class _ctx:
         self.cross_target_triple = ''
         self.cross_pkgconfig_bin = ''
 
+        self.cc = ''
+        self.cxx = ''
+        self.cpp = ''
+        self.host_cc = ''
+        self.host_cxx = ''
+        self.host_cpp = ''
+        self.cross_ldflags = ''
+        self.sysroot = ''
+        self._winres = ''
+        self._ld = ''
+        self._nm = ''
+        self._ar = ''
+        self._as = ''
+        self._ranlib  = ''
+        self._strip   = ''
+        self._objcopy = ''
+
         self.extra_cmake.extend(['-D', 'CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON'])
         self.extra_cmake.extend(['-D', 'CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON'])
         self.extra_cmake.extend(['-D', 'CMAKE_INSTALL_LIBDIR:PATH=lib'])
@@ -119,30 +136,39 @@ class _ctx:
         self.extra_meson.extend(['-Db_pie=true'])
         self.extra_meson.extend(['-Db_ndebug=true'])
 
-        self.ccache = ''
-        if ccache := shutil.which('ccache'):
-            self.ccache = ccache
+        self.ccache = shutil.which('ccache') or ''
         if self.ccache:
             self.extra_cmake.extend(['-D', 'CMAKE_C_COMPILER_LAUNCHER=ccache'])
             self.extra_cmake.extend(['-D', 'CMAKE_CXX_COMPILER_LAUNCHER=ccache'])
 
-        if sys.platform == 'linux':
-            self.nproc = len(os.sched_getaffinity(0))
-        else:
-            self.nproc = os.cpu_count() or 2
-
     def getenv(self) -> dict:
-        env = {
+        _target_archlibc = self.target_arch
+        if self.target_libc:
+            _target_archlibc = f'{self.target_arch}-{self.target_libc}'
+        _3rd_deps_dir = (Path(x.PROJ_ROOT) / f'.lib.{self.target_plat}.{_target_archlibc}').absolute().as_posix()
+        _pkg_buld_dir = (Path(x.PROJ_ROOT) / 'tmp' / self.module / self.target_plat / _target_archlibc).absolute().as_posix()
+        _pkg_inst_dir = (Path(x.PROJ_ROOT) / 'out' / self.module / self.target_plat / _target_archlibc).absolute().as_posix()
+        if x.ON_GITLAB_CI or x.ON_GITHUB_CI:
+            _pkg_inst_dir = os.getenv('INST_DIR') or _pkg_inst_dir
+
+        _subproj_src = (Path(x.PROJ_ROOT) / '.deps' / self.module).absolute().as_posix()
+        _subproj_src_patches = (Path(x.PROJ_ROOT) / 'patches' / self.module).absolute().as_posix()
+
+
+        self.extra_cmake.extend(['-B', _pkg_buld_dir])
+        self.extra_cmake.extend(['-D', f'CMAKE_INSTALL_PREFIX={_pkg_inst_dir}'])
+
+        self.extra_meson.extend(['--prefix', _pkg_inst_dir])
+
+        return {
             **self.env_passthrough,
             **{
-                'FUNC_PKGC': _util_func__dl_pkgc,
-
                 'PKG_NAME': self.module,
                 'PKG_TYPE': PKG_TYPE,
                 'PKG_PLATFORM': self.target_plat,
                 'PKG_ARCH': self.target_arch,
                 'PKG_LIBC': self.target_libc,
-                'PKG_ARCH_LIBC': self.target_arch,
+                'PKG_ARCH_LIBC': _target_archlibc,
 
                 'EXTRA_CMAKE': self.extra_cmake,
                 'EXTRA_MESON': self.extra_meson,
@@ -150,24 +176,33 @@ class _ctx:
                 'CROSS_PKGCONFIG_BIN': self.cross_pkgconfig_bin,
                 'CROSS_BUILD_ENABLED': self.cross_build_enabled,
                 'CROSS_TARGET_TRIPLE': self.cross_target_triple,
+
+                '3RD_DEPS_DIR': _3rd_deps_dir,
+                'PKG_BULD_DIR': _pkg_buld_dir,
+                'PKG_INST_DIR': _pkg_inst_dir,
+
+                'SUBPROJ_SRC': _subproj_src,
+                'SUBPROJ_SRC_PATCHES': _subproj_src_patches,
+
+
+                'CC': self.cc,
+                'CXX': self.cxx,
+                'CPP': self.cpp,
+                'HOSTCC': self.host_cc,
+                'HOSTCXX': self.host_cxx,
+                'HOSTCPP': self.host_cpp,
+                'CROSS_LDFLAGS': self.cross_ldflags,
+                'SYSROOT': self.sysroot,
+                'WINDRES': self._winres,
+                'LD': self._ld,
+                'NM': self._nm,
+                'AR': self._ar,
+                'AS': self._as,
+                'RANLIB': self._ranlib,
+                'STRIP': self._strip,
+                'OBJCOPY': self._objcopy,
             },
         }
-        if env['PKG_LIBC']:
-            env['PKG_ARCH_LIBC'] = f"{env['PKG_ARCH']}-{env['PKG_LIBC']}"
-        env['3RD_DEPS_DIR'] = (Path(x.PROJ_ROOT) / f".lib.{env['PKG_PLATFORM']}.{env['PKG_ARCH_LIBC']}").absolute().as_posix()
-        env['PKG_BULD_DIR'] = (Path(x.PROJ_ROOT) / 'tmp' / env['PKG_NAME'] / env['PKG_PLATFORM'] / env['PKG_ARCH_LIBC']).absolute().as_posix()
-        env['PKG_INST_DIR'] = (Path(x.PROJ_ROOT) / 'out' / env['PKG_NAME'] / env['PKG_PLATFORM'] / env['PKG_ARCH_LIBC']).absolute().as_posix()
-        if x.ON_GITLAB_CI or x.ON_GITHUB_CI:
-            env['PKG_INST_DIR'] = os.getenv('INST_DIR') or env['PKG_INST_DIR']
-
-        self.extra_cmake.extend(['-B', env['PKG_BULD_DIR']])
-        self.extra_cmake.extend(['-D', f'CMAKE_INSTALL_PREFIX={env["PKG_INST_DIR"]}'])
-
-        self.extra_meson.extend(['--prefix', env['PKG_INST_DIR']])
-
-        env['SUBPROJ_SRC'] = (Path(x.PROJ_ROOT) / '.deps' / env['PKG_NAME']).absolute().as_posix()
-        env['SUBPROJ_SRC_PATCHES'] = (Path(x.PROJ_ROOT) / 'patches' / env['PKG_NAME']).absolute().as_posix()
-        return env
 
 
 def _setctx_linux(
@@ -187,21 +222,29 @@ def _setctx_linux(
             raise NotImplementedError(f'unknown the implementation of libc')
         return _libc_type
 
+
+    ctx.host_cc  = shutil.which('clang')
+    ctx.host_cxx = shutil.which('clang++')
+    ctx.host_cpp = shutil.which('clang-cpp')
+    if (not ctx.host_cc) or (not ctx.host_cxx) or (not ctx.host_cpp):
+        raise NotImplementedError(f'only supports the LLVM toolchain')
+
+    ctx.cc  = f'{ctx.ccache} {ctx.host_cc}'
+    ctx.cxx = f'{ctx.ccache} {ctx.host_cxx}'
+    ctx.cpp = f'{ctx.host_cpp}'
+    ctx._ld = shutil.which('ld.lld')
+    ctx._nm = shutil.which('llvm-nm')
+    ctx._ar = shutil.which('llvm-ar')
+    ctx._as = shutil.which('llvm-as')
+    ctx._ranlib  = shutil.which('llvm-ranlib')
+    ctx._strip   = shutil.which('llvm-strip')
+    ctx._objcopy = shutil.which('llvm-objcopy')
+
     if _native:
-        ctx.target_arch = x.NATIVE_PLAT
+        ctx.target_arch = x.NATIVE_ARCH
         if not (ctx.target_arch in ['arm64', 'amd64']):
             raise NotImplementedError(f'unsupported target arch: {ctx.target_arch}')
         ctx.target_libc = _get_linux_libc_type()
-
-        if ctx.ccache:
-            for cc  in ['cc',  'clang',   'gcc']:
-                if _cc  := shutil.which(cc):
-                    ctx.env_passthrough['CC']  = f'{ctx.ccache} {_cc}'
-                    break
-            for cxx in ['c++', 'clang++', 'g++']:
-                if _cxx := shutil.which(cxx):
-                    ctx.env_passthrough['CXX'] = f'{ctx.ccache} {_cxx}'
-                    break
     else:
         CROSS_TOOLCHAIN_ROOT = x._util_get_cross_toolchain_dir()
 
@@ -214,26 +257,17 @@ def _setctx_linux(
             ctx.cross_target_triple = f'x86_64-pc-linux-{ctx.target_libc}'
         if ctx.target_arch == 'armv7':
             ctx.cross_target_triple = f'arm-unknown-linux-{ctx.target_libc}'
-        ctx.env_passthrough['SYSROOT'] = sysroot = (Path(CROSS_TOOLCHAIN_ROOT) / ctx.cross_target_triple).absolute().as_posix()
+        ctx.sysroot = (Path(CROSS_TOOLCHAIN_ROOT) / ctx.cross_target_triple).absolute().as_posix()
 
-        ctx.env_passthrough['CROSS_LDFLAGS'] = f'-fuse-ld=lld --sysroot={sysroot}'
-        ctx.env_passthrough['CROSS_FLAGS'] = f'--target={ctx.cross_target_triple} --gcc-toolchain={sysroot}/usr --sysroot={sysroot}'
+        _cflags = f'--target={ctx.cross_target_triple} --gcc-toolchain={ctx.sysroot}/usr --sysroot={ctx.sysroot}'
         if ctx.target_arch == 'armv7':
-            ctx.env_passthrough['CROSS_FLAGS'] += ' -march=armv7-a -mfpu=neon-vfpv4'
-        ctx.env_passthrough['HOSTCC']  = shutil.which('clang')
-        ctx.env_passthrough['HOSTCXX'] = shutil.which('clang++')
-        ctx.env_passthrough['HOSTCPP'] = shutil.which('clang-cpp')
-        ctx.env_passthrough['CC']  = f"{ctx.ccache} {ctx.env_passthrough['HOSTCC']}  {ctx.env_passthrough['CROSS_FLAGS']}"
-        ctx.env_passthrough['CXX'] = f"{ctx.ccache} {ctx.env_passthrough['HOSTCXX']} {ctx.env_passthrough['CROSS_FLAGS']}"
-        ctx.env_passthrough['CPP'] = f"{ctx.env_passthrough['HOSTCPP']} {ctx.env_passthrough['CROSS_FLAGS']}"
+            _cflags += ' -march=armv7-a -mfpu=neon-vfpv4'
+        ctx.cc  += f' {_cflags}'
+        ctx.cxx += f' {_cflags}'
+        ctx.cpp += f' {_cflags}'
 
-        ctx.env_passthrough['LD'] = shutil.which('ld.lld')
-        ctx.env_passthrough['NM'] = shutil.which('llvm-nm')
-        ctx.env_passthrough['AR'] = shutil.which('llvm-ar')
-        ctx.env_passthrough['AS'] = shutil.which('llvm-as')
-        ctx.env_passthrough['RANLIB']  = shutil.which('llvm-ranlib')
-        ctx.env_passthrough['STRIP']   = shutil.which('llvm-strip')
-        ctx.env_passthrough['READELF'] = shutil.which('llvm-readelf')
+        ctx.cross_ldflags = f'-fuse-ld=lld --sysroot={ctx.sysroot}'
+
 
         # cmake toolchain file
         CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE')

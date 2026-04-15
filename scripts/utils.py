@@ -26,6 +26,14 @@ ON_GITHUB_CI = os.getenv('GITHUB_ACTIONS', '') == 'true'
 ON_CODE_EDIT = (not ON_GITLAB_CI) and (not ON_GITHUB_CI) \
     and (os.getenv('CLANGD_CODE_COMPLETION', '0') == '1')
 # ----------------------------
+RCLONE_EXEC = (Path(PROJ_ROOT) / '.github' / 'rclone')
+# ----------------------------
+S3_R2_ACCOUNT_ID = os.getenv('S3_R2_ACCOUNT_ID', '<mask>')
+S3_R2_ACCESS_KEY = os.getenv('S3_R2_ACCESS_KEY', '<mask>')
+S3_R2_SECRET_KEY = os.getenv('S3_R2_SECRET_KEY', '<mask>')
+S3_R2_STORAGE_REGION = os.getenv('S3_R2_STORAGE_REGION', 'auto')
+S3_R2_STORAGE_BUCKET = os.getenv('S3_R2_STORAGE_BUCKET', '<mask>')
+# ----------------------------
 CPU_COUNT = os.cpu_count() or 2
 if sys.platform == 'linux':
     CPU_COUNT = len(os.sched_getaffinity(0))
@@ -42,12 +50,13 @@ if NATIVE_ARCH == 'aarch64': NATIVE_ARCH = 'arm64'
 def print_stderr(str):
     print(str, file=sys.stderr)
 def _util_func__subprocess(args: Union[str, list[str]],
-    cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False, collect_stdout=False,
+    cwd: Union[str, None] = None, env: Union[dict[str, str], None] = None, shell=False,
+    collect_stdout=False, stdout = None,
 ) -> str:
     print_stderr(f'>>>> subprocess cmdline: {args}')
     proc = sp.run(
         args=args, cwd=cwd, env=env, check=True, shell=shell,
-        stdout=(sp.PIPE if collect_stdout else None), text=(True if collect_stdout else None),
+        stdout=(sp.PIPE if collect_stdout else stdout), text=(True if collect_stdout else None),
     )
     return proc.stdout if collect_stdout else ''
 def _util_load_module(name: str, attrs: Union[list[str], None] = None):
@@ -82,6 +91,10 @@ def _util_get_pkg_version_desc(pkg_name: str) -> str:
 
 def _util_append_ci_env(f: io.TextIOWrapper, k, v):
     print_stderr(f'{k}: {v}'); f.write(f'{k}={v}\n')
+def _util_append_env_pkgconf_path(env: dict[str, str], dir: Path):
+    old_pkgconf_path = env.get('PKG_CONFIG_PATH', '')
+    new_pkgconf_path = (dir).absolute().as_posix()
+    env['PKG_CONFIG_PATH'] = new_pkgconf_path + os.pathsep + old_pkgconf_path
 
 def _util_source_cleanup(cwd: str):
     _util_func__subprocess(cwd=cwd, args=['git', 'reset', '--hard', 'HEAD'])

@@ -14,14 +14,13 @@ from scripts import utils as x
 
 import glob
 import os
-import platform
 import shutil
 import stat
 import urllib.request
 
 
 _rclone_ver = 'current'
-_rclone_dir = (Path(x.PROJ_ROOT) / '.github').absolute().as_posix()
+_rclone_dir = (Path(x.RCLONE_EXEC).parent).absolute().as_posix()
 
 plat = x.NATIVE_PLAT
 if plat == 'darwin':
@@ -53,10 +52,10 @@ os.chmod(rclone_exec, stat.S_IRWXU); shutil.move(src=rclone_exec, dst=_rclone_di
 
 rclone_conf_src = (Path(_rclone_dir) / 'rclone.conf.tmpl')
 rclone_conf_content = rclone_conf_src.read_text()
-rclone_conf_content = rclone_conf_content.replace('@S3_R2_ACCOUNT_ID@', os.getenv('S3_R2_ACCOUNT_ID', '<mask>'))
-rclone_conf_content = rclone_conf_content.replace('@S3_R2_ACCESS_KEY@', os.getenv('S3_R2_ACCESS_KEY', '<mask>'))
-rclone_conf_content = rclone_conf_content.replace('@S3_R2_SECRET_KEY@', os.getenv('S3_R2_SECRET_KEY', '<mask>'))
-rclone_conf_content = rclone_conf_content.replace('@S3_R2_STORAGE_REGION@', os.getenv('S3_R2_STORAGE_REGION', 'auto'))
+rclone_conf_content = rclone_conf_content.replace('@S3_R2_ACCOUNT_ID@', x.S3_R2_ACCOUNT_ID)
+rclone_conf_content = rclone_conf_content.replace('@S3_R2_ACCESS_KEY@', x.S3_R2_ACCESS_KEY)
+rclone_conf_content = rclone_conf_content.replace('@S3_R2_SECRET_KEY@', x.S3_R2_SECRET_KEY)
+rclone_conf_content = rclone_conf_content.replace('@S3_R2_STORAGE_REGION@', x.S3_R2_STORAGE_REGION)
 
 rclone_conf_dst = (Path(_rclone_dir) / 'rclone.conf')
 rclone_conf_dst.write_text(rclone_conf_content)
