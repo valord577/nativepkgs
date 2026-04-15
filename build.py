@@ -33,62 +33,10 @@ if not os.getenv('VIRTUAL_ENV'):
 #
 # (Modules make their own decisions.)
 # ----------------------------
-#LIB_RELEASE = os.getenv('LIB_RELEASE', '1')
-#if LIB_RELEASE not in ['0']: LIB_RELEASE = '1'
-# ----------------------------
 # static or shared
 # ----------------------------
 PKG_TYPE = os.getenv('PKG_TYPE', 'static')
 if PKG_TYPE not in ['static']: PKG_TYPE = 'shared'
-# ----------------------------
-# >>>> utils functions >>>>
-# ----------------------------
-def _util_func__dl_pkgc(_ctx: dict, _env: dict[str, str],
-    pkg_name: str, pkg_version: str, pkg_type: str, pkg_extra='',
-):
-    _3rd_deps_dir = os.path.abspath(os.path.join(x.PROJ_ROOT, f".lib.{_env['PKG_PLATFORM']}.{_env['PKG_ARCH_LIBC']}"))
-    _this_lib_dir = os.path.abspath(os.path.join(_3rd_deps_dir, pkg_name))
-    os.makedirs(_3rd_deps_dir, exist_ok=True)
-    if False:
-        pass
-    elif x.ON_GITLAB_CI:
-        pass
-    elif x.ON_GITHUB_CI:
-        _pkg_dl_name = f"{pkg_name}_{_env['PKG_PLATFORM']}_{_env['PKG_ARCH_LIBC']}_{pkg_version}_{pkg_type}"
-        if pkg_extra:
-            _pkg_dl_name += f"_{pkg_extra}"
-
-        _rclone = os.path.abspath(os.path.join(x.PROJ_ROOT, '.github', 'rclone'))
-        _rclone_src = f'r2:{os.getenv("S3_R2_STORAGE_BUCKET", "")}/packages/{pkg_name}/{pkg_version}/{_pkg_dl_name}.zip'
-        _util_func__subprocess_devnul([_rclone, 'copy', _rclone_src , _3rd_deps_dir])
-
-        pkg_zippath = os.path.abspath(os.path.join(_3rd_deps_dir, f'{_pkg_dl_name}.zip'))
-        shutil.unpack_archive(pkg_zippath, extract_dir=_3rd_deps_dir)
-    else:
-        try:
-            os.remove(_this_lib_dir)
-        except:
-            pass
-        _src = os.path.abspath(os.path.join(x.PROJ_ROOT, 'out', pkg_name, _env['PKG_PLATFORM'], _env['PKG_ARCH_LIBC']))
-        os.symlink(_src, _this_lib_dir, target_is_directory=True)
-
-
-    def _ensure_key(key: str, default):
-        if not _ctx.get(key):
-            _ctx[key] = default
-    _ensure_key('CMAKE_SEARCH_PATH', [])
-    _ensure_key('PKG_CONFIG_PATH', [])
-    _ensure_key('PKG_3RD_DEPS_SHARED', [])
-    _ensure_key('PKG_3RD_DEPS_STATIC', [])
-
-    _ctx['CMAKE_SEARCH_PATH'].append(_this_lib_dir)
-    _ctx['PKG_CONFIG_PATH'].append(os.path.abspath(os.path.join(_this_lib_dir, 'lib', 'pkgconfig')))
-    if pkg_type == 'shared':
-        _ctx['PKG_3RD_DEPS_SHARED'].append(_this_lib_dir)
-    if pkg_type == 'static':
-        _ctx['PKG_3RD_DEPS_STATIC'].append(_this_lib_dir)
-# ----------------------------
-# <<<< utils functions <<<<
 # ----------------------------
 
 
