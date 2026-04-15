@@ -2,27 +2,66 @@
 
 # fmt: off
 
+from scripts import utils as x
+# ----------------------------
+
 import os
-import shutil
+import shlex
 
 from pathlib import Path
 
 
-_env: dict = {}
-_ctx: dict = {
-    'PKG_INST_STRIP': '',
-    'CMAKE_CMD': 'cmake',
-    'BUILD_ENV': os.environ.copy(),
-    'SHELL_REQ': False,
-}
+BUILD_CMD = 'cmake'
+BUILD_ENV = os.environ.copy()
+
+_subproj_src = ''
+_subproj_src_patches = ''
+
+_target_pkg_name = ''
+_target_pkg_type = ''
+_target_platform = ''
+
+_pkg_buld_dir = ''
+_pkg_inst_dir = ''
+
+_extra_args_build: list[str] = []
 
 def module_init(env: dict) -> list:
-    global _env; _env = env
+    global _target_pkg_name; \
+        _target_pkg_name = env['PKG_NAME']
+    global _target_pkg_type; \
+        _target_pkg_type = env['PKG_TYPE']
+    global _subproj_src; \
+        _subproj_src = env['SUBPROJ_SRC']
+    global _subproj_src_patches; \
+        _subproj_src_patches = env['SUBPROJ_SRC_PATCHES']
+    global _target_platform; \
+        _target_platform = env['PKG_PLATFORM']
+    global _pkg_buld_dir; \
+        _pkg_buld_dir = env['PKG_BULD_DIR']
+    global _pkg_inst_dir; \
+        _pkg_inst_dir = env['PKG_INST_DIR']
+    global _extra_sysroot; \
+        _extra_sysroot = env['SYSROOT']
+    global _extra_args_build; \
+        _extra_args_build = env[f'EXTRA_{BUILD_CMD.upper()}']
+
+    if _target_pkg_type != 'static':
+        raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
+
+
+    global BUILD_ENV
+
+    if _target_platform == 'android':
+        BUILD_ENV['ANDROID_API_LEVEL'] = env['ANDROID_API_LEVEL']
+    elif _target_platform == 'win-msvc':
+        BUILD_ENV = env['WIN32_MSVC_ENV_TARGET']
+        BUILD_ENV['CFLAGS']   = '/utf-8'
+        BUILD_ENV['CXXFLAGS'] = BUILD_ENV['CFLAGS']
+        _extra_args_build.extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
+
     return [
         _source_download,
-        _source_apply_patches,
-        _build_step_msvc,
-        _build_step_android,
         _build_step_00,
         _build_step_01,
         _build_step_02,
@@ -31,62 +70,19 @@ def module_init(env: dict) -> list:
 
 
 def _source_download():
-    _git_target = 'refs/tags/R_2_7_3'
-    if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/libexpat/libexpat.git'])
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
-    if file_ver := os.getenv('DEPS_VER', ''):
-        _git_ver = _env['FUNC_SHELL_STDOUT'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'describe', '--always', '--abbrev=7'])[:-1]
-        Path(file_ver).write_text(f'{_git_ver}')
-def _source_apply_patches():
-    if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
-        return
-    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'reset', '--hard', 'HEAD'])
-    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'clean', '-d', '-f', '-q'])
-    with os.scandir(_env['SUBPROJ_SRC_PATCHES']) as it:
-        entries = sorted(it, key=lambda e: e.name)
-        for entry in entries:
-            if not entry.is_file():
-                continue
-            _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'],
-                args=[shutil.which('git'), 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
-
-
-def _build_step_msvc():
-    if _env['PKG_PLATFORM'] != 'win-msvc':
-        return
-    _ctx['BUILD_ENV'] = _env['WIN32_MSVC_ENV_TARGET']
-    _ctx['BUILD_ENV']['CFLAGS']   = '/utf-8'
-    _ctx['BUILD_ENV']['CXXFLAGS'] = _ctx['BUILD_ENV']['CFLAGS']
-    _ctx['SHELL_REQ'] = True
-
-    if _env['LIB_RELEASE'] == '0':
-        raise NotImplementedError(f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')
-    if _env['LIB_RELEASE'] == '1':
-        _env['EXTRA_CMAKE'].extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
-def _build_step_android():
-    if _env['PKG_PLATFORM'] != 'android':
-        return
-    _ctx['BUILD_ENV']['ANDROID_API_LEVEL'] = _env['ANDROID_API_LEVEL']
+    _git_target = 'refs/tags/R_2_7_5'
+    if not (Path(_subproj_src) / '.git').exists():
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'init'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'remote', 'add', 'x', 'https://github.com/libexpat/libexpat.git'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'checkout', 'FETCH_HEAD'])
+    x._util_put_pkg_version_desc(_target_pkg_name, x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
+    x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
 def _build_step_00():
-    _extra_args_cmake: list[str] = _env['EXTRA_CMAKE']
-
-    if _env['PKG_TYPE'] == 'static':
-        _extra_args_cmake.extend(['-D', 'EXPAT_SHARED_LIBS:BOOL=0'])
-    if _env['PKG_TYPE'] == 'shared':
-        _extra_args_cmake.extend(['-D', 'EXPAT_SHARED_LIBS:BOOL=1'])
-
-    if _env['LIB_RELEASE'] == '0':
-        _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Debug'])
-    if _env['LIB_RELEASE'] == '1':
-        _ctx['PKG_INST_STRIP'] = '--strip'
-        _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Release'])
-
-    args = [
-        _ctx['CMAKE_CMD'],
-        '-S',  os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], 'expat')),
+    args = [BUILD_CMD, *_extra_args_build,
+        '-S',   (Path(_subproj_src) / 'expat'),
+        '-D',  'EXPAT_SHARED_LIBS:BOOL=0',
+        '-D',  'CMAKE_BUILD_TYPE=RelWithDebInfo',
         '-D',  'EXPAT_WARNINGS_AS_ERRORS:BOOL=1',
         '-D',  'EXPAT_MSVC_STATIC_CRT:BOOL=1',
         '-D',  'EXPAT_BUILD_TOOLS:BOOL=0',
@@ -97,13 +93,10 @@ def _build_step_00():
         '-D',  'EXPAT_OSSFUZZ_BUILD:BOOL=0',
         '-D',  'EXPAT_WITH_LIBBSD:BOOL=0',
     ]
-    args.extend(_extra_args_cmake)
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    x._util_func__subprocess(env=BUILD_ENV, args=args)
 def _build_step_01():
-    args = [_ctx['CMAKE_CMD'], '--build', _env['PKG_BULD_DIR'], '-j', _env['PARALLEL_JOBS']]
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    args = f"{BUILD_CMD} --build {_pkg_buld_dir} -j {x.CPU_COUNT}"
+    x._util_func__subprocess(env=BUILD_ENV, args=shlex.split(args))
 def _build_step_02():
-    args = [_ctx['CMAKE_CMD'], '--install', _env['PKG_BULD_DIR']]
-    if _ctx['PKG_INST_STRIP']:
-        args.append( _ctx['PKG_INST_STRIP'])
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    args = f"{BUILD_CMD} --install {_pkg_buld_dir}"
+    x._util_func__subprocess(env=BUILD_ENV, args=shlex.split(args))
