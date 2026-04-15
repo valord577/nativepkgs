@@ -545,7 +545,7 @@ def _setctx_android(
     CROSS_TOOLCHAIN_PKGCONF_PREFIX = os.getenv('CROSS_TOOLCHAIN_PKGCONF_PREFIX')
     if not CROSS_TOOLCHAIN_PKGCONF_PREFIX:
         CROSS_TOOLCHAIN_PKGCONF_PREFIX = (Path(CROSS_TOOLCHAIN_ROOT) / 'pkgconf-wrapper').absolute().as_posix()
-    ctx.cross_pkgconfig_bin = f'{CROSS_TOOLCHAIN_PKGCONF_PREFIX}.{ctx.cross_target_triple}'
+    ctx.cross_pkgconfig_bin = f'{CROSS_TOOLCHAIN_PKGCONF_PREFIX}.{ctx.cross_target_triple[:-len(ctx.android_api_level)]}'
     # cmake toolchain file
     CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE')
     if not CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE:

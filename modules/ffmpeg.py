@@ -105,8 +105,8 @@ def module_init(env: dict) -> list:
         _source_dl_3rd_deps,
         _source_download,
         _build_on_code_edit,
-        # _build_step_00,
-        # _build_step_01,
+        _build_step_00,
+        _build_step_01,
         _build_step_02,
     ]
 
@@ -179,7 +179,7 @@ def _build_step_00():
         '--disable-libxcb',
         '--disable-xlib',
         '--disable-vaapi',
-        f'--cc={_cc}', f'--cxx={_cxx}', f'--host-cc={_host_cc}',
+        f'--cc={_cc}', f'--cxx={_cxx}',
         f'--pkg-config={_pkgconf_bin}',
     ]
     if not _extra_args_enable_log:
@@ -195,11 +195,13 @@ def _build_step_00():
     _ffmpeg_target_os = _target_platform
     if _target_platform == 'win-mingw':
         _ffmpeg_target_os = 'mingw64'
-    elif _target_platform in ['macosx', 'iphoneos', 'iphonesimulator']:
+    if _target_platform in ['macosx', 'iphoneos', 'iphonesimulator']:
         _ffmpeg_target_os = 'darwin'
         args.append('--disable-coreimage')
         if _target_platform != 'macosx':
             args.append('--disable-programs')
+    else:
+        args.append(f'--host-cc={_host_cc}')
 
     if _target_platform == 'win-msvc':
         pass
