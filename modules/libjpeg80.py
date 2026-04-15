@@ -88,15 +88,9 @@ def _build_step_00():
         '-D',  'WITH_TOOLS:BOOL=0',
     ]
     if _target_pkg_type == 'static':
-        args.extend([
-            '-D', 'ENABLE_SHARED:BOOL=0',
-            '-D', 'ENABLE_STATIC:BOOL=1',
-        ])
+        args.extend(['-D', 'ENABLE_SHARED:BOOL=0', '-D', 'ENABLE_STATIC:BOOL=1'])
     if _target_pkg_type == 'shared':
-        args.extend([
-            '-D', 'ENABLE_SHARED:BOOL=1',
-            '-D', 'ENABLE_STATIC:BOOL=0',
-        ])
+        args.extend(['-D', 'ENABLE_SHARED:BOOL=1', '-D', 'ENABLE_STATIC:BOOL=0'])
 
     if _target_platform == 'win-msvc':
         args.extend([
