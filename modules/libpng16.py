@@ -105,9 +105,12 @@ def _source_download():
     x._util_put_pkg_version_desc(_target_pkg_name, x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
     x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
 def _build_step_00():
+    _cmake_search_dir = ';'.join(_extra_search_dir)
     args = [BUILD_CMD, *_extra_args_build,
         '-S',   _subproj_src,
         '-D',  'CMAKE_BUILD_TYPE=RelWithDebInfo',
+        '-D', f'CMAKE_PREFIX_PATH={_cmake_search_dir}',
+        '-D', f'CMAKE_FIND_ROOT_PATH={_extra_sysroot};{_cmake_search_dir}',
         '-D',  'PNG_FRAMEWORK:BOOL=0',
         '-D',  'PNG_TESTS:BOOL=0',
         '-D',  'PNG_TOOLS:BOOL=0',
@@ -116,12 +119,6 @@ def _build_step_00():
         args.extend(['-D', 'PNG_SHARED:BOOL=0', '-D', 'PNG_STATIC:BOOL=1'])
     if _target_pkg_type == 'shared':
         args.extend(['-D', 'PNG_SHARED:BOOL=1', '-D', 'PNG_STATIC:BOOL=0'])
-
-    _cmake_search_dir = ';'.join(_extra_search_dir)
-    args.extend([
-        '-D', f'CMAKE_PREFIX_PATH={_cmake_search_dir}',
-        '-D', f'CMAKE_FIND_ROOT_PATH={_extra_sysroot};{_cmake_search_dir}',
-    ])
 
     x._util_func__subprocess(env=BUILD_ENV, args=args)
 def _build_step_01():
