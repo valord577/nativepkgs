@@ -1,0 +1,13 @@
+diff --git a/include/mbedtls/debug.h b/include/mbedtls/debug.h
+index b8273bc..8cd101c 100644
+--- a/include/mbedtls/debug.h
++++ b/include/mbedtls/debug.h
+@@ -59,7 +59,7 @@
+  */
+ #if defined(__has_attribute)
+ #if __has_attribute(format)
+-#if defined(__MINGW32__)
++#if defined(__MINGW32__) && !defined(__clang__)
+ #define MBEDTLS_PRINTF_ATTRIBUTE(string_index, first_to_check)    \
+     __attribute__((__format__(gnu_printf, string_index, first_to_check)))
+ #else /* defined(__MINGW32__) */
