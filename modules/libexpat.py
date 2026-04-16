@@ -78,7 +78,7 @@ def _source_download():
     x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
 def _build_step_00():
     args = [BUILD_CMD, *_extra_args_build,
-        '-S',   (Path(_subproj_src) / 'expat'),
+        '-S',   (Path(_subproj_src) / 'expat').absolute().as_posix(),
         '-D',  'EXPAT_SHARED_LIBS:BOOL=0',
         '-D',  'CMAKE_BUILD_TYPE=RelWithDebInfo',
         '-D',  'EXPAT_WARNINGS_AS_ERRORS:BOOL=1',
