@@ -167,12 +167,10 @@ def _build_step_00():
             os.makedirs(_tblgen_dir, exist_ok=True)
 
         _tblgen_build_args = [*args]
-        x.print_stderr('>>>>>>>>>>>>>>>>>>>>>>')
-        x.print_stderr(_tblgen_build_args)
-        x.print_stderr('>>>>>>>>>>>>>>>>>>>>>>')
         _tblgen_build_args_bdir_idx = 0
         _tblgen_build_args_zlib_idx = 0
         for i, entry in enumerate(_tblgen_build_args):
+            x.print_stderr(f'>>>>>>>>>>>>>>>>>>>>>> {i}: {entry}')
             if entry == '-B':
                 _tblgen_build_args_bdir_idx = i + 1
             if entry.startswith('LLVM_ENABLE_ZLIB'):
