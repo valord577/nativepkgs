@@ -58,7 +58,7 @@ def module_init(env: dict) -> list:
         raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
 
 
-    x._util_func__pip_install(['pip', 'meson', 'ninja'])
+    x._util_func__pip_install(['meson', 'ninja'])
 
     return [
         _source_download,

@@ -64,7 +64,7 @@ def module_init(env: dict) -> list:
 
     if _target_platform == 'android':
         BUILD_ENV['ANDROID_API_LEVEL'] = env['ANDROID_API_LEVEL']
-    elif _target_platform == 'win-msvc':
+    if _target_platform == 'win-msvc':
         BUILD_ENV = env['WIN32_MSVC_ENV_TARGET']
         BUILD_ENV['CFLAGS']   = '/utf-8 /wd4146'
         BUILD_ENV['CXXFLAGS'] = BUILD_ENV['CFLAGS']

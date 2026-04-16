@@ -54,15 +54,15 @@ def module_init(env: dict) -> list:
     global _extra_args_build; \
         _extra_args_build = env[f'EXTRA_{BUILD_CMD.upper()}']
 
-    #if _target_pkg_type != 'static':
-    #    raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
+    if _target_pkg_type != 'static':
+        raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
 
 
     global BUILD_ENV
 
     if _target_platform == 'android':
         BUILD_ENV['ANDROID_API_LEVEL'] = env['ANDROID_API_LEVEL']
-    elif _target_platform == 'win-msvc':
+    if _target_platform == 'win-msvc':
         BUILD_ENV = env['WIN32_MSVC_ENV_TARGET']
         BUILD_ENV['CFLAGS']   = '/utf-8'
         BUILD_ENV['CXXFLAGS'] = BUILD_ENV['CFLAGS']
