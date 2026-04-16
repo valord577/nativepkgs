@@ -134,7 +134,7 @@ def _build_step_00():
 
     _cmake_search_dir = ';'.join(_extra_search_dir)
     args = [BUILD_CMD, *_extra_args_build,
-        '-S',   (Path(_subproj_src) / 'llvm'),
+        '-S',   (Path(_subproj_src) / 'llvm').absolute().as_posix(),
         '-D',  'LLVM_BUILD_LLVM_DYLIB:BOOL=0',
         '-D',  'CMAKE_BUILD_TYPE=RelWithDebInfo',
         '-D', f'CMAKE_PREFIX_PATH={_cmake_search_dir}',
@@ -170,7 +170,6 @@ def _build_step_00():
         _tblgen_build_args_bdir_idx = 0
         _tblgen_build_args_zlib_idx = 0
         for i, entry in enumerate(_tblgen_build_args):
-            x.print_stderr(f'>>>>>>>>>>>>>>>>>>>>>> {i}: {entry}')
             if entry == '-B':
                 _tblgen_build_args_bdir_idx = i + 1
             if entry.startswith('LLVM_ENABLE_ZLIB'):
