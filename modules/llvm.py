@@ -2,30 +2,99 @@
 
 # fmt: off
 
+from scripts import utils as x
+# ----------------------------
+
 import os
+import shlex
 import shutil
-import sys
 
 from pathlib import Path
 
 
-_env: dict = {}
-_ctx: dict = {
-    'PKG_INST_STRIP': '',
-    'CMAKE_CMD': 'cmake',
-    'BUILD_ENV': os.environ.copy(),
-    'SHELL_REQ': False,
-}
+BUILD_CMD = 'cmake'
+BUILD_ENV = os.environ.copy()
+
+_subproj_src = ''
+_subproj_src_patches = ''
+
+_target_pkg_name = ''
+_target_pkg_type = ''
+_target_platform = ''
+_target_arch = ''
+_target_archlibc = ''
+
+_3rd_deps_dir = ''
+_pkg_buld_dir = ''
+_pkg_inst_dir = ''
+
+_cross_build_enabled = False
+_cross_target_triple = ''
+_extra_sysroot = ''
+_extra_args_build: list[str] = []
+_extra_search_dir: list[str] = []
+
+_host_cc  = ''
+_host_cxx = ''
+
+_win32_msvc_env_native: dict[str, str] = {}
 
 def module_init(env: dict) -> list:
-    global _env; _env = env
+    global _target_pkg_name; \
+        _target_pkg_name = env['PKG_NAME']
+    global _target_pkg_type; \
+        _target_pkg_type = env['PKG_TYPE']
+    global _subproj_src; \
+        _subproj_src = env['SUBPROJ_SRC']
+    global _subproj_src_patches; \
+        _subproj_src_patches = env['SUBPROJ_SRC_PATCHES']
+    global _target_platform; \
+        _target_platform = env['PKG_PLATFORM']
+    global _target_arch; \
+        _target_arch = env['PKG_ARCH']
+    global _target_archlibc; \
+        _target_archlibc = env['PKG_ARCH_LIBC']
+    global _3rd_deps_dir; \
+        _3rd_deps_dir = env['3RD_DEPS_DIR']
+    global _pkg_buld_dir; \
+        _pkg_buld_dir = env['PKG_BULD_DIR']
+    global _pkg_inst_dir; \
+        _pkg_inst_dir = env['PKG_INST_DIR']
+    global _cross_build_enabled; \
+        _cross_build_enabled = env['CROSS_BUILD_ENABLED']
+    global _cross_target_triple; \
+        _cross_target_triple = env['CROSS_TARGET_TRIPLE']
+    global _extra_sysroot; \
+        _extra_sysroot = env['SYSROOT']
+    global _extra_args_build; \
+        _extra_args_build = env[f'EXTRA_{BUILD_CMD.upper()}']
+    global _host_cc; \
+        _host_cc = env['HOSTCC']
+    global _host_cxx; \
+        _host_cxx = env['HOSTCXX']
+    global _win32_msvc_env_native; \
+        _win32_msvc_env_native = env['WIN32_MSVC_ENV_NATIVE']
+
+    if _target_pkg_type != 'static':
+        raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
+
+
+    global BUILD_ENV
+
+    if _target_platform == 'android':
+        BUILD_ENV['ANDROID_API_LEVEL'] = env['ANDROID_API_LEVEL']
+    if _target_platform == 'win-msvc':
+        BUILD_ENV = env['WIN32_MSVC_ENV_TARGET']
+        BUILD_ENV['CFLAGS']   = '/utf-8'
+        BUILD_ENV['CXXFLAGS'] = BUILD_ENV['CFLAGS']
+        _extra_args_build.extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
+    if _target_platform != 'win-msvc':
+        x._util_func__pip_install(['ninja'])
+        _extra_args_build.extend(['-G', 'Ninja'])
+
     return [
-        _platform_check,
         _source_dl_3rd_deps,
         _source_download,
-        _source_apply_patches,
-        _build_step_msvc,
-        _build_step_unix,
         _build_step_00,
         _build_step_01,
         _build_step_02,
@@ -33,82 +102,43 @@ def module_init(env: dict) -> list:
 
 
 
-def _platform_check():
-    if not (_env['PKG_PLATFORM'] in ['macosx', 'linux', 'win-mingw', 'win-msvc']):
-        raise NotImplementedError(f'unsupported PKG_PLATFORM: {_env["PKG_PLATFORM"]}')
 def _source_dl_3rd_deps():
-    if not _env.get('PLATFORM_APPLE', False):
-        _env['FUNC_PKGC'](_ctx, _env, 'zlib-ng', '4254390', 'static')
+    _3rd_deps: list[dict[str, str]] = []
+    if _target_platform not in ['macosx', 'iphoneos', 'iphonesimulator']:
+        _3rd_deps.extend([
+            {
+                'name': 'zlib-ng',
+                'type': 'static',
+                'vers': '1273109',
+            },
+        ])
+
+    _get_prebuilt_script = (Path(x.PROJ_ROOT) / 'scripts' / 'get_prebuilt.py').absolute().as_posix()
+    for dep in _3rd_deps:
+        _name = dep['name']; _type = dep['type']; _vers = dep['vers']
+        x._util_func__exec_python([_get_prebuilt_script, _target_archlibc, _name, _target_platform, _vers, _type, '', _3rd_deps_dir])
+
+        _extra_search_dir.append((Path(_3rd_deps_dir) / _name).absolute().as_posix())
 def _source_download():
     _git_target = 'refs/heads/main'
-    if not os.path.exists(os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], '.git'))):
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'init'])
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'remote', 'add', 'x', 'https://github.com/llvm/llvm-project.git'])
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
-        _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'checkout', 'FETCH_HEAD'])
-    if file_ver := os.getenv('DEPS_VER', ''):
-        _git_ver = _env['FUNC_SHELL_STDOUT'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'describe', '--always', '--abbrev=7'])[:-1]
-        Path(file_ver).write_text(f'{_git_ver}')
-def _source_apply_patches():
-    if not os.path.exists(_env['SUBPROJ_SRC_PATCHES']):
-        return
-    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'reset', '--hard', 'HEAD'])
-    _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'], args=[shutil.which('git'), 'clean', '-d', '-f', '-q'])
-    with os.scandir(_env['SUBPROJ_SRC_PATCHES']) as it:
-        entries = sorted(it, key=lambda e: e.name)
-        for entry in entries:
-            if not entry.is_file():
-                continue
-            _env['FUNC_SHELL_DEVNUL'](cwd=_env['SUBPROJ_SRC'],
-                args=[shutil.which('git'), 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', entry.path])
-
-
-
-def _build_step_msvc():
-    if _env['PKG_PLATFORM'] != 'win-msvc':
-        return
-    _ctx['BUILD_ENV'] = _env['WIN32_MSVC_ENV_TARGET']
-    _ctx['BUILD_ENV']['CFLAGS']   = '/utf-8'
-    _ctx['BUILD_ENV']['CXXFLAGS'] = _ctx['BUILD_ENV']['CFLAGS']
-    _ctx['SHELL_REQ'] = True
-
-    if _env['LIB_RELEASE'] == '0':
-        raise NotImplementedError(f'unsupported LIB_RELEASE: {_env["LIB_RELEASE"]}')
-    if _env['LIB_RELEASE'] == '1':
-        _env['EXTRA_CMAKE'].extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
-def _build_step_unix():
-    if _env['PKG_PLATFORM'] == 'win-msvc':
-        return
-    _env['FUNC_PYPI'](['pip', 'ninja'])
-    if not os.getenv('VIRTUAL_ENV'):
-        _binary_dirpath = os.path.abspath(os.path.join(sys.prefix, 'bin'))
-        _ctx['BUILD_ENV']['PATH'] = f"{_binary_dirpath}{os.pathsep}{os.getenv('PATH', '')}"
-    _env['EXTRA_CMAKE'].extend(['-G', 'Ninja'])
+    if not (Path(_subproj_src) / '.git').exists():
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'init'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'remote', 'add', 'x', 'https://github.com/llvm/llvm-project.git'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'checkout', 'FETCH_HEAD'])
+    x._util_put_pkg_version_desc(_target_pkg_name, x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
+    x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
 def _build_step_00():
-    _extra_args_cmake: list[str] = _env['EXTRA_CMAKE']
+    _tblgen_dir = (Path(_pkg_inst_dir).parent / '.NATIVE').absolute().as_posix()
+    _tblgen_req = ((_target_platform == 'win-msvc') and (_cross_build_enabled))
 
-    if _env['PKG_TYPE'] == 'static':
-        _extra_args_cmake.extend(['-D', 'LLVM_BUILD_LLVM_DYLIB:BOOL=0'])
-    if _env['PKG_TYPE'] == 'shared':
-        raise NotImplementedError(f'unsupported pkg type: {_env["PKG_TYPE"]}')
-        _extra_args_cmake.extend(['-D', 'LLVM_BUILD_LLVM_DYLIB:BOOL=1'])
-
-    if _env['LIB_RELEASE'] == '0':
-        _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Debug'])
-    if _env['LIB_RELEASE'] == '1':
-        _ctx['PKG_INST_STRIP'] = '--strip'
-        _extra_args_cmake.extend(['-D', 'CMAKE_BUILD_TYPE=Release'])
-
-
-    _tblgen_dir = os.path.abspath(os.path.join(os.path.dirname(_env['PKG_INST_DIR']), '.NATIVE'))
-    _tblgen_req = ((_env['PKG_PLATFORM'] == 'win-msvc') and (_env['CROSS_BUILD_ENABLED']))
-
-    _cmake_search_path = ';'.join(_ctx.get('CMAKE_SEARCH_PATH', []))
-    args = [
-        _ctx['CMAKE_CMD'],
-        '-S',  os.path.abspath(os.path.join(_env['SUBPROJ_SRC'], 'llvm')),
-        '-D', f'CMAKE_PREFIX_PATH={_cmake_search_path}',
-        '-D', f'CMAKE_FIND_ROOT_PATH={_env["SYSROOT"]};{_cmake_search_path}',
+    _cmake_search_dir = ';'.join(_extra_search_dir)
+    args = [BUILD_CMD, *_extra_args_build,
+        '-S',   (Path(_subproj_src) / 'llvm').absolute().as_posix(),
+        '-D',  'LLVM_BUILD_LLVM_DYLIB:BOOL=0',
+        '-D',  'CMAKE_BUILD_TYPE=RelWithDebInfo',
+        '-D', f'CMAKE_PREFIX_PATH={_cmake_search_dir}',
+        '-D', f'CMAKE_FIND_ROOT_PATH={_extra_sysroot};{_cmake_search_dir}',
         '-D',  'LLVM_ENABLE_PROJECTS=clang;clang-tools-extra;lldb',
         '-D',  'CLANG_PLUGIN_SUPPORT:BOOL=0',
         '-D',  'LLVM_APPEND_VC_REV:BOOL=0',
@@ -129,15 +159,14 @@ def _build_step_00():
         '-D',  'LLDB_ENABLE_FBSDVMCORE:BOOL=0',
         '-D',  'LLVM_TARGETS_TO_BUILD=AArch64;ARM;RISCV;WebAssembly;X86',
         '-D',  'LLDB_USE_SYSTEM_DEBUGSERVER:BOOL=1',
-        '-D', f'LLVM_NATIVE_TOOL_DIR={os.path.abspath(os.path.join(_tblgen_dir, "bin"))}',
+        '-D', f'LLVM_NATIVE_TOOL_DIR={(Path(_tblgen_dir) / "bin").absolute().as_posix()}',
     ]
-    args.extend(_extra_args_cmake)
 
     if _tblgen_req:
         shutil.rmtree(_tblgen_dir, ignore_errors=True); \
             os.makedirs(_tblgen_dir, exist_ok=True)
 
-        _tblgen_build_args = []; _tblgen_build_args.extend(args)
+        _tblgen_build_args = [*args]
         _tblgen_build_args_bdir_idx = 0
         _tblgen_build_args_zlib_idx = 0
         for i, entry in enumerate(_tblgen_build_args):
@@ -148,92 +177,88 @@ def _build_step_00():
         _tblgen_build_args[_tblgen_build_args_bdir_idx] = _tblgen_dir
         _tblgen_build_args[_tblgen_build_args_zlib_idx] = 'LLVM_ENABLE_ZLIB=OFF'
 
-        _tblgen_build_env = _env['WIN32_MSVC_ENV_NATIVE']
+        _tblgen_build_env = _win32_msvc_env_native
         _tblgen_build_env['CFLAGS']   = '/utf-8'
         _tblgen_build_env['CXXFLAGS'] = _tblgen_build_env['CFLAGS']
-        _env['FUNC_SHELL_DEVNUL'](env=_tblgen_build_env, args=_tblgen_build_args, shell=_ctx['SHELL_REQ'])
+        x._util_func__subprocess(env=_tblgen_build_env, args=_tblgen_build_args)
 
         _tblgen_build_targets = ['llvm-tblgen', 'clang-tblgen', 'lldb-tblgen', 'clang-tidy-confusable-chars-gen']
-        _tblgen_build_args = [_ctx['CMAKE_CMD'], '--build', _tblgen_dir, '-j', _env['PARALLEL_JOBS'], '--target', ';'.join(_tblgen_build_targets)]
-        _env['FUNC_SHELL_DEVNUL'](env=_tblgen_build_env, args=_tblgen_build_args, shell=_ctx['SHELL_REQ'])
+        _tblgen_build_args = f"{BUILD_CMD} --build {_tblgen_dir} -j {x.CPU_COUNT} --target {';'.join(_tblgen_build_targets)}"
+        x._util_func__subprocess(env=_tblgen_build_env, args=shlex.split(_tblgen_build_args))
 
 
-    LLVM_ARCH = ''
-    if _env['PKG_ARCH'] == 'amd64': LLVM_ARCH = 'X86'
-    if _env['PKG_ARCH'] == 'arm64': LLVM_ARCH = 'AArch64'
-    if _env['PKG_ARCH'] == 'armv7': LLVM_ARCH = 'ARM'
-    if _env['PKG_PLATFORM'] == 'macosx':
+    LLVM_ARCH = {
+        'amd64': 'X86',
+        'arm64': 'AArch64',
+        'armv7': 'ARM',
+    }[_target_arch]
+    args.extend([
+        '-D', f'LLVM_TARGET_ARCH={LLVM_ARCH}',
+        '-D', f'CMAKE_C_HOST_COMPILER={_host_cc}',
+        '-D', f'CMAKE_CXX_HOST_COMPILER={_host_cxx}',
+    ])
+    if _target_platform == 'macosx':
         args.extend([
-            '-D', f'LLVM_HOST_TRIPLE={_env["PKG_ARCH"]}-apple-darwin',
-            '-D', f'LLVM_TARGET_ARCH={LLVM_ARCH}',
-            '-D', f'CMAKE_C_HOST_COMPILER={_env["HOSTCC"]}',
-            '-D', f'CMAKE_CXX_HOST_COMPILER={_env["HOSTCXX"]}',
+            '-D', f'LLVM_HOST_TRIPLE={_target_arch}-apple-darwin',
         ])
-    if (_env['PKG_PLATFORM'] == 'linux') and (_env['CROSS_BUILD_ENABLED']):
+    if _target_platform == 'linux' and _cross_build_enabled:
         args.extend([
-            '-D', f'LLVM_HOST_TRIPLE={_env["CROSS_TARGET_TRIPLE"]}',
-            '-D', f'LLVM_TARGET_ARCH={LLVM_ARCH}',
-            '-D', f'CMAKE_C_HOST_COMPILER={_env["HOSTCC"]}',
-            '-D', f'CMAKE_CXX_HOST_COMPILER={_env["HOSTCXX"]}',
+            '-D', f'LLVM_HOST_TRIPLE={_cross_target_triple}',
         ])
-    if _env['PKG_PLATFORM'] == 'win-mingw':
+    if _target_platform == 'win-mingw':
         args.extend([
-            '-D', f'LLVM_HOST_TRIPLE={_env["CROSS_TARGET_TRIPLE"]}',
-            '-D', f'LLVM_TARGET_ARCH={LLVM_ARCH}',
-            '-D', f'CMAKE_C_HOST_COMPILER={_env["HOSTCC"]}',
-            '-D', f'CMAKE_CXX_HOST_COMPILER={_env["HOSTCXX"]}',
+            '-D', f'LLVM_HOST_TRIPLE={_cross_target_triple}',
         ])
-    if _env['PKG_PLATFORM'] == 'win-msvc':
+    if _target_platform == 'win-msvc':
         args.extend([
             '-D',  'CMAKE_SYSTEM_NAME=Windows',
             '-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE',
-            '-D', f'LLVM_HOST_TRIPLE={_env["CROSS_TARGET_TRIPLE"]}',
-            '-D', f'LLVM_TARGET_ARCH={LLVM_ARCH}',
-            '-D', f'CMAKE_C_HOST_COMPILER={_env["HOSTCC"]}',
-            '-D', f'CMAKE_CXX_HOST_COMPILER={_env["HOSTCXX"]}',
+            '-D', f'LLVM_HOST_TRIPLE={_cross_target_triple}',
         ])
 
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    x._util_func__subprocess(env=BUILD_ENV, args=args)
 def _build_step_01():
     _build_targets = ['clangd', 'llvm-symbolizer', 'lldb', 'lldb-dap', 'lldb-instr']
-    if _env.get('PLATFORM_LINUX', False):
+    if _target_platform == 'linux':
         _build_targets.append('lldbIntelFeatures')
-    if not _env.get('PLATFORM_APPLE', False):
+    if _target_platform != 'macosx':
         _build_targets.append('lldb-server')
 
-    args = [_ctx['CMAKE_CMD'], '--build', _env['PKG_BULD_DIR'], '-j', _env['PARALLEL_JOBS'], '--target', ';'.join(_build_targets)]
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+    args = f"{BUILD_CMD} --build {_pkg_buld_dir} -j {x.CPU_COUNT} --target {';'.join(_build_targets)}"
+    x._util_func__subprocess(env=BUILD_ENV, args=shlex.split(args))
 def _build_step_02():
-    args = [_ctx['CMAKE_CMD'], '--install', '<?>', '--component', '<?>']
-    if _ctx['PKG_INST_STRIP']:
-        args.append( _ctx['PKG_INST_STRIP'])
+    _install_targets = {
+        (Path(_pkg_buld_dir) / 'tools').absolute().as_posix(): [
+            'llvm-symbolizer',
+        ],
+        (Path(_pkg_buld_dir) / 'tools' / 'lldb' / 'tools').absolute().as_posix(): [
+            'lldb',
+            'lldb-argdumper',
+            'lldb-dap',
+            'lldb-instr',
+        ],
+        (Path(_pkg_buld_dir) / 'tools' / 'lldb').absolute().as_posix(): [
+            'liblldb',
+        ],
+        (Path(_pkg_buld_dir) / 'tools' / 'clang').absolute().as_posix(): [
+            'clangd',
+            'clang-resource-headers',
+        ],
+    }
+    if _target_platform == 'linux':
+        _install_targets[(Path(_pkg_buld_dir) / 'tools' / 'lldb' / 'tools').absolute().as_posix()].extend([
+            'lldbIntelFeatures',
+        ])
+    if _target_platform != 'macosx':
+        _install_targets[(Path(_pkg_buld_dir) / 'tools' / 'lldb' / 'tools').absolute().as_posix()].extend([
+            'lldb-server',
+        ])
 
-    args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools')); args[4] = 'llvm-symbolizer'
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
-
-    args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb', 'tools')); args[4] = 'lldb'
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
-    args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb', 'tools')); args[4] = 'lldb-argdumper'
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
-    args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb', 'tools')); args[4] = 'lldb-dap'
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
-    args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb', 'tools')); args[4] = 'lldb-instr'
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
-
-    args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb')); args[4] = 'liblldb'
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
-    args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'clang')); args[4] = 'clangd'
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
-    args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'clang')); args[4] = 'clang-resource-headers'
-    _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
-
-    if _env.get('PLATFORM_LINUX', False):
-        args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb', 'tools')); args[4] = 'lldbIntelFeatures'
-        _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
-    if _env.get('PLATFORM_APPLE', False):
+    for _dir, _targets in _install_targets.items():
+        for _target in _targets:
+            x._util_func__subprocess(env=BUILD_ENV, args=[
+                BUILD_CMD, '--install', _dir, '--component', _target,
+            ])
+    if _target_platform == 'macosx':
         _src = '/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Versions/A/Resources/debugserver'
-        _dst = os.path.abspath(os.path.join(_env['PKG_INST_DIR'], 'bin', 'lldb-server'))
-        os.symlink(_src, _dst, target_is_directory=False)
-    else:
-        args[2] = os.path.abspath(os.path.join(_env['PKG_BULD_DIR'], 'tools', 'lldb', 'tools')); args[4] = 'lldb-server'
-        _env['FUNC_SHELL_DEVNUL'](env=_ctx['BUILD_ENV'], args=args, shell=_ctx['SHELL_REQ'])
+        (Path(_pkg_inst_dir) / 'bin' / 'lldb-server').symlink_to(_src, target_is_directory=False)
