@@ -57,8 +57,8 @@ def module_init(env: dict) -> list:
     if _target_pkg_type != 'static':
         raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
 
-
     x._util_func__pip_install(['meson', 'ninja'])
+
 
     return [
         _source_download,
