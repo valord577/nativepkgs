@@ -30,4 +30,5 @@ jobs:
     uses: ./.github/workflows/_matrix.yml
     with:
       disable_shared: false
+      disable_static: true
       disable_commit: true
