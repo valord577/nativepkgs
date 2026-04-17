@@ -449,6 +449,9 @@ def _setctx_android(
             ANDROID_FLEXIBLE_PAGE_SIZES = f'.{ANDROID_FLEXIBLE_PAGE_SIZES}'
         else:
             raise RuntimeError(f'unknown page sizes: `{ANDROID_FLEXIBLE_PAGE_SIZES}`, allowed: `{ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED}`')
+    if ANDROID_FLEXIBLE_PAGE_SIZES == '.16k':
+        if ctx.target_arch == 'armv7':
+            raise RuntimeError(f'unsupported {ANDROID_FLEXIBLE_PAGE_SIZES} page size on {ctx.target_arch}')
 
     CROSS_TOOLCHAIN_ROOT = x._util_get_cross_toolchain_dir()
     _toolchains_dir = (Path(CROSS_TOOLCHAIN_ROOT) / 'toolchains' / 'llvm' / 'prebuilt' / 'linux-x86_64').absolute().as_posix()
@@ -467,10 +470,11 @@ def _setctx_android(
     ctx.sysroot = (Path(_toolchains_dir) / 'sysroot').absolute().as_posix()
 
 
+    _cflags = ''
     ctx.cross_ldflags = ''
     if ANDROID_FLEXIBLE_PAGE_SIZES == '.16k':
+        _cflags += ' -D__BIONIC_NO_PAGE_SIZE_MACRO'
         ctx.cross_ldflags += ' -Wl,-z,max-page-size=16384'
-    _cflags = ''
     if ctx.target_arch == 'armv7':
         _cflags += ' -march=armv7-a -mfpu=neon-vfpv4'
 
@@ -495,20 +499,28 @@ def _setctx_android(
         CROSS_TOOLCHAIN_PKGCONF_PREFIX = (Path(CROSS_TOOLCHAIN_ROOT) / 'pkgconf-wrapper').absolute().as_posix()
     ctx.cross_pkgconfig_bin = f'{CROSS_TOOLCHAIN_PKGCONF_PREFIX}.{ctx.cross_target_triple[:-len(ctx.android_api_level)]}'
     # cmake toolchain file
-    CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE')
-    if not CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE:
-        CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = (Path(CROSS_TOOLCHAIN_ROOT) / 'toolchain-cmake-template').absolute().as_posix()
-    CROSS_TOOLCHAIN_FILE_CMAKE = f'{CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE}{ANDROID_FLEXIBLE_PAGE_SIZES}.{ctx.target_arch}'
-    ctx.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE={CROSS_TOOLCHAIN_FILE_CMAKE}"])
+    #CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE')
+    #if not CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE:
+    #    CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE = (Path(CROSS_TOOLCHAIN_ROOT) / 'toolchain-cmake-template').absolute().as_posix()
+    #CROSS_TOOLCHAIN_FILE_CMAKE = f'{CROSS_TOOLCHAIN_FILE_PREFIX_CMAKE}{ANDROID_FLEXIBLE_PAGE_SIZES}.{ctx.target_arch}'
+    #ctx.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE={CROSS_TOOLCHAIN_FILE_CMAKE}"])
     # ******* ******* ******* ******* ******* ******* ******* ******* *******
-    #ctx.extra_cmake.extend(["-D", f"CMAKE_SYSTEM_NAME=Android"])
-    #ctx.extra_cmake.extend(["-D", f"CMAKE_SYSTEM_VERSION={ctx.android_api_level}"])
-    #ctx.extra_cmake.extend(["-D", f"CMAKE_ANDROID_ARCH_ABI=armeabi-v7a"])
-    #ctx.extra_cmake.extend(["-D", f"CMAKE_ANDROID_NDK={CROSS_TOOLCHAIN_ROOT}"])
-    #if ctx.target_arch == 'armv7':
-    #    ctx.extra_cmake.extend(["-D", "CMAKE_ANDROID_ARM_MODE:BOOL=1"])
-    #    ctx.extra_cmake.extend(["-D", "CMAKE_ANDROID_ARM_NEON:BOOL=1"])
-    #ctx.extra_cmake.extend(['-D', f"PKG_CONFIG_EXECUTABLE={ctx.cross_pkgconfig_bin}"])
+    _cmake_arch_abi = {
+        'arm64': 'arm64-v8a',
+        'armv7': 'armeabi-v7a',
+        'amd64': 'x86_64',
+    }[ctx.target_arch]
+    if ANDROID_FLEXIBLE_PAGE_SIZES == '.16k':
+        ctx.extra_cmake.extend(["-D",  "ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES:BOOL=TRUE"])
+    ctx.extra_cmake.extend(["-D",  "CMAKE_CROSSCOMPILING:BOOL=TRUE"])
+    ctx.extra_cmake.extend(["-D",  "CMAKE_SYSTEM_NAME=Android"])
+    ctx.extra_cmake.extend(["-D", f"CMAKE_SYSTEM_VERSION={ctx.android_api_level}"])
+    ctx.extra_cmake.extend(["-D", f"CMAKE_ANDROID_ARCH_ABI={_cmake_arch_abi}"])
+    ctx.extra_cmake.extend(["-D", f"CMAKE_ANDROID_NDK={CROSS_TOOLCHAIN_ROOT}"])
+    if ctx.target_arch == 'armv7':
+        ctx.extra_cmake.extend(["-D", "CMAKE_ANDROID_ARM_MODE:BOOL=1"])
+        ctx.extra_cmake.extend(["-D", "CMAKE_ANDROID_ARM_NEON:BOOL=1"])
+    ctx.extra_cmake.extend(['-D', f"PKG_CONFIG_EXECUTABLE={ctx.cross_pkgconfig_bin}"])
     # ******* ******* ******* ******* ******* ******* ******* ******* *******
     # meson toolchain file
     CROSS_TOOLCHAIN_FILE_PREFIX_MESON = os.getenv('CROSS_TOOLCHAIN_FILE_PREFIX_MESON')

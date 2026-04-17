@@ -54,8 +54,8 @@ def module_init(env: dict) -> list:
     global _extra_args_build; \
         _extra_args_build = env[f'EXTRA_{BUILD_CMD.upper()}']
 
-    if _target_pkg_type != 'static':
-        raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
+    #if _target_pkg_type != 'static':
+    #    raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
 
 
     global BUILD_ENV

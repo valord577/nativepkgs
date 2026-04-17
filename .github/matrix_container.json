@@ -61,10 +61,5 @@
     "platform": "android",
     "arch": "armv7",
     "libc": ""
-  },
-  {
-    "platform": "android",
-    "arch": "armv7",
-    "libc": "16k"
   }
 ]
