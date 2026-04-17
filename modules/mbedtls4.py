@@ -123,7 +123,7 @@ def _source_download():
     x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
     x._util_source_cleanup(_git_submodule_tf_psa_crypto)
     if _target_platform == 'win-msvc':
-        x._util_func__exec_python(cwd=_subproj_src, args=[(Path(_subproj_src) / 'framework' / 'scripts' / 'make_generated_files.py')])
+        x._util_func__exec_python(cwd=_subproj_src, args=[(Path(_subproj_src) / 'framework' / 'scripts' / 'make_generated_files.py').absolute().as_posix()])
 def _source_set_features():
     _config_script = (Path(_subproj_src) / 'scripts' / 'config.py').absolute().as_posix()
 
