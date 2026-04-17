@@ -186,6 +186,7 @@ Libs: -L${libdir} -lmbedtls -lmbedx509 -ltfpsacrypto @PKGCONFIG_EXTRA_LIBS@
     _pkgconf_content = _pkgconf_content.replace('@PKGCONFIG_EXTRA_LIBS@', _pkgconf_extra_libs)
     _pkgconf_content = _pkgconf_content.replace('@PKGCONFIG_VERSION@', x._util_get_pkg_version_desc(_target_pkg_name))
 
-    _pkgconf = (Path(_pkg_inst_dir) / 'lib' / 'pkgconfig' / 'mbedtls.pc'); \
+    _pkgconf = (Path(_pkg_inst_dir) / 'lib' / 'pkgconfig' / 'mbedtls4.pc'); \
         _pkgconf.parent.mkdir(parents=True, exist_ok=True)
     _pkgconf.write_text(_pkgconf_content)
+    (_pkgconf.parent / 'mbedtls.pc').symlink_to(_pkgconf.name, target_is_directory=False)
