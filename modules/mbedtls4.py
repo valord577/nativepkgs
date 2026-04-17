@@ -122,8 +122,8 @@ def _source_download():
     x._util_put_pkg_version_desc(_target_pkg_name, x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
     x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
     x._util_source_cleanup(_git_submodule_tf_psa_crypto)
-    if _target_platform == 'win-msvc':
-        x._util_func__exec_python(cwd=_subproj_src, args=[(Path(_subproj_src) / 'framework' / 'scripts' / 'make_generated_files.py').absolute().as_posix()])
+    #if _target_platform == 'win-msvc':
+    #    x._util_func__exec_python(cwd=_subproj_src, args=[(Path(_subproj_src) / 'framework' / 'scripts' / 'make_generated_files.py').absolute().as_posix()])
 def _source_set_features():
     _config_script = (Path(_subproj_src) / 'scripts' / 'config.py').absolute().as_posix()
 
@@ -156,6 +156,7 @@ def _build_step_00():
         '-D',  'ENABLE_PROGRAMS:BOOL=0',
         '-D',  'ENABLE_TESTING:BOOL=0',
         '-D',  'DISABLE_PACKAGE_CONFIG_AND_INSTALL:BOOL=1',
+        '-D',  'GEN_FILES:BOOL=1',
     ]
     x._util_func__subprocess(env=BUILD_ENV, args=args)
 def _build_step_01():
