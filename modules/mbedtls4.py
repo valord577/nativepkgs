@@ -59,6 +59,8 @@ def module_init(env: dict) -> list:
     if _target_pkg_type != 'static':
         raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
 
+    x._util_func__pip_install(['jsonschema', 'jinja2'])
+
 
     global BUILD_ENV
 
@@ -69,8 +71,6 @@ def module_init(env: dict) -> list:
         BUILD_ENV['CFLAGS']   = '/utf-8 /wd4146'
         BUILD_ENV['CXXFLAGS'] = BUILD_ENV['CFLAGS']
         _extra_args_build.extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
-
-    x._util_func__pip_install(['jsonschema', 'jinja2'])
 
     return [
         _source_download,
@@ -122,6 +122,8 @@ def _source_download():
     x._util_put_pkg_version_desc(_target_pkg_name, x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
     x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
     x._util_source_cleanup(_git_submodule_tf_psa_crypto)
+    if _target_platform == 'win-msvc':
+        x._util_func__exec_python(cwd=_subproj_src, args=[(Path(_subproj_src) / 'framework' / 'scripts' / 'make_generated_files.py')])
 def _source_set_features():
     _config_script = (Path(_subproj_src) / 'scripts' / 'config.py').absolute().as_posix()
 
