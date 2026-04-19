@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Union
 
 
-PROJ_ROOT = (Path(__file__).parent / '..').absolute().as_posix()
+PROJ_ROOT = (Path(__file__).absolute().resolve().parents[1]).as_posix()
 # ----------------------------
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', line_buffering=True)
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
