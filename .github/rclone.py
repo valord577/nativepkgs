@@ -37,11 +37,11 @@ if not (arch in ['amd64', 'arm64']):
 download_link = f'https://downloads.rclone.org/rclone-current-{plat}-{arch}.zip'
 x.print_stderr(f'downloading rclone from "{download_link}"')
 
-rclone_zipfile = (Path(_rclone_dir) / 'rclone.zip').absolute().as_posix()
+rclone_zipfile = (Path(_rclone_dir) / 'rclone.zip')
 with urllib.request.urlopen(download_link) as resp:
     if resp.getcode() != 200:
         raise ConnectionError(f"respcode: {resp.getcode()}, respbody: ->\n{resp.read().decode(errors='ignore')}")
-    with open(rclone_zipfile, 'wb') as f:
+    with rclone_zipfile.open('wb') as f:
         shutil.copyfileobj(resp, f)
 
 
