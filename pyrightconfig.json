@@ -1,12 +1,10 @@
 {
   "exclude": [
-    "**/**",
+    ".deps/",
+    "out/",
+    "tmp/",
   ],
-  "include": [
-    "./*.py",
-    "./.github/*.py",
-    "./modules/*.py",
-  ],
+  "include": [],
   "venvPath": ".",
   "venv": ".env",
   "typeCheckingMode": "off",
