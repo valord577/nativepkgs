@@ -206,7 +206,7 @@ jobs:
           choco install ccache nasm; choco list
 
           C:/msys64/usr/bin/bash.exe -lc `
-            'pacman --noconfirm -S zip;'
+            'pacman --noconfirm -S zip unzip;'
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
