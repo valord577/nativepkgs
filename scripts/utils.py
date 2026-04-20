@@ -81,6 +81,10 @@ def _util_func__pip_install(packages: list[str]):
         args.extend(['-i', 'https://repo.huaweicloud.com/repository/pypi/simple'])
     args.extend(['pip', *packages])
     _util_func__exec_python(args=args)
+def _util_func__dl_3rd_deps(args: list[str]):
+    _util_func__exec_python(args=[
+        (Path(PROJ_ROOT) / 'scripts' / 'get_prebuilt.py').absolute().as_posix(), *args
+    ])
 
 def _util_put_pkg_version_desc(pkg_name: str, ver: str):
     (Path(PROJ_ROOT) / '.deps' / f'{pkg_name}.ver') \

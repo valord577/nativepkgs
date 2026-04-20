@@ -144,10 +144,9 @@ def _source_dl_3rd_deps():
             },
         ])
 
-    _get_prebuilt_script = (Path(x.PROJ_ROOT) / 'scripts' / 'get_prebuilt.py').absolute().as_posix()
     for dep in _3rd_deps:
         _name = dep['name']; _type = dep['type']; _vers = dep['vers']; _args = dep.get('args', '')
-        x._util_func__exec_python([_get_prebuilt_script, _target_archlibc, _name, _target_platform, _vers, _type, '', _3rd_deps_dir])
+        x._util_func__dl_3rd_deps([_target_archlibc, _name, _target_platform, _vers, _type, '', _3rd_deps_dir])
 
         if _args: _extra_args_build.append(_args)
         x._util_append_env_pkgconf_path(BUILD_ENV, (Path(_3rd_deps_dir) / _name / 'lib' / 'pkgconfig'))

@@ -113,10 +113,9 @@ def _source_dl_3rd_deps():
             },
         ])
 
-    _get_prebuilt_script = (Path(x.PROJ_ROOT) / 'scripts' / 'get_prebuilt.py').absolute().as_posix()
     for dep in _3rd_deps:
         _name = dep['name']; _type = dep['type']; _vers = dep['vers']
-        x._util_func__exec_python([_get_prebuilt_script, _target_archlibc, _name, _target_platform, _vers, _type, '', _3rd_deps_dir])
+        x._util_func__dl_3rd_deps([_target_archlibc, _name, _target_platform, _vers, _type, '', _3rd_deps_dir])
 
         _extra_search_dir.append((Path(_3rd_deps_dir) / _name).absolute().as_posix())
 def _source_download():
