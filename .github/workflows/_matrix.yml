@@ -254,7 +254,7 @@ jobs:
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
-          ./.github/rclone copy "${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
+          ./.github/rclone copy "out/${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
 
   _buildx_on_container:
     needs: _preset
@@ -321,4 +321,4 @@ jobs:
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
         run: |
-          ./.github/rclone copy "${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
+          ./.github/rclone copy "out/${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
