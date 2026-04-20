@@ -78,6 +78,7 @@ on:
 env:
   GH_TOKEN: ${{ github.token }}
   PKG_NAME: ${{ github.workflow }}
+  INST_DIR: ${{ github.workspace }}/out/${{ github.workflow }}
   CI_HIT_MESSAGE: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} (${{ github.sha }})"
   S3_R2_ACCOUNT_ID: ${{ secrets.S3_R2_ACCOUNT_ID }}
   S3_R2_ACCESS_KEY: ${{ secrets.S3_R2_ACCESS_KEY }}
