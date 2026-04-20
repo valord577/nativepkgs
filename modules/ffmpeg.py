@@ -140,7 +140,7 @@ def _source_dl_3rd_deps():
             {
                 'name': 'sdl2',
                 'type': 'static',
-                'vers': '1c4ea7d',
+                'vers': '1549cd3',
             },
         ])
 
