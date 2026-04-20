@@ -441,7 +441,7 @@ def _setctx_win32_msvc(
 def _setctx_android(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
-    ANDROID_FLEXIBLE_PAGE_SIZES = os.getenv('ANDROID_FLEXIBLE_PAGE_SIZES')
+    ANDROID_FLEXIBLE_PAGE_SIZES = os.getenv('ANDROID_FLEXIBLE_PAGE_SIZES') or ''
     if ANDROID_FLEXIBLE_PAGE_SIZES:
         ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED = ['16k']
         if ANDROID_FLEXIBLE_PAGE_SIZES in ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED:
