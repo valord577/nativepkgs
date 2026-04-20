@@ -15,7 +15,7 @@ from scripts import utils as x
 import os
 
 
-_github_env = os.getenv('GITHUB_ENV', '')
+_github_env = os.getenv('GITHUB_ENV')
 if not _github_env:
     raise RuntimeError('This script should be run on Github Action')
 
@@ -29,7 +29,7 @@ _pkg_type = sys.argv[5]
 with open(_github_env, 'a') as f:
     x._util_append_ci_env(f, 'PKG_TYPE', _pkg_type)
 
-    _inst_dir = (Path(x.PROJ_ROOT) / _pkg_name).absolute().as_posix()
+    _inst_dir = (Path(x.PROJ_ROOT) / 'out' / _pkg_name).absolute().as_posix()
     x._util_append_ci_env(f, 'INST_DIR', _inst_dir)
 
     _target_arch_libc = f'{_pkg_arch}'

@@ -206,7 +206,7 @@ jobs:
           choco install ccache nasm; choco list
 
           C:/msys64/usr/bin/bash.exe -lc `
-            'pacman --noconfirm -S zip;'
+            'pacman --noconfirm -S zip unzip;'
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -249,7 +249,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.PKG_ZIPNAME }}
-          path: ${{ env.PKG_ZIPNAME }}.zip
+          path: out/${{ env.PKG_ZIPNAME }}.zip
           compression-level: 0
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
@@ -316,7 +316,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.PKG_ZIPNAME }}
-          path: ${{ env.PKG_ZIPNAME }}.zip
+          path: out/${{ env.PKG_ZIPNAME }}.zip
           compression-level: 0
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}

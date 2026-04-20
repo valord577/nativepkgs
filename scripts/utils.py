@@ -21,18 +21,18 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_bufferin
 # ----------------------------
 # ci runtime
 # ----------------------------
-ON_GITLAB_CI = os.getenv('GITLAB_CI', '')      == 'true'
-ON_GITHUB_CI = os.getenv('GITHUB_ACTIONS', '') == 'true'
+ON_GITLAB_CI = os.getenv('GITLAB_CI') or ''      == 'true'
+ON_GITHUB_CI = os.getenv('GITHUB_ACTIONS') or '' == 'true'
 ON_CODE_EDIT = (not ON_GITLAB_CI) and (not ON_GITHUB_CI) \
-    and (os.getenv('CLANGD_CODE_COMPLETION', '0') == '1')
+    and (os.getenv('CLANGD_CODE_COMPLETION') or '0' == '1')
 # ----------------------------
 RCLONE_EXEC = (Path(PROJ_ROOT) / '.github' / 'rclone')
 # ----------------------------
-S3_R2_ACCOUNT_ID = os.getenv('S3_R2_ACCOUNT_ID', '<mask>')
-S3_R2_ACCESS_KEY = os.getenv('S3_R2_ACCESS_KEY', '<mask>')
-S3_R2_SECRET_KEY = os.getenv('S3_R2_SECRET_KEY', '<mask>')
-S3_R2_STORAGE_REGION = os.getenv('S3_R2_STORAGE_REGION', 'auto')
-S3_R2_STORAGE_BUCKET = os.getenv('S3_R2_STORAGE_BUCKET', '<mask>')
+S3_R2_ACCOUNT_ID = os.getenv('S3_R2_ACCOUNT_ID') or '<mask>'
+S3_R2_ACCESS_KEY = os.getenv('S3_R2_ACCESS_KEY') or '<mask>'
+S3_R2_SECRET_KEY = os.getenv('S3_R2_SECRET_KEY') or '<mask>'
+S3_R2_STORAGE_REGION = os.getenv('S3_R2_STORAGE_REGION') or  'auto'
+S3_R2_STORAGE_BUCKET = os.getenv('S3_R2_STORAGE_BUCKET') or '<mask>'
 # ----------------------------
 CPU_COUNT = os.cpu_count() or 2
 if sys.platform == 'linux':
@@ -133,3 +133,24 @@ def _util_get_cross_toolchain_dir():
 
 def _util_load_json_from_file(filepath: str) -> dict:
     return json.loads(Path(filepath).read_text())
+
+def _util_dopack_zip_with_softlinks(filepath: Path, zipname: Union[str, None] = None):
+    if not zipname:
+        zipname = filepath.name
+
+    _sh = 'bash'
+    _cwd = (filepath.parent).absolute().as_posix()
+    if sys.platform == 'win32':
+        _sh = 'C:/msys64/usr/bin/bash.exe'
+        _cwd = f'$(cygpath -u "{_cwd}")'
+    _cmd = f'zip -ry {zipname}.zip {filepath.name}'
+    _util_func__subprocess(args=[_sh, '-lc', f'cd {_cwd}; {_cmd}'])
+def _util_unpack_zip_with_softlinks(zipfile: Path, extract_dir: str):
+    _sh = 'bash'
+    _cwd = (Path(extract_dir)).absolute().as_posix()
+    if sys.platform == 'win32':
+        _sh = 'C:/msys64/usr/bin/bash.exe'
+        _cwd = f'$(cygpath -u "{_cwd}")'
+    _cmd = f'unzip {zipfile.absolute().as_posix()}'
+    _util_func__subprocess(args=[_sh, '-lc', f'cd {_cwd}; {_cmd}'])
+# ----------------------------
