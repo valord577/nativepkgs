@@ -35,7 +35,7 @@ if not os.getenv('VIRTUAL_ENV'):
 # ----------------------------
 # static or shared
 # ----------------------------
-PKG_TYPE = os.getenv('PKG_TYPE', 'static')
+PKG_TYPE = os.getenv('PKG_TYPE') or 'static'
 if PKG_TYPE not in ['static']: PKG_TYPE = 'shared'
 # ----------------------------
 
@@ -392,7 +392,7 @@ def _setctx_win32_msvc(
         ])
 
     _vs_search_path: list[str] = []
-    if _user_def := os.getenv('MSVC_INSTALL_DIR', ''):
+    if _user_def := os.getenv('MSVC_INSTALL_DIR'):
         _vs_search_path.append(_user_def)
     else:
         # auto search vs install dir
@@ -441,7 +441,7 @@ def _setctx_win32_msvc(
 def _setctx_android(
     ctx: _ctx, _native: bool, _tuple: tuple[str, ...],
 ):
-    ANDROID_FLEXIBLE_PAGE_SIZES = os.getenv('ANDROID_FLEXIBLE_PAGE_SIZES', '')
+    ANDROID_FLEXIBLE_PAGE_SIZES = os.getenv('ANDROID_FLEXIBLE_PAGE_SIZES')
     if ANDROID_FLEXIBLE_PAGE_SIZES:
         ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED = ['16k']
         if ANDROID_FLEXIBLE_PAGE_SIZES in ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED:

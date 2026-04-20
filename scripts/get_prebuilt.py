@@ -37,8 +37,8 @@ elif x.ON_GITHUB_CI:
     _src = f'r2:{x.S3_R2_STORAGE_BUCKET}/packages/{pkg_name}/{pkg_version}/{_pkg_dl_name}.zip'
     x._util_func__subprocess(args=[x.RCLONE_EXEC.absolute().as_posix(), 'copy', _src, _3rd_deps_dir])
 
-    archive_filepath = (Path(_3rd_deps_dir) / f'{_pkg_dl_name}.zip').absolute().as_posix()
-    shutil.unpack_archive(archive_filepath, extract_dir=_3rd_deps_dir)
+    archive_filepath = (Path(_3rd_deps_dir) / f'{_pkg_dl_name}.zip')
+    x._util_unpack_zip_with_softlinks(archive_filepath, extract_dir=_3rd_deps_dir)
 else:
     _this_lib_dir.unlink(missing_ok=True)
     _src = (Path(x.PROJ_ROOT) / 'out' / pkg_name / pkg_platform / _adapt_arch_libc).absolute().as_posix()

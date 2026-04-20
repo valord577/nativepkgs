@@ -45,7 +45,7 @@ with urllib.request.urlopen(download_link) as resp:
         shutil.copyfileobj(resp, f)
 
 
-shutil.unpack_archive(rclone_zipfile, extract_dir=_rclone_dir)
+x._util_unpack_zip_with_softlinks(rclone_zipfile, extract_dir=_rclone_dir)
 rclone_exec = glob.glob(f'{_rclone_dir}/rclone-v*-{plat}-{arch}/rclone{fext}')[0]
 os.chmod(rclone_exec, stat.S_IRWXU); shutil.move(src=rclone_exec, dst=_rclone_dir)
 

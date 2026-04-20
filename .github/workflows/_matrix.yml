@@ -249,7 +249,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.PKG_ZIPNAME }}
-          path: ${{ env.PKG_ZIPNAME }}.zip
+          path: out/${{ env.PKG_ZIPNAME }}.zip
           compression-level: 0
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
@@ -316,7 +316,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.PKG_ZIPNAME }}
-          path: ${{ env.PKG_ZIPNAME }}.zip
+          path: out/${{ env.PKG_ZIPNAME }}.zip
           compression-level: 0
       - name: commit to pre-compiled storage
         if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
