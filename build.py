@@ -101,8 +101,8 @@ class _ctx:
         _3rd_deps_dir = (Path(x.PROJ_ROOT) / f'.lib.{self.target_plat}.{_target_archlibc}').absolute().as_posix()
         _pkg_buld_dir = (Path(x.PROJ_ROOT) / 'tmp' / self.module / self.target_plat / _target_archlibc).absolute().as_posix()
         _pkg_inst_dir = (Path(x.PROJ_ROOT) / 'out' / self.module / self.target_plat / _target_archlibc).absolute().as_posix()
-        if x.ON_GITLAB_CI or x.ON_GITHUB_CI:
-            _pkg_inst_dir = os.getenv('INST_DIR') or _pkg_inst_dir
+        if (x.ON_GITLAB_CI or x.ON_GITHUB_CI) and (_pkg_inst_dir_ci := os.getenv('INST_DIR')):
+            _pkg_inst_dir = Path(_pkg_inst_dir_ci).absolute().as_posix()
 
         _subproj_src = (Path(x.PROJ_ROOT) / '.deps' / self.module).absolute().as_posix()
         _subproj_src_patches = (Path(x.PROJ_ROOT) / 'patches' / self.module).absolute().as_posix()
