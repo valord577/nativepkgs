@@ -44,11 +44,6 @@
   },
   {
     "platform": "android",
-    "arch": "amd64",
-    "libc": "16k"
-  },
-  {
-    "platform": "android",
     "arch": "arm64",
     "libc": ""
   },

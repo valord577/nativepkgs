@@ -450,7 +450,7 @@ def _setctx_android(
         else:
             raise RuntimeError(f'unknown page sizes: `{ANDROID_FLEXIBLE_PAGE_SIZES}`, allowed: `{ANDROID_FLEXIBLE_PAGE_SIZES_ALLOWED}`')
     if ANDROID_FLEXIBLE_PAGE_SIZES == '.16k':
-        if ctx.target_arch == 'armv7':
+        if ctx.target_arch in ['amd64', 'armv7']:
             raise RuntimeError(f'unsupported {ANDROID_FLEXIBLE_PAGE_SIZES} page size on {ctx.target_arch}')
 
     CROSS_TOOLCHAIN_ROOT = x._util_get_cross_toolchain_dir()
