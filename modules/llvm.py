@@ -135,7 +135,7 @@ def _build_step_00():
     args = [BUILD_CMD, *_extra_args_build,
         '-S',   (Path(_subproj_src) / 'llvm').absolute().as_posix(),
         '-D',  'LLVM_BUILD_LLVM_DYLIB:BOOL=0',
-        '-D',  'CMAKE_BUILD_TYPE=RelWithDebInfo',
+        '-D',  'CMAKE_BUILD_TYPE=Release',
         '-D', f'CMAKE_PREFIX_PATH={_cmake_search_dir}',
         '-D', f'CMAKE_FIND_ROOT_PATH={_extra_sysroot};{_cmake_search_dir}',
         '-D',  'LLVM_ENABLE_PROJECTS=clang;clang-tools-extra;lldb',
@@ -256,7 +256,7 @@ def _build_step_02():
     for _dir, _targets in _install_targets.items():
         for _target in _targets:
             x._util_func__subprocess(env=BUILD_ENV, args=[
-                BUILD_CMD, '--install', _dir, '--component', _target,
+                BUILD_CMD, '--install', _dir, '--component', _target, '--strip'
             ])
     if _target_platform == 'macosx':
         _src = '/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Versions/A/Resources/debugserver'
