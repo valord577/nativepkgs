@@ -261,3 +261,11 @@ def _build_step_02():
     if _target_platform == 'macosx':
         _src = '/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Versions/A/Resources/debugserver'
         (Path(_pkg_inst_dir) / 'bin' / 'lldb-server').symlink_to(_src, target_is_directory=False)
+
+
+    if _target_platform in ['win-msvc', 'win-mingw']:
+        _libname = {
+            'win-msvc':  'liblldb.lib',
+            'win-mingw': 'liblldb.dll.a',
+        }[_target_platform]
+        (Path(_pkg_inst_dir) / 'lib' / _libname).unlink(missing_ok=True)
