@@ -234,7 +234,8 @@ def _build_step_00():
     x._util_func__subprocess(cwd=_pkg_buld_dir, env=BUILD_ENV, args=args)
 def _build_step_01():
     args = f"make -j {x.CPU_COUNT}"
-    if bear := shutil.which('bear'): args = f"{bear} -- " + args
+    if x.ON_CODE_EDIT and (bear := shutil.which('bear')):
+        args = f"{bear} -- " + args
     x._util_func__subprocess(cwd=_pkg_buld_dir, env=BUILD_ENV, args=shlex.split(args), stdout=sp.DEVNULL)
 def _build_step_02():
     if _target_platform not in ['iphoneos', 'iphonesimulator']:
