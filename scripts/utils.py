@@ -12,6 +12,7 @@ import sys
 
 from pathlib import Path
 from typing import Union
+from urllib.parse import urljoin
 
 
 PROJ_ROOT = (Path(__file__).absolute().resolve().parents[1]).as_posix()
@@ -118,11 +119,10 @@ def _util_source_apply_patches(cwd: str, patches_dir: str):
         _util_func__subprocess(cwd=cwd, args=[
             'git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', it.absolute().as_posix(),
         ])
-def _util_source_sync_submodules(submodules: list[dict[str, str]]):
+def _util_source_sync_submodules(repo_url: str, submodules: list[dict[str, str]]):
     for _submodule in submodules:
         repo = _submodule['repo']; path = _submodule['path']; cwd  = _submodule['cwd']; url  = _submodule['url']
-        _util_func__subprocess(cwd=cwd, args=['git', 'config', '--local', f'submodule.{repo}.url', url])
-        _util_func__subprocess(cwd=cwd, args=['git', 'submodule', 'sync', '--', path])
+        _util_func__subprocess(cwd=cwd, args=['git', 'config', '--local', f'submodule.{repo}.url', urljoin(repo_url + '/', url)])
         _util_func__subprocess(cwd=cwd, args=['git', 'submodule', 'update', '--init', '--depth=1', '--single-branch', '-f', '--', path])
 
 def _util_get_cross_toolchain_dir():

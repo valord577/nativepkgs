@@ -85,10 +85,11 @@ def module_init(env: dict) -> list:
 
 def _source_download():
     _git_target = 'refs/heads/mbedtls-4.1'
+    _git_repo_url = 'https://github.com/Mbed-TLS/mbedtls.git'
     _git_submodule_tf_psa_crypto = (Path(_subproj_src) / 'tf-psa-crypto').absolute().as_posix()
     if not (Path(_subproj_src) / '.git').exists():
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'init'])
-        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'remote', 'add', 'x', 'https://github.com/Mbed-TLS/mbedtls.git'])
+        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'remote', 'add', 'x', _git_repo_url])
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'checkout', 'FETCH_HEAD'])
 
@@ -118,7 +119,7 @@ def _source_download():
                 'url':  '../mldsa-native.git',
             },
         ]
-        x._util_source_sync_submodules(_git_submodules)
+        x._util_source_sync_submodules(_git_repo_url, _git_submodules)
     x._util_put_pkg_version_desc(_target_pkg_name, x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
     x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
     x._util_source_cleanup(_git_submodule_tf_psa_crypto)
