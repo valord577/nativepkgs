@@ -135,6 +135,7 @@ def _build_step_00():
         '-D',  'ENABLE_PROGRAMS:BOOL=0',
         '-D',  'ENABLE_TESTING:BOOL=0',
         '-D',  'DISABLE_PACKAGE_CONFIG_AND_INSTALL:BOOL=1',
+        '-D',  'GEN_FILES:BOOL=1',
     ]
     x._util_func__subprocess(env=BUILD_ENV, args=args)
 def _build_step_01():
