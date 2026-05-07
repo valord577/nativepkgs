@@ -123,7 +123,7 @@ def _source_dl_3rd_deps():
         {
             'name': 'mbedtls3',
             'type': 'static',
-            'vers': '0bebf8b',
+            'vers': '2f2b202',
             'args': '--enable-mbedtls',
         },
     ]
