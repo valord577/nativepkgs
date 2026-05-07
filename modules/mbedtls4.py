@@ -84,7 +84,7 @@ def module_init(env: dict) -> list:
 
 
 def _source_download():
-    _git_target = 'refs/tags/v4.1.0'
+    _git_target = 'refs/heads/mbedtls-4.1'
     _git_submodule_tf_psa_crypto = (Path(_subproj_src) / 'tf-psa-crypto').absolute().as_posix()
     if not (Path(_subproj_src) / '.git').exists():
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'init'])

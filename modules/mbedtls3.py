@@ -82,7 +82,7 @@ def module_init(env: dict) -> list:
 
 
 def _source_download():
-    _git_target = 'refs/tags/v3.6.6'
+    _git_target = 'refs/heads/mbedtls-3.6'
     if not (Path(_subproj_src) / '.git').exists():
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'init'])
         x._util_func__subprocess(cwd=_subproj_src, args=['git', 'remote', 'add', 'x', 'https://github.com/Mbed-TLS/mbedtls.git'])
