@@ -2,7 +2,7 @@
 
 # fmt: off
 
-from scripts import utils as x
+from buildx import utils as x
 # ----------------------------
 
 import os

@@ -9,7 +9,7 @@ sys.dont_write_bytecode = True
 sys.path.append(
     (Path(__file__).parent / '..').absolute().as_posix()
 )
-from scripts import utils as x
+from buildx import utils as x
 # ----------------------------
 
 import os

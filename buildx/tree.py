@@ -11,6 +11,10 @@ import utils as x
 from pathlib import Path
 
 
+def _format_size(_path: Path) -> str:
+    _size = _path.stat().st_size
+    return f'{_size} bytes (≈ {(_size / 1024.0):.3f} KiB)'
+
 basepath = Path(sys.argv[1])
 depth = 0
 if len(sys.argv) > 2:
@@ -27,13 +31,14 @@ while _stack:
         _name_with_symlink = _path.as_posix()
     if _is_symlink:
         _name_with_symlink = f'{_name_with_symlink} -> {_path.readlink().as_posix()}'
+    _line = f'[{_format_size(_path)}]   {_name_with_symlink}'
 
     _child_prefixes: list[str] = []
     if _depth == -1:
-        x.print_stderr(f"{_name_with_symlink}")
+        x.print_stderr(f"{_line}")
     else:
         _child_prefixes = _prefixes + ['    ' if _connector.startswith('└') else '│   ']
-        x.print_stderr(f"{''.join(_prefixes)}{_connector}{_name_with_symlink}")
+        x.print_stderr(f"{''.join(_prefixes)}{_connector}{_line}")
 
     if (not _is_dir) or (depth > 0 and _depth + 1 >= depth):
         continue
