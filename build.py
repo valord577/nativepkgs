@@ -5,7 +5,7 @@
 import sys
 sys.dont_write_bytecode = True
 
-from scripts import utils as x
+from buildx import utils as x
 # ----------------------------
 
 
@@ -701,6 +701,6 @@ if __name__ == "__main__":
         func()
     if not x.ON_CODE_EDIT:
         x._util_func__exec_python([
-            (Path(x.PROJ_ROOT) / 'scripts' / 'tree.py').absolute().as_posix(), _pkg_inst_dir, '3'
+            (Path(x.PROJ_ROOT) / 'buildx' / 'tree.py').absolute().as_posix(), _pkg_inst_dir, '3'
         ])
     x.print_stderr(f'──── Build Done @{dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S %Z")} ────')

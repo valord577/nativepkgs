@@ -84,7 +84,7 @@ def _util_func__pip_install(packages: list[str]):
     _util_func__exec_python(args=args)
 def _util_func__dl_3rd_deps(args: list[str]):
     _util_func__exec_python(args=[
-        (Path(PROJ_ROOT) / 'scripts' / 'get_prebuilt.py').absolute().as_posix(), *args
+        (Path(PROJ_ROOT) / 'buildx' / 'get_prebuilt.py').absolute().as_posix(), *args
     ])
 
 def _util_put_pkg_version_desc(pkg_name: str, ver: str):
