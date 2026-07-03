@@ -1,11 +1,16 @@
 {
   "exclude": [
+    ".env",
     ".deps/",
-    "out/",
-    "tmp/",
+    //
+    "out",
+    "tmp",
+    "toolchain",
   ],
   "include": [],
+  "pythonVersion": "3.8",
+  "pythonPlatform": "All",
   "venvPath": ".",
   "venv": ".env",
-  "typeCheckingMode": "off",
+  //"typeCheckingMode": "off",
 }

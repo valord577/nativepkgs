@@ -28,28 +28,12 @@ on:
         required: false
         type: boolean
 
-      container_linux:
-        default: "linux310-gcc7-cross"
+      container:
+        default: "crossbuild-all-in-one"
         required: false
         type: string
-      container_linux_vers:
-        default: "627c15642b853fa1d85b5c31c5c78982ea75b7fb"
-        required: false
-        type: string
-      container_mingw:
-        default: "mingw-cross-native"
-        required: false
-        type: string
-      container_mingw_vers:
-        default: "627c15642b853fa1d85b5c31c5c78982ea75b7fb"
-        required: false
-        type: string
-      container_android:
-        default: "android-ndk-r27d"
-        required: false
-        type: string
-      container_android_vers:
-        default: "627c15642b853fa1d85b5c31c5c78982ea75b7fb"
+      container_vers:
+        default: "20260703T060311Z-a2f803d"
         required: false
         type: string
 
@@ -146,14 +130,12 @@ jobs:
       - name: set matrix container
         id: set-matrix-container
         run: |
-          container_linux="valord577/${{ inputs.container_linux }}:${{ inputs.container_linux_vers }}"
-          container_mingw="valord577/${{ inputs.container_mingw }}:${{ inputs.container_mingw_vers }}"
-          container_android="valord577/${{ inputs.container_android }}:${{ inputs.container_android_vers }}"
+          container_all_in_one="valord577/${{ inputs.container }}:${{ inputs.container_vers }}"
 
           matrix=$(cat .github/matrix_container.json | jq -c -M)
-          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\"     then . + {image: \"${container_linux}\"}   else . end)")
-          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"win-mingw\" then . + {image: \"${container_mingw}\"}   else . end)")
-          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"android\"   then . + {image: \"${container_android}\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\"     then . + {image: \"${container_all_in_one}\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"win-mingw\" then . + {image: \"${container_all_in_one}\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"android\"   then . + {image: \"${container_all_in_one}\"} else . end)")
 
           [ -n "${jq_expr_plat}" ] && \
             { matrix=$(echo ${matrix} | jq -c -M "map(. | select($jq_expr_plat) )"); }
@@ -192,7 +174,7 @@ jobs:
         run: |
           sudo mdutil -a -i off
 
-          brew install ccache nasm; brew list -l
+          brew install nasm; brew list -l
       - name: set required software(s) - windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
@@ -204,7 +186,7 @@ jobs:
             -DisableRealtimeMonitoring $True
           Set-ExecutionPolicy -ExecutionPolicy Bypass -Force -Scope CurrentUser
 
-          choco install ccache nasm; choco list
+          choco install nasm; choco list
 
           C:/msys64/usr/bin/bash.exe -lc `
             'pacman --noconfirm -S zip unzip;'
@@ -221,7 +203,7 @@ jobs:
           python3 ./.github/rclone.py
       - name: set required env - 00
         run: |
-          python3 ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
+          python3 ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.info }}' '${{ matrix.pkg_type }}'
       - name: ccache get... (s3)
         if: ${{ (! inputs.disable_ccache_on_host) }}
         run: |
@@ -234,7 +216,7 @@ jobs:
               && '.env/Scripts/activate.ps1'
               || 'source .env/bin/activate'
           }}
-          python3 ./build.py ${{ matrix.platform }} ${{ matrix.arch }} -m ${{ env.PKG_NAME }}
+          python3 ./build_v2.py ${{ matrix.platform }} ${{ matrix.arch }} -m ${{ env.PKG_NAME }}
       - name: ccache put... (s3)
         if: ${{ (! inputs.disable_ccache_on_host) }}
         run: |
@@ -283,7 +265,7 @@ jobs:
           ./.github/rclone.py
       - name: set required env - 00
         run: |
-          ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
+          ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.info }}' '${{ matrix.pkg_type }}'
       - name: ccache get... (s3)
         if: ${{ (! inputs.disable_ccache_on_container) }}
         run: |
@@ -291,17 +273,17 @@ jobs:
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
           build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
-          ${{ matrix.platform == 'linux' }} && \
+          ${{ matrix.platform == 'linux' }}   && \
             {
-              build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.libc }}'
+              build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.info }}'
             }
-          ${{ matrix.platform == 'android' }} && ${{ matrix.libc != '' }} && \
+          ${{ matrix.platform == 'android' }} && \
             {
-              export ANDROID_FLEXIBLE_PAGE_SIZES=${{ matrix.libc }}
+              build_target_args='${{ matrix.platform }} ${{ matrix.info }}'
             }
 
           python3 -m venv .env; source .env/bin/activate
-          ./build.py ${build_target_args} -m ${{ env.PKG_NAME }}
+          ./build_v2.py ${build_target_args} -m ${{ env.PKG_NAME }}
       - name: ccache put... (s3)
         if: ${{ (! inputs.disable_ccache_on_container) }}
         run: |

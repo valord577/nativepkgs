@@ -2,32 +2,32 @@
   {
     "platform": "linux",
     "arch": "amd64",
-    "libc": "gnu"
+    "info": "gnu"
   },
   {
     "platform": "linux",
     "arch": "arm64",
-    "libc": "gnu"
+    "info": "gnu"
   },
   {
     "platform": "linux",
     "arch": "armv7",
-    "libc": "gnueabihf"
+    "info": "gnueabihf"
   },
   {
     "platform": "linux",
     "arch": "amd64",
-    "libc": "musl"
+    "info": "musl"
   },
   {
     "platform": "linux",
     "arch": "arm64",
-    "libc": "musl"
+    "info": "musl"
   },
   {
     "platform": "linux",
     "arch": "armv7",
-    "libc": "musleabihf"
+    "info": "musleabihf"
   },
   {
     "platform": "win-mingw",
@@ -40,21 +40,21 @@
   {
     "platform": "android",
     "arch": "amd64",
-    "libc": ""
+    "info": "4k"
   },
   {
     "platform": "android",
     "arch": "arm64",
-    "libc": ""
+    "info": "4k"
   },
   {
     "platform": "android",
     "arch": "arm64",
-    "libc": "16k"
+    "info": "16k"
   },
   {
     "platform": "android",
     "arch": "armv7",
-    "libc": ""
+    "info": "4k"
   }
 ]
