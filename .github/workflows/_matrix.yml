@@ -183,10 +183,10 @@ jobs:
             -DisableRealtimeMonitoring $True
           Set-ExecutionPolicy -ExecutionPolicy Bypass -Force -Scope CurrentUser
 
-          winget install -e --id NASM.NASM
-          winget install -e --id Mozilla.sccache
+          choco install nasm
+          choco install sccache
 
-          winget list
+          choco list
 
           C:/msys64/usr/bin/bash.exe -c `
             'pacman --noconfirm -S zip unzip;'
