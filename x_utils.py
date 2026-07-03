@@ -28,12 +28,15 @@ def loge_usage() -> NoReturn:
 if __name__ == "__main__": loge_usage()
 # ----------------------------
 
+import http.client
 import inspect
 import subprocess as sp
 import os
 import platform
+import shutil
+import urllib.request
 
-from typing import Literal, overload
+from typing import Literal, cast, overload
 
 
 # ----------------------------
@@ -156,3 +159,42 @@ def unzip_with_softlink(zipfile: Path, extract_dir: "str | None" = None, is_msys
     if (NATIVE_PLAT == 'windows') and (is_msys64):
         cmd = ['C:/msys64/usr/bin/bash.exe', '-c', ' '.join(cmd)]
     run_as_subprocess(args=cmd)
+# ----------------------------
+RCLONE_EXEC = (Path(PROJ_ROOT) / '.github' / 'rclone')
+if ON_GITHUB_CI:
+    plat = {
+        'linux':   'linux',
+        'macosx':  'osx',
+        'windows': 'windows',
+    }[NATIVE_PLAT]
+    fext = ('.exe' if plat == 'windows' else '')
+    arch = NATIVE_ARCH
+
+    _rclone_dir = RCLONE_EXEC.parent
+
+    download_link = f'https://downloads.rclone.org/rclone-current-{plat}-{arch}.zip'
+    rclone_zipfile = (_rclone_dir / 'rclone.zip')
+    logv(f'downloading rclone from "{download_link}" > "${rclone_zipfile.as_posix()}"')
+    with cast(http.client.HTTPResponse,
+        urllib.request.urlopen(
+            urllib.request.Request(download_link)
+        )
+    ) as resp:
+        if resp.status != 200:
+            loge(f"respcode: {resp.status}, respbody: ->\n{resp.read().decode(errors='ignore')}")
+        with rclone_zipfile.open('wb') as dst:
+            shutil.copyfileobj(resp, dst)
+    run_as_subprocess(args=['unzip', '-j', rclone_zipfile.as_posix(), f'*/rclone{fext}', '-d', _rclone_dir.as_posix()])
+
+    rclone_conf_content = f'''\
+[r2]
+type = s3
+provider = Cloudflare
+access_key_id = {feature("S3_R2_ACCESS_KEY")}
+secret_access_key = {feature("S3_R2_SECRET_KEY")}
+region = {feature("S3_R2_STORAGE_REGION")}
+endpoint = https://{feature("S3_R2_ACCOUNT_ID")}.r2.cloudflarestorage.com
+no_check_bucket = true
+no_head = true
+'''
+    _ = (_rclone_dir / 'rclone.conf').write_text(rclone_conf_content)

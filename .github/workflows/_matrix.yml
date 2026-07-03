@@ -19,15 +19,6 @@ on:
         required: false
         type: boolean
 
-      disable_ccache_on_host:
-        default: true
-        required: false
-        type: boolean
-      disable_ccache_on_container:
-        default: true
-        required: false
-        type: boolean
-
       container:
         default: "crossbuild-all-in-one"
         required: false
@@ -63,6 +54,7 @@ env:
   GH_TOKEN: ${{ github.token }}
   PKG_NAME: ${{ github.workflow }}
   INST_DIR: ${{ github.workspace }}/out/${{ github.workflow }}
+  SCCACHE_GHA_ENABLED: "true"
   CI_HIT_MESSAGE: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} (${{ github.sha }})"
   S3_R2_ACCOUNT_ID: ${{ secrets.S3_R2_ACCOUNT_ID }}
   S3_R2_ACCESS_KEY: ${{ secrets.S3_R2_ACCESS_KEY }}
@@ -168,13 +160,18 @@ jobs:
       run:
         shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'zsh' }}
         working-directory: ${{ github.workspace }}
+    env:
+      PKG_TYPE: ${{ matrix.pkg_type }}
     steps:
       - name: set required software(s) - macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           sudo mdutil -a -i off
 
-          brew install nasm; brew list -l
+          brew install nasm
+          brew install sccache
+
+          brew list -l
       - name: set required software(s) - windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
@@ -186,9 +183,12 @@ jobs:
             -DisableRealtimeMonitoring $True
           Set-ExecutionPolicy -ExecutionPolicy Bypass -Force -Scope CurrentUser
 
-          choco install nasm; choco list
+          winget install -e --id NASM.NASM
+          winget install -e --id Mozilla.sccache
 
-          C:/msys64/usr/bin/bash.exe -lc `
+          winget list
+
+          C:/msys64/usr/bin/bash.exe -c `
             'pacman --noconfirm -S zip unzip;'
       - name: clone source
         run: |
@@ -198,16 +198,9 @@ jobs:
           git remote add x ${{github.server_url}}/${{ github.repository }}.git
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
-      - name: setup rclone for s3 (cloudflare r2)
-        run: |
-          python3 ./.github/rclone.py
       - name: set required env - 00
         run: |
           python3 ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.info }}' '${{ matrix.pkg_type }}'
-      - name: ccache get... (s3)
-        if: ${{ (! inputs.disable_ccache_on_host) }}
-        run: |
-          python3 ./.github/ccache_get.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
           python3 -m venv .env
@@ -217,10 +210,6 @@ jobs:
               || 'source .env/bin/activate'
           }}
           python3 ./build_v2.py ${{ matrix.platform }} ${{ matrix.arch }} -m ${{ env.PKG_NAME }}
-      - name: ccache put... (s3)
-        if: ${{ (! inputs.disable_ccache_on_host) }}
-        run: |
-          python3 ./.github/ccache_put.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: set required env - 01
         run: |
           python3 ./.github/setenv_01.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.pkg_type }}'
@@ -251,6 +240,8 @@ jobs:
       run:
         shell: sh
         working-directory: ${{ github.workspace }}
+    env:
+      PKG_TYPE: ${{ matrix.pkg_type }}
     steps:
       - name: clone source
         run: |
@@ -260,16 +251,9 @@ jobs:
           git remote add x ${{github.server_url}}/${{ github.repository }}.git
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
-      - name: setup rclone for s3 (cloudflare r2)
-        run: |
-          ./.github/rclone.py
       - name: set required env - 00
         run: |
           ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.info }}' '${{ matrix.pkg_type }}'
-      - name: ccache get... (s3)
-        if: ${{ (! inputs.disable_ccache_on_container) }}
-        run: |
-          ./.github/ccache_get.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
           build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
@@ -284,10 +268,6 @@ jobs:
 
           python3 -m venv .env; source .env/bin/activate
           ./build_v2.py ${build_target_args} -m ${{ env.PKG_NAME }}
-      - name: ccache put... (s3)
-        if: ${{ (! inputs.disable_ccache_on_container) }}
-        run: |
-          ./.github/ccache_put.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
       - name: set required env - 01
         run: |
           ./.github/setenv_01.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.pkg_type }}'
