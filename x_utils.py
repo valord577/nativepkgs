@@ -161,7 +161,7 @@ def unzip_with_softlink(zipfile: Path, extract_dir: "str | None" = None, is_msys
     run_as_subprocess(args=cmd)
 # ----------------------------
 RCLONE_EXEC = (Path(PROJ_ROOT) / '.github' / 'rclone')
-if ON_GITHUB_CI:
+if ON_GITHUB_CI and (not RCLONE_EXEC.exists()):
     plat = {
         'linux':   'linux',
         'macosx':  'osx',

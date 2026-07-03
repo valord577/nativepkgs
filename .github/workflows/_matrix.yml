@@ -188,7 +188,7 @@ jobs:
 
           choco list
 
-          C:/msys64/usr/bin/bash.exe -c `
+          C:/msys64/usr/bin/bash.exe -lc `
             'pacman --noconfirm -S zip unzip;'
       - name: clone source
         run: |
