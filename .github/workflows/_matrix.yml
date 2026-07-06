@@ -3,17 +3,22 @@ on:
   workflow_call:
     inputs:
       disable_shared:
-        default: true
+        default: false
+        required: false
+        type: boolean
+      enable_shared_commit:
+        default: false
         required: false
         type: boolean
       disable_static:
         default: false
         required: false
         type: boolean
-      disable_commit:
+      enable_static_commit:
         default: false
         required: false
         type: boolean
+
       allow_failure:
         default: true
         required: false
@@ -24,7 +29,7 @@ on:
         required: false
         type: string
       container_vers:
-        default: "20260703T060311Z-a2f803d"
+        default: "20260706T123658Z-21a6565"
         required: false
         type: string
 
@@ -230,7 +235,9 @@ jobs:
           path: ${{ env.PKG_ZIPNAME }}.zip
           archive: false
       - name: commit to pre-compiled storage
-        if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
+        if: ${{ (github.event_name == 'push') &&
+          (  ((matrix.pkg_type == 'static') && (inputs.enable_static_commit)) || ((matrix.pkg_type == 'shared') && (inputs.enable_shared_commit))  )
+        }}
         run: |
           ./.github/rclone copy "${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
 
@@ -283,6 +290,8 @@ jobs:
           path: ${{ env.PKG_ZIPNAME }}.zip
           archive: false
       - name: commit to pre-compiled storage
-        if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
+        if: ${{ (github.event_name == 'push') &&
+          (  ((matrix.pkg_type == 'static') && (inputs.enable_static_commit)) || ((matrix.pkg_type == 'shared') && (inputs.enable_shared_commit))  )
+        }}
         run: |
           ./.github/rclone copy "${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"

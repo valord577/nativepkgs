@@ -175,7 +175,7 @@ if ON_GITHUB_CI and (not RCLONE_EXEC.exists()):
 
     download_link = f'https://downloads.rclone.org/rclone-current-{plat}-{arch}.zip'
     rclone_zipfile = (_rclone_dir / 'rclone.zip')
-    logv(f'downloading rclone from "{download_link}" > "${rclone_zipfile.as_posix()}"')
+    logv(f'downloading rclone from "{download_link}" > "{rclone_zipfile.as_posix()}"')
     with cast(http.client.HTTPResponse,
         urllib.request.urlopen(
             urllib.request.Request(download_link)
