@@ -53,7 +53,6 @@ on:
 env:
   GH_TOKEN: ${{ github.token }}
   PKG_NAME: ${{ github.workflow }}
-  INST_DIR: ${{ github.workspace }}/out/${{ github.workflow }}
   SCCACHE_GHA_ENABLED: "true"
   CI_HIT_MESSAGE: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} (${{ github.sha }})"
   S3_R2_ACCOUNT_ID: ${{ secrets.S3_R2_ACCOUNT_ID }}
@@ -159,9 +158,9 @@ jobs:
     defaults:
       run:
         shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'zsh' }}
-        working-directory: ${{ github.workspace }}
     env:
       PKG_TYPE: ${{ matrix.pkg_type }}
+      INST_DIR: ${{ env.GITHUB_WORKSPACE }}/out/${{ env.PKG_NAME }}
     steps:
       - name: set required software(s) - macos
         if: ${{ startsWith(matrix.os, 'macos') }}
@@ -211,14 +210,14 @@ jobs:
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           # keep file permissions and case sensitivity
-          cd ${{ env.INST_DIR }}/..; zip -ry ${{ github.workspace }}/${{ env.PKG_ZIPNAME }}.zip $(basename ${{ env.INST_DIR }})
+          cd ${{ env.INST_DIR }}/..; zip -ry ${{ env.GITHUB_WORKSPACE }}/${{ env.PKG_ZIPNAME }}.zip $(basename ${{ env.INST_DIR }})
       - name: library packed - windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
           # keep file permissions and case sensitivity
           $shell = @'
             inst_dir=$(cygpath -u "${{ env.INST_DIR }}")
-            zip_file=$(cygpath -u "${{ github.workspace }}/${{ env.PKG_ZIPNAME }}.zip")
+            zip_file=$(cygpath -u "${{ env.GITHUB_WORKSPACE }}/${{ env.PKG_ZIPNAME }}.zip")
             zip -ry "${zip_file}" "$(basename ${inst_dir})"
           '@
           C:/msys64/usr/bin/bash.exe -lc "${shell}"
@@ -243,9 +242,9 @@ jobs:
     defaults:
       run:
         shell: sh
-        working-directory: ${{ github.workspace }}
     env:
       PKG_TYPE: ${{ matrix.pkg_type }}
+      INST_DIR: ${{ env.GITHUB_WORKSPACE }}/out/${{ env.PKG_NAME }}
     steps:
       - name: clone source
         run: |
@@ -264,7 +263,7 @@ jobs:
             }
           ${{ matrix.platform == 'android' }} && \
             {
-              build_target_args='${{ matrix.platform }} ${{ matrix.info }}'
+              build_target_args='${{ matrix.platform }} ${{ matrix.arch }} ${{ matrix.info }}'
             }
 
           python3 -m venv .env; source .env/bin/activate
@@ -272,7 +271,7 @@ jobs:
       - name: library packed
         run: |
           # keep file permissions and case sensitivity
-          cd ${{ env.INST_DIR }}/..; zip -ry ${{ github.workspace }}/${{ env.PKG_ZIPNAME }}.zip $(basename ${{ env.INST_DIR }})
+          cd ${{ env.INST_DIR }}/..; zip -ry ${{ env.GITHUB_WORKSPACE }}/${{ env.PKG_ZIPNAME }}.zip $(basename ${{ env.INST_DIR }})
       - name: library upload - ${{ env.PKG_NAME }}
         uses: actions/upload-artifact@v7
         with:
