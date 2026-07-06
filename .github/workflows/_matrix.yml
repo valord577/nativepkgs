@@ -161,7 +161,7 @@ jobs:
     env:
       PKG_TYPE: ${{ matrix.pkg_type }}
     steps:
-      - name: set required software(s) - macos
+      - name: set required something(s) - macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           sudo mdutil -a -i off
@@ -170,7 +170,9 @@ jobs:
           brew install sccache
 
           brew list -l
-      - name: set required software(s) - windows
+
+          echo "INST_DIR=${GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "${GITHUB_ENV}"
+      - name: set required something(s) - windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
           Set-MpPreference `
@@ -188,6 +190,8 @@ jobs:
 
           C:/msys64/usr/bin/bash.exe -lc `
             'pacman --noconfirm -S zip unzip;'
+
+          echo "INST_DIR=${env:GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "${env:GITHUB_ENV}"
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -196,9 +200,6 @@ jobs:
           git remote add x ${{github.server_url}}/${{ github.repository }}.git
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
-      - name: set runtime env
-        run: |
-          echo "INST_DIR=${GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "$GITHUB_ENV"
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
           python3 -m venv .env
@@ -212,14 +213,14 @@ jobs:
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           # keep file permissions and case sensitivity
-          cd ${{ env.INST_DIR }}/..; zip -ry ${{ env.GITHUB_WORKSPACE }}/${{ env.PKG_ZIPNAME }}.zip $(basename ${{ env.INST_DIR }})
+          cd ${{ env.INST_DIR }}/..; zip -ry ${GITHUB_WORKSPACE}/${{ env.PKG_ZIPNAME }}.zip $(basename ${{ env.INST_DIR }})
       - name: library packed - windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
           # keep file permissions and case sensitivity
           $shell = @'
             inst_dir=$(cygpath -u "${{ env.INST_DIR }}")
-            zip_file=$(cygpath -u "${{ env.GITHUB_WORKSPACE }}/${{ env.PKG_ZIPNAME }}.zip")
+            zip_file=$(cygpath -u "${GITHUB_WORKSPACE}/${{ env.PKG_ZIPNAME }}.zip")
             zip -ry "${zip_file}" "$(basename ${inst_dir})"
           '@
           C:/msys64/usr/bin/bash.exe -lc "${shell}"
@@ -257,7 +258,7 @@ jobs:
           git checkout FETCH_HEAD
       - name: set runtime env
         run: |
-          echo "INST_DIR=${GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "$GITHUB_ENV"
+          echo "INST_DIR=${GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "${GITHUB_ENV}"
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
           build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
@@ -275,7 +276,7 @@ jobs:
       - name: library packed
         run: |
           # keep file permissions and case sensitivity
-          cd ${{ env.INST_DIR }}/..; zip -ry ${{ env.GITHUB_WORKSPACE }}/${{ env.PKG_ZIPNAME }}.zip $(basename ${{ env.INST_DIR }})
+          cd ${{ env.INST_DIR }}/..; zip -ry ${GITHUB_WORKSPACE}/${{ env.PKG_ZIPNAME }}.zip $(basename ${{ env.INST_DIR }})
       - name: library upload - ${{ env.PKG_NAME }}
         uses: actions/upload-artifact@v7
         with:
