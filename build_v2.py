@@ -164,7 +164,7 @@ class _state:
             '-D', 'CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON',
             '-D', 'CMAKE_INSTALL_LIBDIR:PATH=lib',
             '-D', 'CMAKE_PLATFORM_NO_VERSIONED_SONAME:BOOL=ON',
-            #'-D', 'CMAKE_VERBOSE_MAKEFILE:BOOL=ON',
+            '-D', 'CMAKE_VERBOSE_MAKEFILE:BOOL=ON',
             '-B', self.pkg_buld_dir,
             '-D', f'CMAKE_INSTALL_PREFIX={self.pkg_inst_dir}',
         ])
@@ -309,10 +309,11 @@ def _setctx_android(
     flexible_page_sizes = int(_tuple[2][:-1])
     x.logv(f'ANDROID_FLEXIBLE_PAGE_SIZES: {flexible_page_sizes} KiB')
     state.cc.append('-D__BIONIC_NO_PAGE_SIZE_MACRO')
-    state.ldflags.extend([
+    flexible_page_ldflags = [
         f'-Wl,-z,max-page-size={1024 * flexible_page_sizes}',
         f'-Wl,-z,max-page-size={1024 * flexible_page_sizes}',
-    ])
+    ]
+    state.ldflags.extend(flexible_page_ldflags)
 
     # cmake toolchain file
     _cmake_arch_abi = {
@@ -328,9 +329,9 @@ def _setctx_android(
         "-D", f"CMAKE_ANDROID_NDK={ANDROID_NDK_ROOT}",
         "-D", f"CMAKE_C_COMPILER_TARGET={_target_triple}",
         "-D", f"CMAKE_CXX_COMPILER_TARGET={_target_triple}",
-        "-D", f"CMAKE_EXE_LINKER_FLAGS_INIT='-Wl,-z,max-page-size={1024 * flexible_page_sizes};-Wl,-z,max-page-size={1024 * flexible_page_sizes}'",
-        "-D", f"CMAKE_MODULE_LINKER_FLAGS_INIT='-Wl,-z,max-page-size={1024 * flexible_page_sizes};-Wl,-z,max-page-size={1024 * flexible_page_sizes}'",
-        "-D", f"CMAKE_SHARED_LINKER_FLAGS_INIT='-Wl,-z,max-page-size={1024 * flexible_page_sizes};-Wl,-z,max-page-size={1024 * flexible_page_sizes}'",
+        "-D", f"CMAKE_EXE_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
+        "-D", f"CMAKE_MODULE_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
+        "-D", f"CMAKE_SHARED_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
     ])
     if state.target_arch == 'armv7':
         state.extra_cmake.extend([
