@@ -40,6 +40,8 @@ class BuildCtxArgs:
     target_arch: "str"
     target_info: "str"
 
+    target_archinfo: "str"
+
     extra_cmake: "list[str]"
     extra_meson: "list[str]"
 
@@ -96,10 +98,15 @@ class BuildCtx:
             x.run_as_subprocess(cwd=self._subproj_src,
                 args=['git', 'checkout', 'FETCH_HEAD'])
         __class__.git_src_apply_patches(self._subproj_src, self._subproj_src_patches)
-        _ = self._subproj_ver.write_text(
-            x.run_as_subprocess(cwd=self._subproj_src,
-                collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7'])
-        )
+
+        ver = x.run_as_subprocess(cwd=self._subproj_src,
+            collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']).strip()
+        _ = self._subproj_ver.write_text(ver)
+
+        x.gha_append_env({
+            'PKG_VERSION': ver,
+            'PKG_ZIPNAME': f'{self.args.module}_{self.args.target_plat}_{self.args.target_archinfo}_{ver}_{x.feature("PKG_TYPE")}',
+        })
 
     def subproj_src_dir(self, *subdir: "str | Path") -> Path:
         if not subdir:
@@ -177,6 +184,8 @@ class _state:
             target_plat=self.target_plat,
             target_arch=self.target_arch,
             target_info=self.target_info,
+
+            target_archinfo=self.target_archinfo,
 
             extra_cmake=self.extra_cmake,
             extra_meson=self.extra_meson,

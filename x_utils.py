@@ -61,13 +61,23 @@ def feature(key: str) -> str:
 def feature_build_shared() -> str:
     return '1' if feature('PKG_TYPE') == 'shared' else '0'
 # ----------------------------
+def gha_append_env(env: "dict[str, str]"):
+    if not ON_GITHUB_CI:
+        return
+    with open(feature('GITHUB_ENV'), 'a') as f:
+        for k, v in env.items():
+            logv(f'append github action env: {k}={v}')
+            _ = f.write(f'{k}={v}\n')
+# ----------------------------
 NATIVE_PLAT = {
     'linux':   'linux',
     'darwin':  'macosx',
     'windows': 'windows',
 }[platform.system().lower()]
 NATIVE_ARCH = {
+    'amd64':   'amd64',
     'x86_64':  'amd64',
+    'arm64':   'arm64',
     'aarch64': 'arm64',
 }[platform.machine().lower()]
 # ----------------------------
