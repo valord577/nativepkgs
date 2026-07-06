@@ -198,7 +198,7 @@ jobs:
           git checkout FETCH_HEAD
       - name: set runtime env
         run: |
-          echo "INST_DIR=${{ env.GITHUB_WORKSPACE }}/out/${{ env.PKG_ZIPNAME }}" >> "$GITHUB_ENV"
+          echo "INST_DIR=${GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "$GITHUB_ENV"
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
           python3 -m venv .env
@@ -257,7 +257,7 @@ jobs:
           git checkout FETCH_HEAD
       - name: set runtime env
         run: |
-          echo "INST_DIR=${{ env.GITHUB_WORKSPACE }}/out/${{ env.PKG_ZIPNAME }}" >> "$GITHUB_ENV"
+          echo "INST_DIR=${GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "$GITHUB_ENV"
       - name: library buildx - ${{ env.PKG_NAME }}
         run: |
           build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
