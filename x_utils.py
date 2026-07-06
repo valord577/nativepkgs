@@ -81,6 +81,8 @@ NATIVE_ARCH = {
     'arm64':   'arm64',
     'aarch64': 'arm64',
 }[platform.machine().lower()]
+
+fext = ('.exe' if NATIVE_PLAT == 'windows' else '')
 # ----------------------------
 def detect_cpu_count() -> int:
     if NATIVE_PLAT == 'linux':
@@ -160,14 +162,13 @@ def unzip_with_softlink(zipfile: Path, extract_dir: "str | None" = None, is_msys
         cmd = ['C:/msys64/usr/bin/bash.exe', '-c', ' '.join(cmd)]
     run_as_subprocess(args=cmd)
 # ----------------------------
-RCLONE_EXEC = (Path(PROJ_ROOT) / '.github' / 'rclone')
+RCLONE_EXEC = (Path(PROJ_ROOT) / '.github' / f'rclone{fext}')
 if ON_GITHUB_CI and (not RCLONE_EXEC.exists()):
     plat = {
         'linux':   'linux',
         'macosx':  'osx',
         'windows': 'windows',
     }[NATIVE_PLAT]
-    fext = ('.exe' if plat == 'windows' else '')
     arch = NATIVE_ARCH
 
     _rclone_dir = RCLONE_EXEC.parent
@@ -231,7 +232,7 @@ def win32_msvc_detect() -> "tuple[Path, Path]":
             msvc_dir = dir; msvc_devshell = dll; break
     if (not msvc_dir) or (not msvc_devshell):
         loge(f'failed to search msvc environment')
-    logv(f'load msvc devshell: {msvc_devshell.as_posix()}')
+    logv(f'load msvc devshell: "{msvc_devshell.as_posix()}"')
     return (msvc_dir, msvc_devshell)
 
 def win32_msvc_dump_env(msvc_dir: Path, msvc_devshell: Path, target_arch: str) -> "dict[str, str]":
