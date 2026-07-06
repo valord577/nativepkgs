@@ -42,6 +42,9 @@ class BuildCtxArgs:
 
     target_archinfo: "str"
 
+    win32_msvc_env_native: "dict[str, str]"
+    win32_msvc_env_target: "dict[str, str]"
+
     extra_cmake: "list[str]"
     extra_meson: "list[str]"
 
@@ -164,7 +167,7 @@ class _state:
             '-D', 'CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON',
             '-D', 'CMAKE_INSTALL_LIBDIR:PATH=lib',
             '-D', 'CMAKE_PLATFORM_NO_VERSIONED_SONAME:BOOL=ON',
-            '-D', 'CMAKE_VERBOSE_MAKEFILE:BOOL=ON',
+            #'-D', 'CMAKE_VERBOSE_MAKEFILE:BOOL=ON',
             '-B', self.pkg_buld_dir,
             '-D', f'CMAKE_INSTALL_PREFIX={self.pkg_inst_dir}',
         ])
@@ -186,6 +189,9 @@ class _state:
             target_info=self.target_info,
 
             target_archinfo=self.target_archinfo,
+
+            win32_msvc_env_native=self.win32_msvc_env_native,
+            win32_msvc_env_target=self.win32_msvc_env_target,
 
             extra_cmake=self.extra_cmake,
             extra_meson=self.extra_meson,
@@ -262,7 +268,17 @@ def _setctx_linux(
 
         # cmake toolchain file
         state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE={(Path(CROSS_TOOLCHAIN_ROOT) / f'crossfile.cmake.{_target_triple}').absolute().as_posix()}"])
+def _setctx_win32_msvc(
+    state: _state, _native: "bool", _tuple: "tuple[str, ...]",
+):
+    state.target_arch = x.NATIVE_ARCH if _native else _tuple[1]
 
+    msvc_dir, msvc_devshell = x.win32_msvc_detect()
+    state.win32_msvc_env_native = x.win32_msvc_dump_env(msvc_dir, msvc_devshell, x.NATIVE_ARCH)
+    state.win32_msvc_env_target = x.win32_msvc_dump_env(msvc_dir, msvc_devshell, state.target_arch)
+
+    # cmake toolchain file
+    state.extra_cmake.extend(['-G', 'Ninja'])
 def _setctx_android(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -358,6 +374,15 @@ CLI_SUPPORTED_TARGETS: "dict[str, TargetSpec]" = {
             ('linux', 'crossbuild', 'amd64', 'musl'),
             ('linux', 'crossbuild', 'arm64', 'musl'),
             ('linux', 'crossbuild', 'armv7', 'musleabihf'),
+        ],
+    },
+    'win-msvc': {
+        'native': True,
+        'hostos': ('windows', ),
+        'setctx': _setctx_win32_msvc,
+        'tuples': [
+            ('win-msvc', 'arm64'),
+            ('win-msvc', 'amd64'),
         ],
     },
     'android': {

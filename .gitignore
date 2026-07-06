@@ -6,9 +6,6 @@ __pycache__
 AGENTS.md
 CLAUDE.md
 
-.msvc_env_native.json
-.msvc_env_target.json
-
 /.deps/
 /.lib.*/
 

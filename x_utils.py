@@ -30,6 +30,7 @@ if __name__ == "__main__": loge_usage()
 
 import http.client
 import inspect
+import json
 import subprocess as sp
 import os
 import platform
@@ -151,17 +152,6 @@ def run_as_subprocess(args: "str | list[str]",
 def runpy(args: "list[str]", cwd: "str | Path | None" = None):
     run_as_subprocess(args=[(Path(sys.executable)).absolute().as_posix(), *args], cwd=cwd)
 # ----------------------------
-def dozip_with_softlink(filepath: Path, zipname: "str | None" = None):
-    if not zipname:
-        zipname = filepath.name
-
-    shell = 'sh'
-    wkdir = filepath.parent.absolute().as_posix()
-    if (NATIVE_PLAT == 'windows'):
-        shell = 'C:/msys64/usr/bin/bash.exe'
-        wkdir = f'$(cygpath -u "{wkdir}")'
-    cmdline = f'zip -ry {zipname}.zip {filepath.name}'
-    run_as_subprocess(args=[shell, '-c', f'cd {wkdir}; {cmdline}'])
 def unzip_with_softlink(zipfile: Path, extract_dir: "str | None" = None, is_msys64: bool = False):
     if not extract_dir:
         extract_dir = zipfile.parent.as_posix()
@@ -208,3 +198,64 @@ no_check_bucket = true
 no_head = true
 '''
     _ = (_rclone_dir / 'rclone.conf').write_text(rclone_conf_content)
+# ----------------------------
+def win32_msvc_detect() -> "tuple[Path, Path]":
+    if NATIVE_PLAT != 'windows':
+        loge(f'only works on windows, host os: {NATIVE_PLAT}')
+
+    msvc_search_path: "list[Path]" = []
+    if _userdef := ENVIRON.get('MSVC_INSTALL_DIR'):
+        msvc_search_path.append(Path(_userdef))
+    else:
+        # auto search vs install dir
+        msvc_install_dir = [
+            'C:/Program Files/Microsoft Visual Studio',
+            'C:/Program Files (x86)/Microsoft Visual Studio',
+        ]
+        valid_products = {'BuildTools', 'Community', 'Professional', 'Enterprise'}
+        for dir in msvc_install_dir:
+            for product in Path(dir).glob('*/*'):
+                if (not product.is_dir()) or (product.name not in valid_products):
+                    continue
+                year = int(product.parents[0].name)
+                if year < 2019:
+                    continue
+                msvc_search_path.append(product)
+
+    msvc_dir: "Path | None" = None; msvc_devshell: "Path | None" = None
+    for dir in msvc_search_path:
+        if (not dir.exists()) or (not dir.is_dir()):
+            continue
+        dll = (dir / 'Common7' / 'Tools' / 'Microsoft.VisualStudio.DevShell.dll')
+        if dll.exists() and dll.is_file():
+            msvc_dir = dir; msvc_devshell = dll; break
+    if (not msvc_dir) or (not msvc_devshell):
+        loge(f'failed to search msvc environment')
+    logv(f'load msvc devshell: {msvc_devshell.as_posix()}')
+    return (msvc_dir, msvc_devshell)
+
+def win32_msvc_dump_env(msvc_dir: Path, msvc_devshell: Path, target_arch: str) -> "dict[str, str]":
+    if NATIVE_PLAT != 'windows':
+        loge(f'only works on windows, host os: {NATIVE_PLAT}')
+
+    msvc_env_json = (Path(PROJ_ROOT) / 'tmp' / f'.msvc_env_{target_arch}.json')
+
+    # Only supports access to the VS DevShell from PowerShell
+    #  - https://learn.microsoft.com/visualstudio/ide/reference/command-prompt-powershell#developer-powershell
+    vs_devshell_arg = f'-host_arch={NATIVE_ARCH} -arch={target_arch}'
+
+    pwsh_script_blk  = f'Import-Module "{msvc_devshell}"; '
+    pwsh_script_blk += f'Enter-VsDevShell -VsInstallPath "{msvc_dir}" -SkipAutomaticLocation -DevCmdArguments "{vs_devshell_arg}"; '
+    pwsh_script_blk += f'Get-ChildItem Env: | Select-Object -Property Name,Value | ConvertTo-Json -Depth 1  1>{msvc_env_json.as_posix()}; '
+    run_as_subprocess(['pwsh',
+        '-WorkingDirectory', PROJ_ROOT,
+        '-NonInteractive',
+        '-NoProfileLoadTime',
+        '-ExecutionPolicy', 'Bypass',
+        '-Command', pwsh_script_blk
+    ])
+
+    msvc_env: dict[str, str] = {}
+    for kv in cast("list[dict[str, str]]", json.loads(msvc_env_json.read_text())):
+        msvc_env[kv['Name']] = kv['Value']
+    return msvc_env
