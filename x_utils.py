@@ -238,7 +238,8 @@ def win32_msvc_dump_env(msvc_dir: Path, msvc_devshell: Path, target_arch: str) -
     if NATIVE_PLAT != 'windows':
         loge(f'only works on windows, host os: {NATIVE_PLAT}')
 
-    msvc_env_json = (Path(PROJ_ROOT) / 'tmp' / f'.msvc_env_{target_arch}.json')
+    msvc_env_json = (Path(PROJ_ROOT) / 'tmp' / f'.msvc_env_{target_arch}.json'); \
+        msvc_env_json.parent.mkdir(parents=True, exist_ok=True)
 
     # Only supports access to the VS DevShell from PowerShell
     #  - https://learn.microsoft.com/visualstudio/ide/reference/command-prompt-powershell#developer-powershell

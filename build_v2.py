@@ -268,6 +268,15 @@ def _setctx_linux(
 
         # cmake toolchain file
         state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE={(Path(CROSS_TOOLCHAIN_ROOT) / f'crossfile.cmake.{_target_triple}').absolute().as_posix()}"])
+def _setctx_win32_mingw(
+    state: _state, _native: "bool", _tuple: "tuple[str, ...]",
+):
+    CROSS_TOOLCHAIN_ROOT = x.get_cross_toolchain_dir(state.target_plat)
+
+    state.target_arch = _tuple[1]
+
+    # cmake toolchain file
+    state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE={(Path(CROSS_TOOLCHAIN_ROOT) / f'crossfile.cmake.{state.target_arch}').absolute().as_posix()}"])
 def _setctx_win32_msvc(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -341,6 +350,8 @@ def _setctx_android(
         "-D",  "CMAKE_CROSSCOMPILING:BOOL=TRUE",
         "-D",  "CMAKE_SYSTEM_NAME=Android",
         "-D", f"CMAKE_SYSTEM_VERSION={state.android_api_level}",
+        "-D", f"CMAKE_ANDROID_API={state.android_api_level}",
+        "-D", f"CMAKE_ANDROID_API_MIN={state.android_api_level}",
         "-D", f"CMAKE_ANDROID_ARCH_ABI={_cmake_arch_abi}",
         "-D", f"CMAKE_ANDROID_NDK={ANDROID_NDK_ROOT}",
         "-D", f"CMAKE_C_COMPILER_TARGET={_target_triple}",
@@ -383,6 +394,15 @@ CLI_SUPPORTED_TARGETS: "dict[str, TargetSpec]" = {
         'tuples': [
             ('win-msvc', 'arm64'),
             ('win-msvc', 'amd64'),
+        ],
+    },
+    'win-mingw': {
+        'native': False,
+        'hostos': ('linux', ),
+        'setctx': _setctx_win32_mingw,
+        'tuples': [
+            ('win-mingw', 'arm64'),
+            ('win-mingw', 'amd64'),
         ],
     },
     'android': {
