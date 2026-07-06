@@ -221,7 +221,7 @@ jobs:
           $shell = @'
             inst_dir=$(cygpath -u "${{ env.INST_DIR }}")
             zip_file=$(cygpath -u "${GITHUB_WORKSPACE}/${{ env.PKG_ZIPNAME }}.zip")
-            zip -ry "${zip_file}" "$(basename ${inst_dir})"
+            cd ${inst_dir}/..; zip -ry "${zip_file}" "$(basename ${inst_dir})"
           '@
           C:/msys64/usr/bin/bash.exe -lc "${shell}"
       - name: library upload - ${{ env.PKG_NAME }}
