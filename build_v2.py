@@ -337,10 +337,19 @@ def _setctx_win32_msvc(
     state.win32_msvc_env_native = x.win32_msvc_dump_env(msvc_dir, msvc_devshell, x.NATIVE_ARCH)
     state.win32_msvc_env_target = x.win32_msvc_dump_env(msvc_dir, msvc_devshell, state.target_arch)
 
+    _target_triple = {
+        'arm64': f'aarch64-pc-windows-msvc',
+        'amd64': f'x86_64-pc-windows-msvc',
+    }[state.target_arch]
+
     # cmake toolchain file
     state.extra_cmake.extend([
         '-G', 'Ninja',
         '-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded',
+        "-D", f"CMAKE_C_COMPILER=clang-cl.exe",
+        "-D", f"CMAKE_CXX_COMPILER=clang-cl.exe",
+        "-D", f"CMAKE_C_COMPILER_TARGET={_target_triple}",
+        "-D", f"CMAKE_CXX_COMPILER_TARGET={_target_triple}",
     ])
 def _setctx_android(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
