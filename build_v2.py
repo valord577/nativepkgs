@@ -443,7 +443,7 @@ CLI_SUPPORTED_TARGETS: "dict[str, TargetSpec]" = {
     },
     'macosx': {
         'native': True,
-        'hostos': ('darwin', ),
+        'hostos': ('macosx', ),
         'setctx': _setctx_apple,
         'tuples': [
             ('macosx', 'arm64'),
@@ -452,7 +452,7 @@ CLI_SUPPORTED_TARGETS: "dict[str, TargetSpec]" = {
     },
     'iphoneos': {
         'native': False,
-        'hostos': ('darwin', ),
+        'hostos': ('macosx', ),
         'setctx': _setctx_apple,
         'tuples': [
             ('iphoneos', 'arm64'),
@@ -460,7 +460,7 @@ CLI_SUPPORTED_TARGETS: "dict[str, TargetSpec]" = {
     },
     'iphonesimulator': {
         'native': False,
-        'hostos': ('darwin', ),
+        'hostos': ('macosx', ),
         'setctx': _setctx_apple,
         'tuples': [
             ('iphonesimulator', 'arm64'),
