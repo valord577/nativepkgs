@@ -80,10 +80,10 @@ class BuildCtx:
 
     @staticmethod
     def git_src_apply_patches(cwd: "str | Path", patches_dir: "Path"):
-        if not patches_dir.exists():
-            return
         __class__.git_src_factory_reset(cwd)
 
+        if not patches_dir.exists():
+            return
         patches: list[Path] = []
         for it in patches_dir.iterdir():
             if not it.is_file():

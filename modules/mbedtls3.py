@@ -45,7 +45,6 @@ def _fetch_source():
     )
 
 
-    BuildCtx.git_src_factory_reset(ctx.subproj_src_dir())
     x.runpy_pip(['jsonschema', 'jinja2'])
     config_py = ctx.subproj_src_dir('scripts', 'config.py').as_posix()
 
