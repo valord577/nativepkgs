@@ -153,6 +153,13 @@ def run_as_subprocess(args: "str | list[str]",
 
 def runpy(args: "list[str]", cwd: "str | Path | None" = None):
     run_as_subprocess(args=[(Path(sys.executable)).absolute().as_posix(), *args], cwd=cwd)
+def runpy_pip(pkgs: "list[str]"):
+    args = ['-m', 'pip', 'install', '--upgrade']
+    if not ON_GITHUB_CI:
+        args.extend(['--trusted-host', 'repo.huaweicloud.com'])
+        args.extend(['-i', 'https://repo.huaweicloud.com/repository/pypi/simple'])
+    args.extend(['pip', *pkgs])
+    runpy(args=args)
 # ----------------------------
 def unzip_with_softlink(zipfile: Path, extract_dir: "str | None" = None, is_msys64: bool = False):
     if not extract_dir:

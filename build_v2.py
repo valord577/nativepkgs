@@ -25,6 +25,7 @@ import time
 
 from dataclasses import dataclass
 from typing import Callable, TypedDict, cast
+from urllib.parse import urljoin
 
 
 if sys.prefix == sys.base_prefix:
@@ -32,6 +33,12 @@ if sys.prefix == sys.base_prefix:
 if not x.ENVIRON.get('VIRTUAL_ENV'):
     x.loge(f'Please activate the virtual environment first')
 # ----------------------------
+class SubmodulesSpec(TypedDict):
+    repo: "str"
+    path: "str"
+    cwd:  "str | Path"
+    url:  "str"
+
 @dataclass
 class BuildCtxArgs:
     module: "str"
@@ -88,7 +95,8 @@ class BuildCtx:
                 args=['git', 'apply', '--verbose', '--ignore-space-change', '--ignore-whitespace', it.absolute().as_posix()])
 
     def fetch_source_from_git(self,
-        hash: "str", url: "str"
+        hash: "str", url: "str",
+        submodules: "list[SubmodulesSpec] | None" = None,
     ):
         self._subproj_src.mkdir(parents=True, exist_ok=True)
         if not (self._subproj_src / '.git').exists():
@@ -100,6 +108,11 @@ class BuildCtx:
                 args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{hash}'])
             x.run_as_subprocess(cwd=self._subproj_src,
                 args=['git', 'checkout', 'FETCH_HEAD'])
+            for submodule in (submodules or []):
+                x.run_as_subprocess(cwd=submodule["cwd"],
+                    args=['git', 'config', '--local', f'submodule.{submodule["repo"]}.url', urljoin(url + '/', submodule["url"])])
+                x.run_as_subprocess(cwd=submodule["cwd"],
+                    args=['git', 'submodule', 'update', '--init', '--depth=1', '--single-branch', '-f', '--', submodule["path"]])
         __class__.git_src_apply_patches(self._subproj_src, self._subproj_src_patches)
 
         ver = x.run_as_subprocess(cwd=self._subproj_src,
@@ -115,6 +128,9 @@ class BuildCtx:
         if not subdir:
             return self._subproj_src
         return self._subproj_src.joinpath(*subdir)
+
+    def subproj_src_ver(self) -> str:
+        return self._subproj_ver.read_text()
 
 class _state:
     def __init__(self,
@@ -268,6 +284,41 @@ def _setctx_linux(
 
         # cmake toolchain file
         state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE={(Path(CROSS_TOOLCHAIN_ROOT) / f'crossfile.cmake.{_target_triple}').absolute().as_posix()}"])
+def _setctx_apple(
+    state: _state, _native: "bool", _tuple: "tuple[str, ...]",
+):
+    state.target_arch = x.NATIVE_ARCH if _native else _tuple[1]
+
+    _apple_arch = {
+        'arm64': 'arm64',
+        'amd64': 'x86_64',
+    }[state.target_arch]
+
+    _apple_deployment_name = {
+        'macosx':          'macosx',
+        'iphoneos':        'iphoneos',
+        'iphonesimulator': 'ios-simulator',
+    }[state.target_plat]
+    _apple_deployment_vers = {
+        'macosx':          '11',
+        'iphoneos':        '12',
+        'iphonesimulator': '12',
+    }[state.target_plat]
+
+    # cmake toolchain file
+    _cmake_os_name = {
+        'macosx':          'Darwin',
+        'iphoneos':        'iOS',
+        'iphonesimulator': 'iOS',
+    }[state.target_plat]
+    state.extra_cmake.extend(['-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE'])
+    state.extra_cmake.extend(['-D', f'CMAKE_SYSTEM_NAME={_cmake_os_name}'])
+    state.extra_cmake.extend(['-D', f'CMAKE_SYSTEM_PROCESSOR={_apple_arch}'])
+    state.extra_cmake.extend(['-D', f'CMAKE_OSX_ARCHITECTURES={_apple_arch}'])
+    state.extra_cmake.extend(['-D', f'CMAKE_OSX_SYSROOT={state.target_plat}'])
+    state.extra_cmake.extend(['-D', f'CMAKE_OSX_DEPLOYMENT_TARGET={_apple_deployment_vers}'])
+    state.extra_cmake.extend(['-D',  'CMAKE_MACOSX_BUNDLE:BOOL=0'])
+    #ctx.extra_cmake.extend(['-D', f'PKG_CONFIG_EXECUTABLE={ctx.cross_pkgconfig_bin}'])
 def _setctx_win32_mingw(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -287,7 +338,10 @@ def _setctx_win32_msvc(
     state.win32_msvc_env_target = x.win32_msvc_dump_env(msvc_dir, msvc_devshell, state.target_arch)
 
     # cmake toolchain file
-    state.extra_cmake.extend(['-G', 'Ninja'])
+    state.extra_cmake.extend([
+        '-G', 'Ninja',
+        '-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded',
+    ])
 def _setctx_android(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -385,6 +439,32 @@ CLI_SUPPORTED_TARGETS: "dict[str, TargetSpec]" = {
             ('linux', 'crossbuild', 'amd64', 'musl'),
             ('linux', 'crossbuild', 'arm64', 'musl'),
             ('linux', 'crossbuild', 'armv7', 'musleabihf'),
+        ],
+    },
+    'macosx': {
+        'native': True,
+        'hostos': ('darwin', ),
+        'setctx': _setctx_apple,
+        'tuples': [
+            ('macosx', 'arm64'),
+            ('macosx', 'amd64'),
+        ],
+    },
+    'iphoneos': {
+        'native': False,
+        'hostos': ('darwin', ),
+        'setctx': _setctx_apple,
+        'tuples': [
+            ('iphoneos', 'arm64'),
+        ],
+    },
+    'iphonesimulator': {
+        'native': False,
+        'hostos': ('darwin', ),
+        'setctx': _setctx_apple,
+        'tuples': [
+            ('iphonesimulator', 'arm64'),
+            ('iphonesimulator', 'amd64'),
         ],
     },
     'win-msvc': {
