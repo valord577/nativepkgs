@@ -65,7 +65,7 @@ def _fetch_source():
     if ctx.args.target_plat != 'win-msvc':
         x.runpy([config_py, 'set', 'MBEDTLS_DEPRECATED_WARNING'])
 def _build_step_0():
-    x.run_as_subprocess(env=get_build_env(), args=[
+    args = [
         'cmake', *(ctx.args.extra_cmake),
         '-S',   ctx.subproj_src_dir().as_posix(),
         '-D', f'BUILD_SHARED_LIBS:BOOL={x.feature_build_shared()}',
@@ -77,7 +77,13 @@ def _build_step_0():
         '-D',  'ENABLE_TESTING:BOOL=0',
         '-D',  'DISABLE_PACKAGE_CONFIG_AND_INSTALL:BOOL=1',
         '-D',  'GEN_FILES:BOOL=1',
-    ])
+    ]
+    if (x.feature_build_shared() == '1') and (ctx.args.target_plat == 'win-msvc'):
+        # Bug Tracking:
+        #  - https://github.com/Mbed-TLS/mbedtls/issues/470
+        #  - https://github.com/Mbed-TLS/mbedtls/issues/1130
+        args.extend(['-D', 'CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS:BOOL=1'])
+    x.run_as_subprocess(env=get_build_env(), args=args)
 def _build_step_1():
     x.run_as_subprocess(env=get_build_env(), args=['cmake', '--build', ctx.args.pkg_buld_dir, '-j', f'{x.detect_cpu_count()}'])
 def _build_step_2():
