@@ -1,105 +1,52 @@
-#!/usr/bin/env python3
-
 # fmt: off
 
-from buildx import utils as x
-# ----------------------------
-
-import os
-import shlex
-
+import sys
 from pathlib import Path
 
+sys.dont_write_bytecode = True
 
-BUILD_CMD = 'cmake'
-BUILD_ENV = os.environ.copy()
+_this_file = (Path(__file__).absolute().resolve())
+sys.path.append(
+    (_this_file.parents[1]).as_posix()
+); import x_utils as x
 
-_subproj_src = ''
-_subproj_src_patches = ''
-
-_target_pkg_name = ''
-_target_pkg_type = ''
-_target_platform = ''
-_target_archlibc = ''
-
-_3rd_deps_dir = ''
-_pkg_buld_dir = ''
-_pkg_inst_dir = ''
-
-_extra_sysroot = ''
-_extra_args_build: list[str] = []
-
-def module_init(env: dict) -> list:
-    global _target_pkg_name; \
-        _target_pkg_name = env['PKG_NAME']
-    global _target_pkg_type; \
-        _target_pkg_type = env['PKG_TYPE']
-    global _subproj_src; \
-        _subproj_src = env['SUBPROJ_SRC']
-    global _subproj_src_patches; \
-        _subproj_src_patches = env['SUBPROJ_SRC_PATCHES']
-    global _target_platform; \
-        _target_platform = env['PKG_PLATFORM']
-    global _target_archlibc; \
-        _target_archlibc = env['PKG_ARCH_LIBC']
-    global _3rd_deps_dir; \
-        _3rd_deps_dir = env['3RD_DEPS_DIR']
-    global _pkg_buld_dir; \
-        _pkg_buld_dir = env['PKG_BULD_DIR']
-    global _pkg_inst_dir; \
-        _pkg_inst_dir = env['PKG_INST_DIR']
-    global _extra_sysroot; \
-        _extra_sysroot = env['SYSROOT']
-    global _extra_args_build; \
-        _extra_args_build = env[f'EXTRA_{BUILD_CMD.upper()}']
-
-    if _target_pkg_type != 'static':
-        raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
-
-
-    global BUILD_ENV
-
-    if _target_platform == 'android':
-        BUILD_ENV['ANDROID_API_LEVEL'] = env['ANDROID_API_LEVEL']
-    if _target_platform == 'win-msvc':
-        BUILD_ENV = env['WIN32_MSVC_ENV_TARGET']
-        BUILD_ENV['CFLAGS']   = '/utf-8'
-        BUILD_ENV['CXXFLAGS'] = BUILD_ENV['CFLAGS']
-        _extra_args_build.extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
-
+if __name__ == "__main__": x.loge_usage()
+# ----------------------------
+from typing import Callable, cast
+from build_v2 import BuildCtx
+ctx = cast(BuildCtx, globals()["ctx"])
+# ----------------------------
+def build_steps() -> "list[Callable[[], None]]":
     return [
-        _source_download,
-        _build_step_00,
-        _build_step_01,
-        _build_step_02,
+        _fetch_source,
+        _build_step_0,
+        _build_step_1,
+        _build_step_2,
     ]
-
-
-
-def _source_download():
-    _git_target = 'refs/heads/release-2.32.x'
-    if not (Path(_subproj_src) / '.git').exists():
-        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'init'])
-        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'remote', 'add', 'x', 'https://github.com/libsdl-org/SDL.git'])
-        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
-        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'checkout', 'FETCH_HEAD'])
-    x._util_put_pkg_version_desc(_target_pkg_name, x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
-    x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
-def _build_step_00():
-    args = [BUILD_CMD, *_extra_args_build,
-        '-S',   _subproj_src,
-        '-D',  'BUILD_SHARED_LIBS:BOOL=0',
-        '-D',  'SDL_SHARED:BOOL=0',
-        '-D',  'SDL_STATIC:BOOL=1',
-        '-D',  'CMAKE_BUILD_TYPE=RelWithDebInfo',
+# ----------------------------
+def get_build_env() -> "dict[str, str]":
+    env = x.ENVIRON
+    if ctx.args.target_plat == 'win-msvc':
+        env = ctx.args.win32_msvc_env_target
+        env['CFLAGS'] = '/utf-8'
+        env['CXXFLAGS'] = env['CFLAGS']
+    return env
+# ----------------------------
+def _fetch_source():
+    ctx.fetch_source_from_git('refs/heads/release-2.32.x', 'https://github.com/libsdl-org/SDL.git')
+def _build_step_0():
+    x.run_as_subprocess(env=get_build_env(), args=[
+        'cmake', *(ctx.args.extra_cmake),
+        '-S',   ctx.subproj_src_dir().as_posix(),
+        '-D', f'BUILD_SHARED_LIBS:BOOL={x.feature_build_shared()}',
+        '-D', f'SDL_STATIC:BOOL={"0" if (x.feature_build_shared() == "1") else "1"}',
+        '-D', f'SDL_SHARED:BOOL={x.feature_build_shared()}',
+        '-D',  'CMAKE_BUILD_TYPE=Release',
         '-D',  'SDL_CCACHE:BOOL=0',
         '-D',  'SDL_TEST:BOOL=0',
         '-D',  'SDL2_DISABLE_SDL2MAIN:BOOL=1',
-    ]
-    x._util_func__subprocess(env=BUILD_ENV, args=args)
-def _build_step_01():
-    args = f"{BUILD_CMD} --build {_pkg_buld_dir} -j {x.CPU_COUNT}"
-    x._util_func__subprocess(env=BUILD_ENV, args=shlex.split(args))
-def _build_step_02():
-    args = f"{BUILD_CMD} --install {_pkg_buld_dir}"
-    x._util_func__subprocess(env=BUILD_ENV, args=shlex.split(args))
+    ])
+def _build_step_1():
+    x.run_as_subprocess(env=get_build_env(), args=['cmake', '--build', ctx.args.pkg_buld_dir, '-j', f'{x.detect_cpu_count()}'])
+def _build_step_2():
+    x.run_as_subprocess(env=get_build_env(), args=['cmake', '--install', ctx.args.pkg_buld_dir, '--strip'])
