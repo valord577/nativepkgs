@@ -1,6 +1,7 @@
 {
   "exclude": [
     ".env",
+    ".env.container",
     ".deps/",
     //
     "out",
