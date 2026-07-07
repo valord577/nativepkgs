@@ -1,5 +1,6 @@
 name: zlib-ng
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
