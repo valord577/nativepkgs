@@ -162,7 +162,7 @@ jobs:
     continue-on-error: ${{ inputs.allow_failure }}
     defaults:
       run:
-        shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'zsh' }}
+        shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'bash' }}
     env:
       PKG_TYPE: ${{ matrix.pkg_type }}
     steps:
@@ -211,7 +211,7 @@ jobs:
           ${{
             startsWith(matrix.os, 'windows')
               && '.env/Scripts/activate.ps1'
-              || 'source .env/bin/activate'
+              || '. .env/bin/activate'
           }}
           python3 ./build_v2.py ${{ env.PKG_NAME }} ${{ matrix.platform }} ${{ matrix.arch }}
       - name: library packed ~ macos
