@@ -3,53 +3,33 @@ on:
   workflow_call:
     inputs:
       disable_shared:
-        default: true
+        default: false
+        required: false
+        type: boolean
+      enable_shared_commit:
+        default: false
         required: false
         type: boolean
       disable_static:
         default: false
         required: false
         type: boolean
-      disable_commit:
+      enable_static_commit:
         default: false
         required: false
         type: boolean
+
       allow_failure:
         default: true
         required: false
         type: boolean
 
-      disable_ccache_on_host:
-        default: true
-        required: false
-        type: boolean
-      disable_ccache_on_container:
-        default: true
-        required: false
-        type: boolean
-
-      container_linux:
-        default: "linux310-gcc7-cross"
+      container:
+        default: "crossbuild-all-in-one"
         required: false
         type: string
-      container_linux_vers:
-        default: "627c15642b853fa1d85b5c31c5c78982ea75b7fb"
-        required: false
-        type: string
-      container_mingw:
-        default: "mingw-cross-native"
-        required: false
-        type: string
-      container_mingw_vers:
-        default: "627c15642b853fa1d85b5c31c5c78982ea75b7fb"
-        required: false
-        type: string
-      container_android:
-        default: "android-ndk-r27d"
-        required: false
-        type: string
-      container_android_vers:
-        default: "627c15642b853fa1d85b5c31c5c78982ea75b7fb"
+      container_vers:
+        default: "20260707T035604Z-2a055ab"
         required: false
         type: string
 
@@ -78,7 +58,7 @@ on:
 env:
   GH_TOKEN: ${{ github.token }}
   PKG_NAME: ${{ github.workflow }}
-  INST_DIR: ${{ github.workspace }}/out/${{ github.workflow }}
+  SCCACHE_GHA_ENABLED: "true"
   CI_HIT_MESSAGE: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} (${{ github.sha }})"
   S3_R2_ACCOUNT_ID: ${{ secrets.S3_R2_ACCOUNT_ID }}
   S3_R2_ACCESS_KEY: ${{ secrets.S3_R2_ACCESS_KEY }}
@@ -146,14 +126,12 @@ jobs:
       - name: set matrix container
         id: set-matrix-container
         run: |
-          container_linux="valord577/${{ inputs.container_linux }}:${{ inputs.container_linux_vers }}"
-          container_mingw="valord577/${{ inputs.container_mingw }}:${{ inputs.container_mingw_vers }}"
-          container_android="valord577/${{ inputs.container_android }}:${{ inputs.container_android_vers }}"
+          container_all_in_one="valord577/${{ inputs.container }}:${{ inputs.container_vers }}"
 
           matrix=$(cat .github/matrix_container.json | jq -c -M)
-          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\"     then . + {image: \"${container_linux}\"}   else . end)")
-          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"win-mingw\" then . + {image: \"${container_mingw}\"}   else . end)")
-          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"android\"   then . + {image: \"${container_android}\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"linux\"     then . + {image: \"${container_all_in_one}\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"win-mingw\" then . + {image: \"${container_all_in_one}\"} else . end)")
+          matrix=$(echo ${matrix} | jq -c -M "map(if .platform == \"android\"   then . + {image: \"${container_all_in_one}\"} else . end)")
 
           [ -n "${jq_expr_plat}" ] && \
             { matrix=$(echo ${matrix} | jq -c -M "map(. | select($jq_expr_plat) )"); }
@@ -185,15 +163,21 @@ jobs:
     defaults:
       run:
         shell: ${{ startsWith(matrix.os, 'windows') && 'pwsh' || 'bash' }}
-        working-directory: ${{ github.workspace }}
+    env:
+      PKG_TYPE: ${{ matrix.pkg_type }}
     steps:
-      - name: set required software(s) - macos
+      - name: set required something(s) ~ macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           sudo mdutil -a -i off
 
-          brew install ccache nasm; brew list -l
-      - name: set required software(s) - windows
+          brew install nasm
+          brew install sccache
+
+          brew list -l
+
+          echo "INST_DIR=${GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "${GITHUB_ENV}"
+      - name: set required something(s) ~ windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
           Set-MpPreference `
@@ -204,10 +188,15 @@ jobs:
             -DisableRealtimeMonitoring $True
           Set-ExecutionPolicy -ExecutionPolicy Bypass -Force -Scope CurrentUser
 
-          choco install ccache nasm; choco list
+          choco install nasm
+          choco install sccache
+
+          choco list
 
           C:/msys64/usr/bin/bash.exe -lc `
             'pacman --noconfirm -S zip unzip;'
+
+          echo "INST_DIR=${env:GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "${env:GITHUB_ENV}"
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -216,46 +205,46 @@ jobs:
           git remote add x ${{github.server_url}}/${{ github.repository }}.git
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
-      - name: setup rclone for s3 (cloudflare r2)
-        run: |
-          python3 ./.github/rclone.py
-      - name: set required env - 00
-        run: |
-          python3 ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
-      - name: ccache get... (s3)
-        if: ${{ (! inputs.disable_ccache_on_host) }}
-        run: |
-          python3 ./.github/ccache_get.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
-      - name: library buildx - ${{ env.PKG_NAME }}
+      - name: library buildx - [${{ env.PKG_NAME }}]
         run: |
           python3 -m venv .env
           ${{
             startsWith(matrix.os, 'windows')
               && '.env/Scripts/activate.ps1'
-              || 'source .env/bin/activate'
+              || '. .env/bin/activate'
           }}
-          python3 ./build.py ${{ matrix.platform }} ${{ matrix.arch }} -m ${{ env.PKG_NAME }}
-      - name: ccache put... (s3)
-        if: ${{ (! inputs.disable_ccache_on_host) }}
-        run: |
-          python3 ./.github/ccache_put.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
-      - name: set required env - 01
-        run: |
-          python3 ./.github/setenv_01.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.pkg_type }}'
-      - name: library packed - ${{ env.PKG_NAME }}
+          python3 ./build_v2.py ${{ env.PKG_NAME }} ${{ matrix.platform }} ${{ matrix.arch }}
+      - name: library packed ~ macos
+        if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           # keep file permissions and case sensitivity
-          python3 ./.github/library_packed.py
-      - name: library upload - ${{ env.PKG_NAME }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: ${{ env.PKG_ZIPNAME }}
-          path: out/${{ env.PKG_ZIPNAME }}.zip
-          compression-level: 0
-      - name: commit to pre-compiled storage
-        if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
+          cd ${{ env.INST_DIR }}/..; zip -ry ${GITHUB_WORKSPACE}/${{ env.PKG_ZIPNAME }}.zip $(basename ${{ env.INST_DIR }})
+      - name: library packed ~ windows
+        if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
-          ./.github/rclone copy "out/${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
+          # keep file permissions and case sensitivity
+          $shell = @'
+            inst_dir=$(cygpath -u "${{ env.INST_DIR }}")
+            zip_file=$(cygpath -u "${GITHUB_WORKSPACE}/${{ env.PKG_ZIPNAME }}.zip")
+            cd ${inst_dir}/..; zip -ry "${zip_file}" "$(basename ${inst_dir})"
+          '@
+          C:/msys64/usr/bin/bash.exe -lc "${shell}"
+      - name: library upload
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ env.PKG_ZIPNAME }}.zip
+          archive: false
+      - name: commit to pre-compiled storage
+        if: >-
+          ${{
+            github.event_name == 'push' &&
+            (
+              (matrix.pkg_type == 'static' && inputs.enable_static_commit) ||
+              (matrix.pkg_type == 'shared' && inputs.enable_shared_commit)
+            )
+          }}
+        run: |
+          ./.github/rclone copy "${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
 
   _buildx_on_container:
     needs: _preset
@@ -268,7 +257,8 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ${{ github.workspace }}
+    env:
+      PKG_TYPE: ${{ matrix.pkg_type }}
     steps:
       - name: clone source
         run: |
@@ -278,48 +268,40 @@ jobs:
           git remote add x ${{github.server_url}}/${{ github.repository }}.git
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
-      - name: setup rclone for s3 (cloudflare r2)
+      - name: set runtime env
         run: |
-          ./.github/rclone.py
-      - name: set required env - 00
-        run: |
-          ./.github/setenv_00.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.arch }}' '${{ matrix.libc }}' '${{ matrix.pkg_type }}'
-      - name: ccache get... (s3)
-        if: ${{ (! inputs.disable_ccache_on_container) }}
-        run: |
-          ./.github/ccache_get.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
-      - name: library buildx - ${{ env.PKG_NAME }}
+          echo "INST_DIR=${GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "${GITHUB_ENV}"
+      - name: library buildx - [${{ env.PKG_NAME }}]
         run: |
           build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
-          ${{ matrix.platform == 'linux' }} && \
+          ${{ matrix.platform == 'linux' }}   && \
             {
-              build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.libc }}'
+              build_target_args='${{ matrix.platform }} crossbuild ${{ matrix.arch }} ${{ matrix.info }}'
             }
-          ${{ matrix.platform == 'android' }} && ${{ matrix.libc != '' }} && \
+          ${{ matrix.platform == 'android' }} && \
             {
-              export ANDROID_FLEXIBLE_PAGE_SIZES=${{ matrix.libc }}
+              build_target_args='${{ matrix.platform }} ${{ matrix.arch }} ${{ matrix.info }}'
             }
 
-          python3 -m venv .env; source .env/bin/activate
-          ./build.py ${build_target_args} -m ${{ env.PKG_NAME }}
-      - name: ccache put... (s3)
-        if: ${{ (! inputs.disable_ccache_on_container) }}
-        run: |
-          ./.github/ccache_put.py '${{ env.CCACHE_DIR }}' '${{ env.CCACHE_KEY }}'
-      - name: set required env - 01
-        run: |
-          ./.github/setenv_01.py '${{ env.PKG_NAME }}' '${{ matrix.platform }}' '${{ matrix.pkg_type }}'
-      - name: library packed - ${{ env.PKG_NAME }}
+          python3 -m venv .env; . .env/bin/activate
+          ./build_v2.py ${{ env.PKG_NAME }} ${build_target_args}
+      - name: library packed
         run: |
           # keep file permissions and case sensitivity
-          ./.github/library_packed.py
-      - name: library upload - ${{ env.PKG_NAME }}
-        uses: actions/upload-artifact@v6
+          cd ${{ env.INST_DIR }}/..; zip -ry ${GITHUB_WORKSPACE}/${{ env.PKG_ZIPNAME }}.zip $(basename ${{ env.INST_DIR }})
+      - name: library upload
+        uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.PKG_ZIPNAME }}
-          path: out/${{ env.PKG_ZIPNAME }}.zip
-          compression-level: 0
+          path: ${{ env.PKG_ZIPNAME }}.zip
+          archive: false
       - name: commit to pre-compiled storage
-        if: ${{ github.event_name == 'push' && (! inputs.disable_commit) }}
+        if: >-
+          ${{
+            github.event_name == 'push' &&
+            (
+              (matrix.pkg_type == 'static' && inputs.enable_static_commit) ||
+              (matrix.pkg_type == 'shared' && inputs.enable_shared_commit)
+            )
+          }}
         run: |
-          ./.github/rclone copy "out/${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
+          ./.github/rclone copy "${{ env.PKG_ZIPNAME }}.zip" "r2:${{ env.S3_R2_STORAGE_BUCKET }}/packages/${{ env.PKG_NAME }}/${{ env.PKG_VERSION }}/"
