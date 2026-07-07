@@ -44,6 +44,7 @@ def _build_step_0():
         '-D',  'CMAKE_BUILD_TYPE=Release',
         '-D',  'SDL_CCACHE:BOOL=0',
         '-D',  'SDL_TEST:BOOL=0',
+        '-D',  'SDL_LIBC:BOOL=1',
         '-D',  'SDL2_DISABLE_SDL2MAIN:BOOL=1',
     ])
 def _build_step_1():
