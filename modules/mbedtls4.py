@@ -1,174 +1,113 @@
-#!/usr/bin/env python3
-
 # fmt: off
 
-from buildx import utils as x
-# ----------------------------
-
-import os
-import shlex
-
+import sys
 from pathlib import Path
 
+sys.dont_write_bytecode = True
 
-BUILD_CMD = 'cmake'
-BUILD_ENV = os.environ.copy()
+_this_file = (Path(__file__).absolute().resolve())
+sys.path.append(
+    (_this_file.parents[1]).as_posix()
+); import x_utils as x
 
-_subproj_src = ''
-_subproj_src_patches = ''
-
-_target_pkg_name = ''
-_target_pkg_type = ''
-_target_platform = ''
-_target_arch = ''
-_target_archlibc = ''
-
-_3rd_deps_dir = ''
-_pkg_buld_dir = ''
-_pkg_inst_dir = ''
-
-_extra_sysroot = ''
-_extra_args_build: list[str] = []
-
-def module_init(env: dict) -> list:
-    global _target_pkg_name; \
-        _target_pkg_name = env['PKG_NAME']
-    global _target_pkg_type; \
-        _target_pkg_type = env['PKG_TYPE']
-    global _subproj_src; \
-        _subproj_src = env['SUBPROJ_SRC']
-    global _subproj_src_patches; \
-        _subproj_src_patches = env['SUBPROJ_SRC_PATCHES']
-    global _target_platform; \
-        _target_platform = env['PKG_PLATFORM']
-    global _target_arch; \
-        _target_arch = env['PKG_ARCH']
-    global _target_archlibc; \
-        _target_archlibc = env['PKG_ARCH_LIBC']
-    global _3rd_deps_dir; \
-        _3rd_deps_dir = env['3RD_DEPS_DIR']
-    global _pkg_buld_dir; \
-        _pkg_buld_dir = env['PKG_BULD_DIR']
-    global _pkg_inst_dir; \
-        _pkg_inst_dir = env['PKG_INST_DIR']
-    global _extra_sysroot; \
-        _extra_sysroot = env['SYSROOT']
-    global _extra_args_build; \
-        _extra_args_build = env[f'EXTRA_{BUILD_CMD.upper()}']
-
-    if _target_pkg_type != 'static':
-        raise NotImplementedError(f'unsupported PKG_TYPE: {_target_pkg_type}')
-
-    x._util_func__pip_install(['jsonschema', 'jinja2'])
-
-
-    global BUILD_ENV
-
-    if _target_platform == 'android':
-        BUILD_ENV['ANDROID_API_LEVEL'] = env['ANDROID_API_LEVEL']
-    if _target_platform == 'win-msvc':
-        BUILD_ENV = env['WIN32_MSVC_ENV_TARGET']
-        BUILD_ENV['CFLAGS']   = '/utf-8 /wd4146'
-        BUILD_ENV['CXXFLAGS'] = BUILD_ENV['CFLAGS']
-        _extra_args_build.extend(['-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded'])
-
+if __name__ == "__main__": x.loge_usage()
+# ----------------------------
+from typing import Callable, cast
+from build_v2 import BuildCtx
+ctx = cast(BuildCtx, globals()["ctx"])
+# ----------------------------
+def build_steps() -> "list[Callable[[], None]]":
     return [
-        _source_download,
-        _source_set_features,
-        _build_step_00,
-        _build_step_01,
-        _build_step_02,
+        _fetch_source,
+        _build_step_0,
+        _build_step_1,
+        _build_step_2,
     ]
-
-
-
-
-def _source_download():
-    _git_target = 'refs/heads/mbedtls-4.1'
-    _git_repo_url = 'https://github.com/Mbed-TLS/mbedtls.git'
-    _git_submodule_tf_psa_crypto = (Path(_subproj_src) / 'tf-psa-crypto').absolute().as_posix()
-    if not (Path(_subproj_src) / '.git').exists():
-        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'init'])
-        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'remote', 'add', 'x', _git_repo_url])
-        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'fetch', '-q', '--no-tags', '--prune', '--no-recurse-submodules', '--depth=1', 'x', f'+{_git_target}'])
-        x._util_func__subprocess(cwd=_subproj_src, args=['git', 'checkout', 'FETCH_HEAD'])
-
-        _git_submodules = [
+# ----------------------------
+def get_build_env() -> "dict[str, str]":
+    env = x.ENVIRON
+    if ctx.args.target_plat == 'win-msvc':
+        env = ctx.args.win32_msvc_env_target
+        env['CFLAGS'] = '/utf-8'
+        env['CXXFLAGS'] = env['CFLAGS']
+    return env
+# ----------------------------
+def _fetch_source():
+    git_submodule_tf_psa_crypto = ctx.subproj_src_dir('tf-psa-crypto')
+    ctx.fetch_source_from_git('refs/heads/mbedtls-4.1', 'https://github.com/Mbed-TLS/mbedtls.git',
+        submodules=[
             {
                 'repo': 'framework',
                 'path': 'framework',
-                'cwd':  _subproj_src,
+                'cwd':  ctx.subproj_src_dir(),
                 'url':  '../mbedtls-framework.git',
             },
             {
                 'repo': 'tf-psa-crypto',
                 'path': 'tf-psa-crypto',
-                'cwd':  _subproj_src,
+                'cwd':  ctx.subproj_src_dir(),
                 'url':  '../TF-PSA-Crypto.git',
             },
             {
                 'repo': 'framework',
                 'path': 'framework',
-                'cwd':  _git_submodule_tf_psa_crypto,
+                'cwd':  git_submodule_tf_psa_crypto,
                 'url':  '../mbedtls-framework.git',
             },
             {
                 'repo': 'mldsa-native',
                 'path': 'drivers/pqcp/mldsa-native',
-                'cwd':  _git_submodule_tf_psa_crypto,
+                'cwd':  git_submodule_tf_psa_crypto,
                 'url':  '../mldsa-native.git',
             },
-        ]
-        x._util_source_sync_submodules(_git_repo_url, _git_submodules)
-    x._util_put_pkg_version_desc(_target_pkg_name, x._util_func__subprocess(cwd=_subproj_src, collect_stdout=True, args=['git', 'describe', '--always', '--abbrev=7']))
-    x._util_source_apply_patches(_subproj_src, _subproj_src_patches)
-    x._util_source_cleanup(_git_submodule_tf_psa_crypto)
-    #if _target_platform == 'win-msvc':
-    #    x._util_func__exec_python(cwd=_subproj_src, args=[(Path(_subproj_src) / 'framework' / 'scripts' / 'make_generated_files.py').absolute().as_posix()])
-def _source_set_features():
-    _config_script = (Path(_subproj_src) / 'scripts' / 'config.py').absolute().as_posix()
+        ],
+    )
+    ctx.__class__.git_src_factory_reset(git_submodule_tf_psa_crypto)
 
-    x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_HAVE_SSE2'])
-    if _target_arch == 'arm64' and _target_platform != 'win-msvc':
-        x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_SHA256_USE_ARMV8_A_CRYPTO_ONLY'])
-        x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_SHA512_USE_A64_CRYPTO_ONLY'])
 
-    #x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_PSA_P256M_DRIVER_ENABLED'])
-    if _target_arch != 'armv7':
-        x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_ECDH_VARIANT_EVEREST_ENABLED'])
+    x.runpy_pip(['jsonschema', 'jinja2'])
+    config_py = ctx.subproj_src_dir('scripts', 'config.py').as_posix()
 
-    x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_SSL_PROTO_TLS1_3'])
-    x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_SSL_TLS1_3_COMPATIBILITY_MODE'])
+    x.runpy([config_py, 'set', 'MBEDTLS_HAVE_SSE2'])
+    if ctx.args.target_arch == 'arm64':
+        x.runpy([config_py, 'set', 'MBEDTLS_SHA256_USE_ARMV8_A_CRYPTO_ONLY'])
+        x.runpy([config_py, 'set', 'MBEDTLS_SHA512_USE_A64_CRYPTO_ONLY'])
 
-    x._util_func__exec_python([_config_script, 'unset', 'MBEDTLS_DEBUG_C'])
-    x._util_func__exec_python([_config_script, 'unset', 'MBEDTLS_SELF_TEST'])
-    x._util_func__exec_python([_config_script, 'unset', 'MBEDTLS_SSL_RENEGOTIATION'])
+    x.runpy([config_py, 'set', 'MBEDTLS_SSL_PROTO_TLS1_3'])
+    x.runpy([config_py, 'set', 'MBEDTLS_SSL_TLS1_3_COMPATIBILITY_MODE'])
 
-    if _target_platform != 'win-msvc':
-        x._util_func__exec_python([_config_script, 'set', 'MBEDTLS_DEPRECATED_WARNING'])
-def _build_step_00():
-    args = [BUILD_CMD, *_extra_args_build,
-        '-S',   _subproj_src,
-        '-D',  'BUILD_SHARED_LIBS:BOOL=0',
-        '-D',  'USE_STATIC_MBEDTLS_LIBRARY:BOOL=1',
-        '-D',  'USE_SHARED_MBEDTLS_LIBRARY:BOOL=0',
-        '-D',  'CMAKE_BUILD_TYPE=RelWithDebInfo',
+    x.runpy([config_py, 'unset', 'MBEDTLS_DEBUG_C'])
+    x.runpy([config_py, 'unset', 'MBEDTLS_SELF_TEST'])
+    x.runpy([config_py, 'unset', 'MBEDTLS_SSL_RENEGOTIATION'])
+
+    if ctx.args.target_plat != 'win-msvc':
+        x.runpy([config_py, 'set', 'MBEDTLS_DEPRECATED_WARNING'])
+def _build_step_0():
+    args = [
+        'cmake', *(ctx.args.extra_cmake),
+        '-S',   ctx.subproj_src_dir().as_posix(),
+        '-D', f'BUILD_SHARED_LIBS:BOOL={x.feature_build_shared()}',
+        '-D', f'USE_STATIC_MBEDTLS_LIBRARY:BOOL={"0" if (x.feature_build_shared() == "1") else "1"}',
+        '-D', f'USE_SHARED_MBEDTLS_LIBRARY:BOOL={x.feature_build_shared()}',
+        '-D',  'CMAKE_BUILD_TYPE=Release',
         '-D',  'MBEDTLS_AS_SUBPROJECT:BOOL=0',
         '-D',  'ENABLE_PROGRAMS:BOOL=0',
         '-D',  'ENABLE_TESTING:BOOL=0',
         '-D',  'DISABLE_PACKAGE_CONFIG_AND_INSTALL:BOOL=1',
         '-D',  'GEN_FILES:BOOL=1',
     ]
-    x._util_func__subprocess(env=BUILD_ENV, args=args)
-def _build_step_01():
-    args = f"{BUILD_CMD} --build {_pkg_buld_dir} -j {x.CPU_COUNT}"
-    x._util_func__subprocess(env=BUILD_ENV, args=shlex.split(args))
-def _build_step_02():
-    args = f"{BUILD_CMD} --install {_pkg_buld_dir}"
-    x._util_func__subprocess(env=BUILD_ENV, args=shlex.split(args))
+    #if (x.feature_build_shared() == '1') and (ctx.args.target_plat == 'win-msvc'):
+    #    # Bug Tracking:
+    #    #  - https://github.com/Mbed-TLS/mbedtls/issues/470
+    #    #  - https://github.com/Mbed-TLS/mbedtls/issues/1130
+    #    args.extend(['-D', 'CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS:BOOL=1'])
+    x.run_as_subprocess(env=get_build_env(), args=args)
+def _build_step_1():
+    x.run_as_subprocess(env=get_build_env(), args=['cmake', '--build', ctx.args.pkg_buld_dir, '-j', f'{x.detect_cpu_count()}'])
+def _build_step_2():
+    x.run_as_subprocess(env=get_build_env(), args=['cmake', '--install', ctx.args.pkg_buld_dir, '--strip'])
 
-
-    _pkgconf_content = '''
+    _pkgconf_content = '''\
 prefix=${pcfiledir}/../..
 includedir=${prefix}/include
 libdir=${prefix}/lib
@@ -182,12 +121,12 @@ Cflags: -I${includedir}
 Libs: -L${libdir} -lmbedtls -lmbedx509 -ltfpsacrypto @PKGCONFIG_EXTRA_LIBS@
 '''
     _pkgconf_extra_libs = ''
-    if _target_platform == 'win-mingw':
+    if ctx.args.target_plat == 'win-mingw':
         _pkgconf_extra_libs = '-lws2_32 -lbcrypt'
     _pkgconf_content = _pkgconf_content.replace('@PKGCONFIG_EXTRA_LIBS@', _pkgconf_extra_libs)
-    _pkgconf_content = _pkgconf_content.replace('@PKGCONFIG_VERSION@', x._util_get_pkg_version_desc(_target_pkg_name))
+    _pkgconf_content = _pkgconf_content.replace('@PKGCONFIG_VERSION@', ctx.subproj_src_ver())
 
-    _pkgconf = (Path(_pkg_inst_dir) / 'lib' / 'pkgconfig' / 'mbedtls4.pc'); \
+    _pkgconf = (Path(ctx.args.pkg_inst_dir) / 'lib' / 'pkgconfig' / 'mbedtls4.pc'); \
         _pkgconf.parent.mkdir(parents=True, exist_ok=True)
-    _pkgconf.write_text(_pkgconf_content)
+    _ = _pkgconf.write_text(_pkgconf_content)
     (_pkgconf.parent / 'mbedtls.pc').symlink_to(_pkgconf.name, target_is_directory=False)

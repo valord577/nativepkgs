@@ -1,5 +1,6 @@
 name: mbedtls3
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
