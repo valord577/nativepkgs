@@ -16,15 +16,13 @@ if sys.version_info < (3, 8):
     x.loge('Required Python Interpreter ≥ 3.8')  # pyright: ignore[reportUnreachable]
 # ----------------------------
 
-import copy
-import json
 import os
 import runpy
 import shutil
 import time
 
 from dataclasses import dataclass
-from typing import Callable, TypedDict, cast
+from typing import Callable, Literal, TypedDict, cast
 from urllib.parse import urljoin
 
 
@@ -33,11 +31,17 @@ if sys.prefix == sys.base_prefix:
 if not x.ENVIRON.get('VIRTUAL_ENV'):
     x.loge(f'Please activate the virtual environment first')
 # ----------------------------
-class SubmodulesSpec(TypedDict):
+class GitSubmoduleSpec(TypedDict):
     repo: "str"
     path: "str"
     cwd:  "str | Path"
     url:  "str"
+
+class DependencySpec(TypedDict):
+    name: "str"
+    type: "Literal['static', 'shared']"
+    vers: "str"
+    args: "str"
 
 @dataclass
 class BuildCtxArgs:
@@ -57,8 +61,11 @@ class BuildCtxArgs:
 
     cc: "list[str]"
     ar: "list[str]"
+    nm: "list[str]"
     ldflags: "list[str]"
     objcopy: "list[str]"
+    windres: "list[str]"
+    pkgconf: "list[str]"
 
     pkg_buld_dir: "str"
     pkg_inst_dir: "str"
@@ -67,8 +74,9 @@ class BuildCtx:
     def __init__(self, args: "BuildCtxArgs"):
         self.args: "BuildCtxArgs" = args
 
-        self._subproj_src: "Path" = (Path(x.PROJ_ROOT) / '.deps' / f'{self.args.module}')
-        self._subproj_ver: "Path" = (Path(x.PROJ_ROOT) / '.deps' / f'{self.args.module}.ver')
+        self._3rd_deps_dir: "Path" = (Path(x.PROJ_ROOT) / f'.lib.{self.args.target_plat}.{self.args.target_archinfo}')
+        self._subproj_src:  "Path" = (Path(x.PROJ_ROOT) /  '.deps' / f'{self.args.module}')
+        self._subproj_ver:  "Path" = (Path(x.PROJ_ROOT) /  '.deps' / f'{self.args.module}.ver')
         self._subproj_src_patches: "Path" = (Path(x.PROJ_ROOT) / 'patches' / self.args.module)
 
     @staticmethod
@@ -96,7 +104,7 @@ class BuildCtx:
 
     def fetch_source_from_git(self,
         hash: "str", url: "str",
-        submodules: "list[SubmodulesSpec] | None" = None,
+        submodules: "list[GitSubmoduleSpec] | None" = None,
     ):
         self._subproj_src.mkdir(parents=True, exist_ok=True)
         if not (self._subproj_src / '.git').exists():
@@ -132,6 +140,24 @@ class BuildCtx:
     def subproj_src_ver(self) -> str:
         return self._subproj_ver.read_text()
 
+    def include_3rd_dependencies(self, dep: "DependencySpec") -> Path:
+        this_lib_dir = (self._3rd_deps_dir / dep['name']); \
+            this_lib_dir.parent.mkdir(parents=True, exist_ok=True)
+        if False:
+            pass  # pyright: ignore[reportUnreachable]
+        elif x.ON_GITLAB_CI:
+            pass
+        elif x.ON_GITHUB_CI:
+            zipname = f"{dep['name']}_{self.args.target_plat}_{self.args.target_archinfo}_{dep['vers']}_{dep['type']}"
+            x.run_as_subprocess(args=[x.RCLONE_EXEC.as_posix(),
+                'copy', f"r2:{x.feature('S3_R2_STORAGE_BUCKET')}/packages/{dep['name']}/{dep['vers']}/{zipname}.zip", this_lib_dir.parent.as_posix()])
+            x.unzip_with_softlink(this_lib_dir.parent / f'{zipname}.zip')
+        else:
+            this_lib_dir.unlink(missing_ok=True)
+            src = (Path(x.PROJ_ROOT) / 'out' / dep['name'] / self.args.target_plat / self.args.target_archinfo)
+            this_lib_dir.symlink_to(src, target_is_directory=True)
+        return this_lib_dir
+
 class _state:
     def __init__(self,
         is_native_build: "bool",
@@ -154,8 +180,11 @@ class _state:
 
         self.cc: "list[str]" = []
         self.ar: "list[str]" = []
+        self.nm: "list[str]" = []
         self.ldflags: "list[str]" = []
         self.objcopy: "list[str]" = []
+        self.windres: "list[str]" = []
+        self.pkgconf: "list[str]" = []
 
         CLI_SUPPORTED_TARGETS[self.target_plat]['setctx'](self, is_native_build, build_target)
 
@@ -214,8 +243,11 @@ class _state:
 
             cc=self.cc,
             ar=self.ar,
+            nm=self.nm,
             ldflags=self.ldflags,
             objcopy=self.objcopy,
+            windres=self.windres,
+            pkgconf=self.pkgconf,
 
             pkg_buld_dir=self.pkg_buld_dir,
             pkg_inst_dir=self.pkg_inst_dir,
@@ -252,6 +284,7 @@ def _setctx_linux(
 
         state.cc.extend(['clang'])
         state.ar.extend(['llvm-ar'])
+        state.nm.extend(['llvm-nm'])
         state.ldflags.extend(['-fuse-ld=lld'])
         state.objcopy.extend(['llvm-objcopy'])
     else:
@@ -279,9 +312,12 @@ def _setctx_linux(
         if state.target_arch == 'armv7':
             state.cc.extend(['-march=armv7-a', '-mfpu=neon-vfpv4', '-mfloat-abi=hard'])
         state.ar.extend(['llvm-ar'])
+        state.nm.extend(['llvm-nm'])
         state.ldflags.extend(['-fuse-ld=lld'])
         state.objcopy.extend(['llvm-objcopy'])
 
+        # pkgconf
+        state.pkgconf.extend([f'{CROSS_TOOLCHAIN_ROOT}/pkgconf-wrapper.{_target_triple}'])
         # cmake toolchain file
         state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE='{CROSS_TOOLCHAIN_ROOT}/crossfile.cmake.{_target_triple}'"])
         # meson toolchain file
@@ -314,9 +350,20 @@ def _setctx_apple(
         'iphonesimulator': '12',
     }[state.target_plat]
 
+    state.cc.extend([
+        f'clang', '-arch', _apple_arch,
+        f'-m{_apple_deployment_name}-version-min={_apple_deployment_vers}',
+        f'-isysroot', _apple_sdk_path,
+    ])
+    state.ar.extend(['ar'])
+    state.nm.extend(['nm'])
+    state.objcopy.extend(['objcopy'])
+
     pkgconf_wrapper, meson_crossfile = x.apple_crossfiles_generate(
         state.target_plat, state.target_arch, _apple_arch, _apple_sdk_path, _apple_deployment_name, _apple_deployment_vers)
 
+    # pkgconf
+    state.pkgconf.extend([pkgconf_wrapper.as_posix()])
     # cmake toolchain file
     _cmake_os_name = {
         'macosx':          'Darwin',
@@ -337,9 +384,31 @@ def _setctx_win32_mingw(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
     CROSS_TOOLCHAIN_ROOT = x.get_cross_toolchain_dir(state.target_plat)
+    MINGW_ROOT = (Path(CROSS_TOOLCHAIN_ROOT)).absolute()
 
     state.target_arch = _tuple[1]
 
+    _target_triple = {
+        'arm64': f'aarch64-w64-mingw32',
+        'amd64': f'x86_64-w64-mingw32',
+    }[state.target_arch]
+
+    state.cc.extend([
+        f"{(MINGW_ROOT / 'bin' / f'{_target_triple}-clang').as_posix()}",
+        f"-no-canonical-prefixes",
+    ])
+    if state.target_arch == 'amd64':
+        state.cc.extend(['-march=x86-64-v2'])
+    if state.target_arch == 'arm64':
+        state.cc.extend(['-march=armv8-a'])
+    state.ar.extend([f"{(MINGW_ROOT / 'bin' / f'{_target_triple}-ar').as_posix()}"])
+    state.nm.extend([f"{(MINGW_ROOT / 'bin' / f'{_target_triple}-nm').as_posix()}"])
+    state.ldflags.extend(['-fuse-ld=lld'])
+    state.objcopy.extend([f"{(MINGW_ROOT / 'bin' / f'{_target_triple}-objcopy').as_posix()}"])
+    state.windres.extend([f"{(MINGW_ROOT / 'bin' / f'{_target_triple}-windres').as_posix()}"])
+
+    # pkgconf
+    state.pkgconf.extend([f'{CROSS_TOOLCHAIN_ROOT}/pkgconf-wrapper.{state.target_arch}'])
     # cmake toolchain file
     state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE='{CROSS_TOOLCHAIN_ROOT}/crossfile.cmake.{state.target_arch}'"])
     # meson toolchain file
@@ -398,7 +467,6 @@ def _setctx_android(
     state.cc.extend([
         f"{(CROSS_TOOLCHAIN_ROOT / 'bin' / f'{_target_triple_ver}-clang').as_posix()}",
         f"-no-canonical-prefixes",
-        f"--sysroot={(CROSS_TOOLCHAIN_ROOT / 'sysroot').as_posix()}",
     ])
     if state.target_arch == 'amd64':
         state.cc.extend(['-march=x86-64-v2'])
@@ -407,6 +475,7 @@ def _setctx_android(
     if state.target_arch == 'armv7':
         state.cc.extend(['-march=armv7-a', '-mfpu=neon', '-mfloat-abi=softfp'])
     state.ar.extend([f"{(CROSS_TOOLCHAIN_ROOT / 'bin' / 'llvm-ar').as_posix()}"])
+    state.nm.extend([f"{(CROSS_TOOLCHAIN_ROOT / 'bin' / 'llvm-nm').as_posix()}"])
     state.ldflags.extend(['-fuse-ld=lld'])
     state.objcopy.extend([f"{(CROSS_TOOLCHAIN_ROOT / 'bin' / 'llvm-objcopy').as_posix()}"])
 
@@ -420,6 +489,8 @@ def _setctx_android(
     ]
     state.ldflags.extend(flexible_page_ldflags)
 
+    # pkgconf
+    state.pkgconf.extend([f'{ANDROID_NDK_ROOT}/pkgconf-wrapper.{state.target_arch}'])
     # cmake toolchain file
     _cmake_arch_abi = {
         'arm64': 'arm64-v8a',
@@ -445,7 +516,7 @@ def _setctx_android(
             "-D", "CMAKE_ANDROID_ARM_MODE:BOOL=1",
             "-D", "CMAKE_ANDROID_ARM_NEON:BOOL=1",
         ])
-    state.extra_cmake.extend(['-D', f"PKG_CONFIG_EXECUTABLE='{ANDROID_NDK_ROOT}/pkgconf-wrapper.{state.target_arch}"])
+    state.extra_cmake.extend(['-D', f"PKG_CONFIG_EXECUTABLE:STRING='{' '.join(state.pkgconf)}'"])
     # meson toolchain file
     state.extra_meson.extend(["--cross-file", f"{ANDROID_NDK_ROOT}/crossfile.meson.{state.target_arch}-{state.target_info}"])
 # ----------------------------
