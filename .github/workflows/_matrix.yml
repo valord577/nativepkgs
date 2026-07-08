@@ -205,7 +205,7 @@ jobs:
           git remote add x ${{github.server_url}}/${{ github.repository }}.git
           git fetch --no-tags --prune --no-recurse-submodules --depth=1 x +${{ github.sha }}
           git checkout FETCH_HEAD
-      - name: library buildx - [${{ env.PKG_NAME }}]
+      - name: library buildx - [${{ env.PKG_NAME }} @${{ env.PKG_TYPE }}]
         run: |
           python3 -m venv .env
           ${{
@@ -271,7 +271,7 @@ jobs:
       - name: set runtime env
         run: |
           echo "INST_DIR=${GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "${GITHUB_ENV}"
-      - name: library buildx - [${{ env.PKG_NAME }}]
+      - name: library buildx - [${{ env.PKG_NAME }} @${{ env.PKG_TYPE }}]
         run: |
           build_target_args='${{ matrix.platform }} ${{ matrix.arch }}'
           ${{ matrix.platform == 'linux' }}   && \
