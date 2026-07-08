@@ -31,6 +31,7 @@ if __name__ == "__main__": loge_usage()
 import http.client
 import inspect
 import json
+import stat
 import subprocess as sp
 import os
 import platform
@@ -293,6 +294,7 @@ fi
     pkgconf_wrapper_content = pkgconf_wrapper_content.replace('@SYSROOT@', sdk)
     if not pkgconf_wrapper.exists():
         _ = pkgconf_wrapper.write_text(pkgconf_wrapper_content)
+        pkgconf_wrapper.chmod(stat.S_IRWXU)
 
 
     _meson_subsystem = {

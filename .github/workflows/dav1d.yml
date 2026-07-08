@@ -5,24 +5,22 @@ on:
     branches:
       - main
     paths:
-      - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/dav1d.yml'
       - 'patches/dav1d/**'
       - 'modules/dav1d.py'
-      - 'build.py'
+      - 'build_v2.py'
   pull_request:
     branches:
       - main
     paths:
-      - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/dav1d.yml'
       - 'patches/dav1d/**'
       - 'modules/dav1d.py'
-      - 'build.py'
+      - 'build_v2.py'
 
 jobs:
   build:
@@ -30,4 +28,5 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
-      select_platforms: "macosx, linux, win-mingw, android"
+      select_platforms: "macosx, linux, win-mingw, android, iphoneos"
+      enable_static_commit: true
