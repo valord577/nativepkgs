@@ -30,4 +30,5 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
+      disable_shared: true
       enable_static_commit: true
