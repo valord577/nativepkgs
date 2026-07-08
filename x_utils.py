@@ -31,6 +31,7 @@ if __name__ == "__main__": loge_usage()
 import http.client
 import inspect
 import json
+import stat
 import subprocess as sp
 import os
 import platform
@@ -268,3 +269,76 @@ def win32_msvc_dump_env(msvc_dir: Path, msvc_devshell: Path, target_arch: str) -
     for kv in cast("list[dict[str, str]]", json.loads(msvc_env_json.read_text())):
         msvc_env[kv['Name']] = kv['Value']
     return msvc_env
+# ----------------------------
+def apple_crossfiles_generate(
+    target_plat: str, target_arch: str, apple_arch: str, sdk: str, deployment_name: str, deployment_vers: str,
+) -> "tuple[Path, Path]":
+    if NATIVE_PLAT != 'macosx':
+        loge(f'only works on macosx, host os: {NATIVE_PLAT}')
+
+    pkgconf_wrapper = (Path(PROJ_ROOT) / 'tmp' / f'.apple_pkgconf_wrapper.{target_plat}-{target_arch}'); \
+        pkgconf_wrapper.parent.mkdir(parents=True, exist_ok=True)
+    pkgconf_wrapper_content = '''\
+#!/usr/bin/env sh
+set -e
+
+PKG_CONFIG_LIBDIR="${PKG_CONFIG_LIBDIR}:@SYSROOT@/usr/lib"
+export PKG_CONFIG_LIBDIR
+
+if command -v pkgconf >/dev/null 2>&1 ; then
+  exec pkgconf "$@"
+else
+  exec pkg-config "$@"
+fi
+'''
+    pkgconf_wrapper_content = pkgconf_wrapper_content.replace('@SYSROOT@', sdk)
+    if not pkgconf_wrapper.exists():
+        _ = pkgconf_wrapper.write_text(pkgconf_wrapper_content)
+        pkgconf_wrapper.chmod(stat.S_IRWXU)
+
+
+    _meson_subsystem = {
+        'macosx':          'macos',
+        'iphoneos':        'ios',
+        'iphonesimulator': 'ios-simulator',
+    }[target_plat]
+
+    _meson_arch = {
+        'amd64': 'x86_64',
+        'arm64': 'aarch64',
+    }[target_arch]
+
+    meson_crossfile = (pkgconf_wrapper.parent / f'.apple_meson_crossfile.{target_plat}-{target_arch}'); \
+    meson_crossfile_content = f'''\
+[constants]
+prefix = ''
+ccache = []
+ccflags = ['-arch', '{apple_arch}', '-isysroot', '{sdk}', '-m{deployment_name}-version-min={deployment_vers}']
+
+[host_machine]
+system = 'darwin'
+kernel = 'xnu'
+subsystem = '{_meson_subsystem}'
+cpu_family = '{_meson_arch}'
+cpu = '{_meson_arch}'
+endian = 'little'
+
+[properties]
+needs_exe_wrapper = true
+
+[binaries]
+c   = ccache + [prefix / 'clang']   + ccflags
+cpp = ccache + [prefix / 'clang++'] + ccflags
+ar = prefix / 'ar'
+as = prefix / 'as'
+nm = prefix / 'nm'
+objcopy = prefix / 'objcopy'
+strip   = prefix / 'strip'
+ranlib  = prefix / 'ranlib'
+pkg-config = '@DIRNAME@/{pkgconf_wrapper.name}'
+cmake = 'cmake'
+'''
+    if not meson_crossfile.exists():
+        _ = meson_crossfile.write_text(meson_crossfile_content)
+
+    return (pkgconf_wrapper, meson_crossfile)

@@ -283,7 +283,9 @@ def _setctx_linux(
         state.objcopy.extend(['llvm-objcopy'])
 
         # cmake toolchain file
-        state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE={(Path(CROSS_TOOLCHAIN_ROOT) / f'crossfile.cmake.{_target_triple}').absolute().as_posix()}"])
+        state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE='{CROSS_TOOLCHAIN_ROOT}/crossfile.cmake.{_target_triple}'"])
+        # meson toolchain file
+        state.extra_meson.extend(["--cross-file", f"{CROSS_TOOLCHAIN_ROOT}/crossfile.meson.{_target_triple}"])
 def _setctx_apple(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -293,6 +295,13 @@ def _setctx_apple(
         'arm64': 'arm64',
         'amd64': 'x86_64',
     }[state.target_arch]
+
+    _apple_sdk_name = {
+        'macosx':          'MacOSX',
+        'iphoneos':        'iPhoneOS',
+        'iphonesimulator': 'iPhoneSimulator',
+    }[state.target_plat]
+    _apple_sdk_path = f'/Applications/Xcode.app/Contents/Developer/Platforms/{_apple_sdk_name}.platform/Developer/SDKs/{_apple_sdk_name}.sdk'
 
     _apple_deployment_name = {
         'macosx':          'macosx',
@@ -304,6 +313,9 @@ def _setctx_apple(
         'iphoneos':        '12',
         'iphonesimulator': '12',
     }[state.target_plat]
+
+    pkgconf_wrapper, meson_crossfile = x.apple_crossfiles_generate(
+        state.target_plat, state.target_arch, _apple_arch, _apple_sdk_path, _apple_deployment_name, _apple_deployment_vers)
 
     # cmake toolchain file
     _cmake_os_name = {
@@ -318,7 +330,9 @@ def _setctx_apple(
     state.extra_cmake.extend(['-D', f'CMAKE_OSX_SYSROOT={state.target_plat}'])
     state.extra_cmake.extend(['-D', f'CMAKE_OSX_DEPLOYMENT_TARGET={_apple_deployment_vers}'])
     state.extra_cmake.extend(['-D',  'CMAKE_MACOSX_BUNDLE:BOOL=0'])
-    #ctx.extra_cmake.extend(['-D', f'PKG_CONFIG_EXECUTABLE={ctx.cross_pkgconfig_bin}'])
+    state.extra_cmake.extend(['-D', f'PKG_CONFIG_EXECUTABLE={pkgconf_wrapper.as_posix()}'])
+    # meson toolchain file
+    state.extra_meson.extend(["--cross-file", meson_crossfile.as_posix()])
 def _setctx_win32_mingw(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -327,7 +341,9 @@ def _setctx_win32_mingw(
     state.target_arch = _tuple[1]
 
     # cmake toolchain file
-    state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE={(Path(CROSS_TOOLCHAIN_ROOT) / f'crossfile.cmake.{state.target_arch}').absolute().as_posix()}"])
+    state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE='{CROSS_TOOLCHAIN_ROOT}/crossfile.cmake.{state.target_arch}'"])
+    # meson toolchain file
+    state.extra_meson.extend(["--cross-file", f"{CROSS_TOOLCHAIN_ROOT}/crossfile.meson.{state.target_arch}"])
 def _setctx_win32_msvc(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -370,16 +386,17 @@ def _setctx_android(
 
 
     _target_triple = {
-        'arm64': f'aarch64-linux-android{state.android_api_level}',
-        'armv7': f'armv7a-linux-androideabi{state.android_api_level}',
-        'amd64': f'x86_64-linux-android{state.android_api_level}',
+        'arm64': f'aarch64-linux-android',
+        'armv7': f'armv7a-linux-androideabi',
+        'amd64': f'x86_64-linux-android',
     }[state.target_arch]
+    _target_triple_ver = f'{_target_triple}{state.android_api_level}'
 
     ANDROID_NDK_ROOT = x.get_cross_toolchain_dir(state.target_plat)
     CROSS_TOOLCHAIN_ROOT = (Path(ANDROID_NDK_ROOT) / 'toolchains' / 'llvm' / 'prebuilt' / 'linux-x86_64').absolute()
 
     state.cc.extend([
-        f"{(CROSS_TOOLCHAIN_ROOT / 'bin' / f'{_target_triple}-clang').as_posix()}",
+        f"{(CROSS_TOOLCHAIN_ROOT / 'bin' / f'{_target_triple_ver}-clang').as_posix()}",
         f"-no-canonical-prefixes",
         f"--sysroot={(CROSS_TOOLCHAIN_ROOT / 'sysroot').as_posix()}",
     ])
@@ -399,7 +416,7 @@ def _setctx_android(
     state.cc.append('-D__BIONIC_NO_PAGE_SIZE_MACRO')
     flexible_page_ldflags = [
         f'-Wl,-z,max-page-size={1024 * flexible_page_sizes}',
-        f'-Wl,-z,max-page-size={1024 * flexible_page_sizes}',
+        f'-Wl,-z,common-page-size={1024 * flexible_page_sizes}',
     ]
     state.ldflags.extend(flexible_page_ldflags)
 
@@ -417,8 +434,8 @@ def _setctx_android(
         "-D", f"CMAKE_ANDROID_API_MIN={state.android_api_level}",
         "-D", f"CMAKE_ANDROID_ARCH_ABI={_cmake_arch_abi}",
         "-D", f"CMAKE_ANDROID_NDK={ANDROID_NDK_ROOT}",
-        "-D", f"CMAKE_C_COMPILER_TARGET={_target_triple}",
-        "-D", f"CMAKE_CXX_COMPILER_TARGET={_target_triple}",
+        "-D", f"CMAKE_C_COMPILER_TARGET={_target_triple_ver}",
+        "-D", f"CMAKE_CXX_COMPILER_TARGET={_target_triple_ver}",
         "-D", f"CMAKE_EXE_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
         "-D", f"CMAKE_MODULE_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
         "-D", f"CMAKE_SHARED_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
@@ -428,7 +445,9 @@ def _setctx_android(
             "-D", "CMAKE_ANDROID_ARM_MODE:BOOL=1",
             "-D", "CMAKE_ANDROID_ARM_NEON:BOOL=1",
         ])
-    #ctx.extra_cmake.extend(['-D', f"PKG_CONFIG_EXECUTABLE={ctx.cross_pkgconfig_bin}"])
+    state.extra_cmake.extend(['-D', f"PKG_CONFIG_EXECUTABLE='{ANDROID_NDK_ROOT}/pkgconf-wrapper.{state.target_arch}"])
+    # meson toolchain file
+    state.extra_meson.extend(["--cross-file", f"{ANDROID_NDK_ROOT}/crossfile.meson.{state.target_arch}-{state.target_info}"])
 # ----------------------------
 class TargetSpec(TypedDict):
     native: "bool"

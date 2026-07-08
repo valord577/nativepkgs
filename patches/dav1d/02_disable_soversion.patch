@@ -1,0 +1,13 @@
+diff --git a/src/meson.build b/src/meson.build
+index 108b762..3e9d575 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -387,8 +387,6 @@ libdav1d = library('dav1d',
+         libdl_dependency,
+         ],
+     c_args : [libdav1d_flags, api_export_flags],
+-    version : dav1d_soname_version,
+-    soversion : dav1d_soversion,
+     install : true,
+ )
+ 

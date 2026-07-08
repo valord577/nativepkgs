@@ -5,24 +5,22 @@ on:
     branches:
       - main
     paths:
-      - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/mbedtls3.yml'
       - 'patches/mbedtls3/**'
       - 'modules/mbedtls3.py'
-      - 'build.py'
+      - 'build_v2.py'
   pull_request:
     branches:
       - main
     paths:
-      - '.github/*.py'
       - '.github/matrix*.json'
       - '.github/workflows/_matrix.yml'
       - '.github/workflows/mbedtls3.yml'
       - 'patches/mbedtls3/**'
       - 'modules/mbedtls3.py'
-      - 'build.py'
+      - 'build_v2.py'
 
 jobs:
   build:
@@ -30,4 +28,5 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/_matrix.yml
     with:
+      disable_shared: true
       enable_static_commit: true
