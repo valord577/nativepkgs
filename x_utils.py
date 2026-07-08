@@ -70,6 +70,12 @@ def gha_append_env(env: "dict[str, str]"):
         for k, v in env.items():
             logv(f'append github action env: {k}={v}')
             _ = f.write(f'{k}={v}\n')
+
+def append_pkgconf_search_path(env: "dict[str, str]", dir: "Path"):
+    new = dir.absolute().as_posix()
+    if old := env.get('PKG_CONFIG_PATH'):
+        new = (new + os.pathsep + old)
+    env['PKG_CONFIG_PATH'] = new
 # ----------------------------
 NATIVE_PLAT = {
     'linux':   'linux',
@@ -342,3 +348,4 @@ cmake = 'cmake'
         _ = meson_crossfile.write_text(meson_crossfile_content)
 
     return (pkgconf_wrapper, meson_crossfile)
+# ----------------------------
