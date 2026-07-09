@@ -33,7 +33,6 @@ def get_build_env() -> "dict[str, str]":
         env['CXXFLAGS'] = env['CFLAGS']
     return env
 # ----------------------------
-build_env = get_build_env()
 extra_args: "list[str]" = []
 pkg_buld_dir = ctx.args.pkg_buld_dir
 # ----------------------------
@@ -76,7 +75,7 @@ def _3rd_included():
     for dep in _3rd_deps:
         dep_path = ctx.include_3rd_dependencies(dep)
         if args := dep['args']: extra_args.append(args)
-        x.append_pkgconf_search_path(build_env, (dep_path / 'lib' / 'pkgconfig'))
+        x.append_pkgconf_search_path((dep_path / 'lib' / 'pkgconfig'))
 def _fetch_source():
     ctx.fetch_source_from_git('refs/heads/release/8.1', 'https://git.ffmpeg.org/ffmpeg.git')
 def _build_step_0():
@@ -135,7 +134,7 @@ def _build_step_0():
             pkg_buld_dir = ctx.subproj_src_dir().as_posix()
     else:
         args.append('--disable-logging')
-    x.run_as_subprocess(env=build_env, cwd=pkg_buld_dir, args=args)
+    x.run_as_subprocess(env=get_build_env(), cwd=pkg_buld_dir, args=args)
 def _build_step_1():
     import shutil
     import subprocess as sp
@@ -145,14 +144,14 @@ def _build_step_1():
         if bear_exec := shutil.which('bear'): bear.append(bear_exec)
 
     args = ['make', '-j', f'{x.detect_cpu_count()}']
-    x.run_as_subprocess(env=build_env, cwd=pkg_buld_dir, args=(bear + args), stdout=sp.DEVNULL)
+    x.run_as_subprocess(env=get_build_env(), cwd=pkg_buld_dir, args=(bear + args), stdout=sp.DEVNULL)
 def _build_step_2():
     import shlex
 
     args = ['make', 'install-headers', 'install-libs']
     if ctx.args.target_plat not in {'iphoneos', 'iphonesimulator'}:
         args.append('install-progs')
-    x.run_as_subprocess(env=build_env, cwd=pkg_buld_dir, args=args)
+    x.run_as_subprocess(env=get_build_env(), cwd=pkg_buld_dir, args=args)
 
     if ctx.args.target_plat == 'win-msvc':
         return
@@ -180,7 +179,7 @@ def _build_step_2():
             _ = f.write('};\n')
         elif ctx.args.target_plat == 'win-mingw':
             _dll_sym_arg = f"{' '.join(ctx.args.nm)} -a lib/*.a | grep ' T ' | cut -d ' ' -f 3"
-            _dll_sym_all = x.run_as_subprocess(env=build_env, cwd=ctx.args.pkg_inst_dir,
+            _dll_sym_all = x.run_as_subprocess(env=get_build_env(), cwd=ctx.args.pkg_inst_dir,
                 collect_stdout=True, args=_dll_sym_arg, shell=True)
             _ = f.write('LIBRARY libffmpeg\n')
             _ = f.write('EXPORTS\n')
@@ -197,9 +196,9 @@ def _build_step_2():
 
 
     ffmpeg_pkgconf_search = (Path(ctx.args.pkg_inst_dir) / 'lib' / 'pkgconfig')
-    x.append_pkgconf_search_path(build_env, ffmpeg_pkgconf_search)
+    x.append_pkgconf_search_path(ffmpeg_pkgconf_search)
     ffmpeg_self_libraries = shlex.split(
-        x.run_as_subprocess(env=build_env, collect_stdout=True, args=[' '.join(ctx.args.pkgconf), '--libs', 'libavdevice'])
+        x.run_as_subprocess(env=get_build_env(), collect_stdout=True, args=[' '.join(ctx.args.pkgconf), '--libs', 'libavdevice'])
     )
 
     ffmpeg_mergeso_libdir: list[str] = []
@@ -269,18 +268,18 @@ def _build_step_2():
         cmdlink.extend(ffmpeg_mergeso_libstd)
         for _lib in ffmpeg_mergeso_libmac:
             cmdlink.extend(['-framework', _lib])
-    x.run_as_subprocess(env=build_env, cwd=ctx.args.pkg_inst_dir, args=cmdlink)
+    x.run_as_subprocess(env=get_build_env(), cwd=ctx.args.pkg_inst_dir, args=cmdlink)
 
 
     dbgsym = f'{merged.as_posix()}.dbgsym'
     if ctx.args.target_plat in {'linux', 'win-mingw', 'android'}:
-        x.run_as_subprocess(env=build_env, cwd=ctx.args.pkg_inst_dir,
+        x.run_as_subprocess(env=get_build_env(), cwd=ctx.args.pkg_inst_dir,
             args=(ctx.args.objcopy + ['--only-keep-debug', merged.as_posix(), dbgsym]))
-        x.run_as_subprocess(env=build_env, cwd=ctx.args.pkg_inst_dir,
+        x.run_as_subprocess(env=get_build_env(), cwd=ctx.args.pkg_inst_dir,
             args=(ctx.args.objcopy + ['--strip-debug', '--strip-unneeded', merged.as_posix()]))
-        x.run_as_subprocess(env=build_env, cwd=ctx.args.pkg_inst_dir,
+        x.run_as_subprocess(env=get_build_env(), cwd=ctx.args.pkg_inst_dir,
             args=(ctx.args.objcopy + [f'--add-gnu-debuglink={dbgsym}', merged.as_posix()]))
-    x.run_as_subprocess(env=build_env, cwd=pkg_buld_dir,
+    x.run_as_subprocess(env=get_build_env(), cwd=pkg_buld_dir,
         args=['make', 'uninstall-libs', 'uninstall-pkgconfig'])
 
 
