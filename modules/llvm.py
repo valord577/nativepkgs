@@ -61,7 +61,6 @@ def _fetch_source():
 def _build_step_0():
     _tblgen_dir = (Path(x.PROJ_ROOT) / 'tmp' / 'llvm.NATIVE')
     _tblgen_req = ((ctx.args.target_plat == 'win-msvc') and (ctx.args.target_arch != x.NATIVE_ARCH))
-    _tblgen_req = False
 
     _cmake_search_dir = ';'.join(extra_search_dir)
     args = [
@@ -97,18 +96,25 @@ def _build_step_0():
         args.extend(['-G', 'Ninja'])
 
     if _tblgen_req and (not _tblgen_dir.exists()):
-        _tblgen_build_args: list[str] = [*args]
-        _tblgen_build_args_bdir_idx = 0
-        _tblgen_build_args_zlib_idx = 0
-        for i, entry in enumerate(_tblgen_build_args):
-            if entry == '-B':
-                _tblgen_build_args_bdir_idx = i + 1
-            if entry.startswith('LLVM_ENABLE_ZLIB'):
-                _tblgen_build_args_zlib_idx = i
-        _tblgen_build_args[_tblgen_build_args_bdir_idx] = _tblgen_dir.as_posix()
-        _tblgen_build_args[_tblgen_build_args_zlib_idx] = 'LLVM_ENABLE_ZLIB=OFF'
-        x.run_as_subprocess(env=get_build_env(ctx.args.win32_msvc_env_native),
-            args=_tblgen_build_args)
+        _tblgen_build_args: list[str] = []
+        _tblgen_build_args.append(args[0])
+
+        i = 1; c = len(args)
+        while i < c:
+            arg = args[i]; i += 1
+            if arg == '-B':
+                _tblgen_build_args.extend(['-B', _tblgen_dir.as_posix()])
+                i += 1; continue
+            if (i-1) % 2 == 1:
+                continue
+            if arg.startswith('CMAKE_C_COMPILER_TARGET'):
+                continue
+            if arg.startswith('CMAKE_CXX_COMPILER_TARGET'):
+                continue
+            if arg.startswith('LLVM_ENABLE_ZLIB'):
+                arg = 'LLVM_ENABLE_ZLIB=OFF'
+            _tblgen_build_args.extend([args[i-2], arg])
+        x.run_as_subprocess(env=get_build_env(ctx.args.win32_msvc_env_native), args=_tblgen_build_args)
 
         _tblgen_build_targets = ['llvm-tblgen', 'clang-tblgen', 'lldb-tblgen', 'clang-tidy-confusable-chars-gen']
         x.run_as_subprocess(env=get_build_env(ctx.args.win32_msvc_env_native),
