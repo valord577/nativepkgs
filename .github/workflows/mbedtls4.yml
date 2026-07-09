@@ -10,7 +10,6 @@ on:
       - '.github/workflows/mbedtls4.yml'
       - 'patches/mbedtls4/**'
       - 'modules/mbedtls4.py'
-      - 'build_v2.py'
   pull_request:
     branches:
       - main
@@ -20,7 +19,6 @@ on:
       - '.github/workflows/mbedtls4.yml'
       - 'patches/mbedtls4/**'
       - 'modules/mbedtls4.py'
-      - 'build_v2.py'
 
 jobs:
   build:

@@ -74,7 +74,9 @@ def gha_append_env(env: "dict[str, str]"):
             logv(f'append github action env: {k}={v}')
             _ = f.write(f'{k}={v}\n')
 
-def append_pkgconf_search_path(env: "dict[str, str]", dir: "Path"):
+def append_pkgconf_search_path(dir: "Path", *, env: "dict[str, str] | None" = None):
+    if not env:
+        env = ENVIRON
     new = dir.absolute().as_posix()
     if old := env.get('PKG_CONFIG_PATH'):
         new = (new + os.pathsep + old)
@@ -158,6 +160,8 @@ def run_as_subprocess(args: "str | list[str]",
         stdout = sp.PIPE
     if not env:
         env = ENVIRON
+    if (NATIVE_PLAT == 'windows') and (ON_CODE_EDIT):
+        shell = True
     proc = sp.run(args=args, cwd=cwd, env=env, check=True, shell=shell, stdout=stdout, text=True,)
     return proc.stdout if collect_stdout else None
 

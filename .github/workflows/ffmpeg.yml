@@ -10,7 +10,6 @@ on:
       - '.github/workflows/ffmpeg.yml'
       - 'patches/ffmpeg/**'
       - 'modules/ffmpeg.py'
-      - 'build_v2.py'
 
 jobs:
   build:
