@@ -123,7 +123,7 @@ def _build_step_0():
     if ctx.args.target_plat != 'win-msvc':
         args.extend([
             '-D', f'CMAKE_C_HOST_COMPILER="clang"',
-            '-D', f'CMAKE_CXX_HOST_COMPILER="clang;--driver-mode=g++"',
+            '-D', f'CMAKE_CXX_HOST_COMPILER="clang++"',
         ])
     else:
         args.extend([
