@@ -59,8 +59,8 @@ def _3rd_included():
 def _fetch_source():
     ctx.fetch_source_from_git('refs/heads/main', 'https://github.com/llvm/llvm-project.git')
 def _build_step_0():
-    # always build from source code
     _tblgen_dir = (Path(x.PROJ_ROOT) / 'tmp' / 'llvm.NATIVE')
+    _tblgen_req = ((ctx.args.target_plat == 'win-msvc') and (ctx.args.target_plat != x.NATIVE_ARCH))
 
     _cmake_search_dir = ';'.join(extra_search_dir)
     args = [
@@ -95,7 +95,7 @@ def _build_step_0():
         x.runpy_pip(['ninja'])
         args.extend(['-G', 'Ninja'])
 
-    if not _tblgen_dir.exists():
+    if _tblgen_req and (not _tblgen_dir.exists()):
         _tblgen_build_args: list[str] = [*args]
         _tblgen_build_args_bdir_idx = 0
         _tblgen_build_args_zlib_idx = 0
@@ -127,8 +127,8 @@ def _build_step_0():
         ])
     else:
         args.extend([
-            '-D', f'CMAKE_C_HOST_COMPILER="clang-cl.exe"',
-            '-D', f'CMAKE_CXX_HOST_COMPILER="clang-cl.exe"',
+            '-D', f'CMAKE_C_HOST_COMPILER="clang.exe;--driver-mode=cl"',
+            '-D', f'CMAKE_CXX_HOST_COMPILER="clang.exe;--driver-mode=cl"',
         ])
 
     if ctx.args.llvm_triple:
