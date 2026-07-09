@@ -133,6 +133,11 @@ def _build_step_0():
             '-D', f'CMAKE_CXX_HOST_COMPILER="clang++"',
         ])
     else:
+        if ctx.args.target_arch != x.NATIVE_ARCH:
+            args.extend([
+                '-D',  'CMAKE_SYSTEM_NAME=Windows',
+                '-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE',
+            ])
         args.extend([
             '-D', f'CMAKE_C_HOST_COMPILER="clang-cl.exe"',
             '-D', f'CMAKE_CXX_HOST_COMPILER="clang-cl.exe"',

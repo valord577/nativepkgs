@@ -447,11 +447,6 @@ def _setctx_win32_msvc(
         "-D", f"CMAKE_C_COMPILER_TARGET={state.llvm_triple}",
         "-D", f"CMAKE_CXX_COMPILER_TARGET={state.llvm_triple}",
     ])
-    if state.target_arch != x.NATIVE_ARCH:
-        state.extra_cmake.extend([
-            '-D',  'CMAKE_SYSTEM_NAME=Windows',
-            '-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE',
-        ])
 def _setctx_android(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
