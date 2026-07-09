@@ -127,8 +127,8 @@ def _build_step_0():
         ])
     else:
         args.extend([
-            '-D', f'CMAKE_C_HOST_COMPILER="clang.exe;--driver-mode=cl"',
-            '-D', f'CMAKE_CXX_HOST_COMPILER="clang.exe;--driver-mode=cl"',
+            '-D', f'CMAKE_C_HOST_COMPILER="clang-cl.exe"',
+            '-D', f'CMAKE_CXX_HOST_COMPILER="clang-cl.exe"',
         ])
 
     if ctx.args.llvm_triple:

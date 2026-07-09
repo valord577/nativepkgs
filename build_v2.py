@@ -442,8 +442,8 @@ def _setctx_win32_msvc(
     state.extra_cmake.extend([
         '-G',  'Ninja',
         '-D',  'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded',
-        "-D", f"CMAKE_C_COMPILER='clang.exe;--driver-mode=cl'",
-        "-D", f"CMAKE_CXX_COMPILER='clang.exe;--driver-mode=cl'",
+        "-D", f"CMAKE_C_COMPILER='clang-cl.exe'",
+        "-D", f"CMAKE_CXX_COMPILER='clang-cl.exe'",
         "-D", f"CMAKE_C_COMPILER_TARGET={state.llvm_triple}",
         "-D", f"CMAKE_CXX_COMPILER_TARGET={state.llvm_triple}",
     ])
