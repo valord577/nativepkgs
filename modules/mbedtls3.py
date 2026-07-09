@@ -27,7 +27,7 @@ def build_steps() -> "list[Callable[[], None]]":
 def get_build_env() -> "dict[str, str]":
     env = x.ENVIRON
     if ctx.args.target_plat == 'win-msvc':
-        env = ctx.args.win32_msvc_env_target
+        env.update(ctx.args.win32_msvc_env_target)
         env['CFLAGS'] = '/utf-8'
         env['CXXFLAGS'] = env['CFLAGS']
     return env
