@@ -59,6 +59,12 @@ def _3rd_included():
 def _fetch_source():
     ctx.fetch_source_from_git('refs/heads/main', 'https://github.com/llvm/llvm-project.git')
 def _build_step_0():
+    import shutil
+
+    msvc_hostcc = shutil.which('cl.exe', path=ctx.args.win32_msvc_env_native['PATH'])
+    if not msvc_hostcc: x.loge(f'failed to search msvc host cc')
+
+
     _tblgen_dir = (Path(x.PROJ_ROOT) / 'tmp' / 'llvm.NATIVE')
     _tblgen_req = ((ctx.args.target_plat == 'win-msvc') and (ctx.args.target_arch != x.NATIVE_ARCH))
 
@@ -111,8 +117,12 @@ def _build_step_0():
                 continue
             if arg.startswith('CMAKE_CXX_COMPILER_TARGET'):
                 continue
-            if arg.startswith('LLVM_ENABLE_ZLIB'):
-                arg = 'LLVM_ENABLE_ZLIB=OFF'
+            if arg.startswith('LLVM_ENABLE_ZLIB='):
+                arg = f'LLVM_ENABLE_ZLIB=OFF'
+            elif arg.startswith('CMAKE_C_COMPILER='):
+                arg = f'CMAKE_C_COMPILER={msvc_hostcc}'
+            elif arg.startswith('CMAKE_CXX_COMPILER='):
+                arg = f'CMAKE_CXX_COMPILER={msvc_hostcc}'
             _tblgen_build_args.extend([args[i-2], arg])
         x.run_as_subprocess(env=get_build_env(ctx.args.win32_msvc_env_native), args=_tblgen_build_args)
 
@@ -133,14 +143,11 @@ def _build_step_0():
             '-D', f'CMAKE_CXX_HOST_COMPILER="clang++"',
         ])
     else:
-        if ctx.args.target_arch != x.NATIVE_ARCH:
-            args.extend([
-                '-D',  'CMAKE_SYSTEM_NAME=Windows',
-                '-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE',
-            ])
         args.extend([
-            '-D', f'CMAKE_C_HOST_COMPILER="clang-cl.exe"',
-            '-D', f'CMAKE_CXX_HOST_COMPILER="clang-cl.exe"',
+            '-D',  'CMAKE_SYSTEM_NAME=Windows',
+            '-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE',
+            '-D', f'CMAKE_C_HOST_COMPILER={msvc_hostcc}',
+            '-D', f'CMAKE_CXX_HOST_COMPILER={msvc_hostcc}',
         ])
 
     if ctx.args.llvm_triple:
