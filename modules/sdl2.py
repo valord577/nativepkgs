@@ -39,7 +39,7 @@ def _build_step_0():
         'cmake', *(ctx.args.extra_cmake),
         '-S',   ctx.subproj_src_dir().as_posix(),
         '-D', f'BUILD_SHARED_LIBS:BOOL={x.feature_build_shared()}',
-        '-D', f'SDL_STATIC:BOOL={"0" if (x.feature_build_shared() == "1") else "1"}',
+        '-D', f'SDL_STATIC:BOOL={x.feature_build_static()}',
         '-D', f'SDL_SHARED:BOOL={x.feature_build_shared()}',
         '-D',  'CMAKE_BUILD_TYPE=Release',
         '-D',  'SDL_CCACHE:BOOL=0',
