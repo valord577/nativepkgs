@@ -49,6 +49,7 @@ ON_CODE_EDIT = (not ON_GITLAB_CI) and (not ON_GITHUB_CI)
 # ----------------------------
 BUILD_DEFAULT_FEATURES = {
     'PKG_TYPE': 'static',
+    'ENABLE_CLANGD_FOR_LEGACY_TOOLCHAIN': '0',
 }
 def feature(key: str) -> str:
     v = ENVIRON.get(key)
@@ -62,6 +63,8 @@ def feature(key: str) -> str:
         return v
 def feature_build_shared() -> str:
     return '1' if feature('PKG_TYPE') == 'shared' else '0'
+def feature_build_static() -> str:
+    return '1' if feature('PKG_TYPE') == 'static' else '0'
 # ----------------------------
 def gha_append_env(env: "dict[str, str]"):
     if not ON_GITHUB_CI:

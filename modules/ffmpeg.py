@@ -22,7 +22,7 @@ def build_steps() -> "list[Callable[[], None]]":
         _fetch_source,
         _build_step_0,
         _build_step_1,
-        #_build_step_2,
+        _build_step_2,
     ]
 # ----------------------------
 def get_build_env() -> "dict[str, str]":
@@ -83,7 +83,7 @@ def _build_step_0():
     args = [
         ctx.subproj_src_dir('configure').as_posix(),
         *extra_args,
-        f'--prefix={pkg_buld_dir}',
+        f'--prefix={ctx.args.pkg_inst_dir}',
         f'--disable-stripping',
         f'--enable-version3',
         f'--fatal-warnings',
@@ -130,11 +130,175 @@ def _build_step_0():
     if ctx.args.target_plat == 'win-mingw':
         args.append(f'--windres={" ".join(ctx.args.windres)}')
 
+    if x.feature('ENABLE_CLANGD_FOR_LEGACY_TOOLCHAIN') != '0':
+        global pkg_buld_dir; \
+            pkg_buld_dir = ctx.subproj_src_dir().as_posix()
+    else:
+        args.append('--disable-logging')
     x.run_as_subprocess(env=build_env, cwd=pkg_buld_dir, args=args)
 def _build_step_1():
+    import shutil
     import subprocess as sp
 
+    bear: list[str] = []
+    if x.feature('ENABLE_CLANGD_FOR_LEGACY_TOOLCHAIN') != '0':
+        if bear_exec := shutil.which('bear'): bear.append(bear_exec)
+
     args = ['make', '-j', f'{x.detect_cpu_count()}']
-    x.run_as_subprocess(env=build_env, cwd=pkg_buld_dir, args=args, stdout=sp.DEVNULL)
+    x.run_as_subprocess(env=build_env, cwd=pkg_buld_dir, args=(bear + args), stdout=sp.DEVNULL)
 def _build_step_2():
-    x.run_as_subprocess(env=get_build_env(), args=['cmake', '--install', ctx.args.pkg_buld_dir, '--strip'])
+    import shlex
+
+    args = ['make', 'install-headers', 'install-libs']
+    if ctx.args.target_plat not in {'iphoneos', 'iphonesimulator'}:
+        args.append('install-progs')
+    x.run_as_subprocess(env=build_env, cwd=pkg_buld_dir, args=args)
+
+    if ctx.args.target_plat == 'win-msvc':
+        return
+
+
+    exported_symbols: "set[str]" = set()
+    for _v in ctx.subproj_src_dir().glob('**/*.v'):
+        _x = _v.read_text()
+        _l = _x[_x.index('global:'):_x.index('local:')]
+        for _s in _l.splitlines():
+            if not _s.endswith(';'):
+                continue
+            exported_symbols.add(_s.strip()[:-1])
+    x.logv(f'exported symbols: {exported_symbols}')
+
+    ffmpeg_symbol_v = (Path(ctx.args.pkg_inst_dir) / 'lib' / 'libffmpeg.v')
+    with ffmpeg_symbol_v.open('w', encoding='utf-8') as f:
+        if ctx.args.target_plat in {'linux', 'android'}:
+            _ = f.write('{\n')
+            _ = f.write('  global:\n')
+            for symbol in exported_symbols:
+                _ = f.write(f'    {symbol};\n')
+            _ = f.write('  local:\n')
+            _ = f.write('    *;\n')
+            _ = f.write('};\n')
+        elif ctx.args.target_plat == 'win-mingw':
+            _dll_sym_arg = f"{' '.join(ctx.args.nm)} -a lib/*.a | grep ' T ' | cut -d ' ' -f 3"
+            _dll_sym_all = x.run_as_subprocess(env=build_env, cwd=ctx.args.pkg_inst_dir,
+                collect_stdout=True, args=_dll_sym_arg, shell=True)
+            _ = f.write('LIBRARY libffmpeg\n')
+            _ = f.write('EXPORTS\n')
+            for symbol in shlex.split(_dll_sym_all):
+                if any(
+                    (
+                        (symbol == rule) or
+                        (rule.endswith('*') and symbol.startswith(rule[:-1]))
+                    ) for rule in exported_symbols
+                ): _ = f.write(f'  {symbol}\n')
+        else: # apple platform
+            for symbol in exported_symbols:
+                _ = f.write(f'_{symbol}\n')
+
+
+    ffmpeg_pkgconf_search = (Path(ctx.args.pkg_inst_dir) / 'lib' / 'pkgconfig')
+    x.append_pkgconf_search_path(build_env, ffmpeg_pkgconf_search)
+    ffmpeg_self_libraries = shlex.split(
+        x.run_as_subprocess(env=build_env, collect_stdout=True, args=[' '.join(ctx.args.pkgconf), '--libs', 'libavdevice'])
+    )
+
+    ffmpeg_mergeso_libdir: list[str] = []
+    ffmpeg_mergeso_libffm: list[str] = []
+    ffmpeg_mergeso_libmac: list[str] = []
+    ffmpeg_mergeso_libext: list[str] = []
+    ffmpeg_mergeso_libstd: list[str] = []
+    i = 0; c = len(ffmpeg_self_libraries)
+    while i < c:
+        _lib = ffmpeg_self_libraries[i]; i += 1
+        if False:
+            pass  # pyright: ignore[reportUnreachable]
+        elif _lib.startswith('-L'):
+            if _lib not in ffmpeg_mergeso_libdir: ffmpeg_mergeso_libdir.append(_lib)
+        elif _lib in {'-lavdevice', '-lavfilter', '-lswscale', '-lavformat', '-lavcodec', '-lswresample', '-lavutil'}:
+            if _lib not in ffmpeg_mergeso_libffm: ffmpeg_mergeso_libffm.append(_lib)
+        elif _lib in {'-lm', '-ldl', '-latomic', '-pthread'}:
+            if _lib not in ffmpeg_mergeso_libstd: ffmpeg_mergeso_libstd.append(_lib)
+        elif _lib in {'-framework'}:
+            _lib = ffmpeg_self_libraries[i]; i += 1
+            if _lib not in ffmpeg_mergeso_libmac: ffmpeg_mergeso_libmac.append(_lib)
+        else:
+            if _lib not in ffmpeg_mergeso_libext: ffmpeg_mergeso_libext.append(_lib)
+
+    merged = Path(ctx.args.pkg_inst_dir)
+    cmdlink: list[str] = []
+    cmdlink.extend(ctx.args.cc)
+    cmdlink.extend(ctx.args.ldflags)
+    cmdlink.extend(['-shared', '-v'])
+    if ctx.args.target_plat in {'linux', 'android'}:
+        merged = (merged / 'lib' / 'libffmpeg.so'); \
+            merged.parent.mkdir(parents=True, exist_ok=True)
+        cmdlink.extend([
+            f'-Wl,-rpath,$ORIGIN',
+            f'-Wl,--version-script={ffmpeg_symbol_v.as_posix()}',
+            f'-o', merged.as_posix(),
+            f'-Wl,--soname={merged.name}',
+        ])
+        cmdlink.extend(ffmpeg_mergeso_libdir)
+        cmdlink.extend(['-Wl,--whole-archive'])
+        cmdlink.extend(ffmpeg_mergeso_libffm)
+        cmdlink.extend(['-Wl,--no-whole-archive'])
+        cmdlink.extend(ffmpeg_mergeso_libext)
+        cmdlink.extend(ffmpeg_mergeso_libstd)
+    elif ctx.args.target_plat == 'win-mingw':
+        merged = (merged / 'lib' / 'libffmpeg.dll'); \
+            merged.parent.mkdir(parents=True, exist_ok=True)
+        cmdlink.extend(['-o', merged.as_posix()])
+        cmdlink.extend([f'-Wl,--Xlink=/DEF:{ffmpeg_symbol_v.as_posix()}'])
+        cmdlink.extend([f'-Wl,--output-def={(merged.parent / merged.stem).as_posix()}.def'])
+        cmdlink.extend([f'-Wl,--out-implib={(merged.parent / merged.stem).as_posix()}.lib'])
+        cmdlink.extend(ffmpeg_mergeso_libdir)
+        cmdlink.extend(['-Wl,--whole-archive'])
+        cmdlink.extend(ffmpeg_mergeso_libffm)
+        cmdlink.extend(['-Wl,--no-whole-archive'])
+        cmdlink.extend(ffmpeg_mergeso_libext)
+        cmdlink.extend(ffmpeg_mergeso_libstd)
+    else: # apple platform
+        merged = (merged / 'lib' / 'libffmpeg.dylib'); \
+            merged.parent.mkdir(parents=True, exist_ok=True)
+        cmdlink.extend(['-o', merged.as_posix(), '-install_name', merged.name])
+        cmdlink.extend(['-Wl,-exported_symbols_list', ffmpeg_symbol_v.as_posix()])
+        cmdlink.extend(ffmpeg_mergeso_libdir)
+        for _lib in ffmpeg_mergeso_libffm:
+            cmdlink.extend(['-Wl,-force_load', f'lib/lib{_lib[2:]}.a'])
+        cmdlink.extend(ffmpeg_mergeso_libext)
+        cmdlink.extend(ffmpeg_mergeso_libstd)
+        for _lib in ffmpeg_mergeso_libmac:
+            cmdlink.extend(['-framework', _lib])
+    x.run_as_subprocess(env=build_env, cwd=ctx.args.pkg_inst_dir, args=cmdlink)
+
+
+    dbgsym = f'{merged.as_posix()}.dbgsym'
+    if ctx.args.target_plat in {'linux', 'win-mingw', 'android'}:
+        x.run_as_subprocess(env=build_env, cwd=ctx.args.pkg_inst_dir,
+            args=(ctx.args.objcopy + ['--only-keep-debug', merged.as_posix(), dbgsym]))
+        x.run_as_subprocess(env=build_env, cwd=ctx.args.pkg_inst_dir,
+            args=(ctx.args.objcopy + ['--strip-debug', '--strip-unneeded', merged.as_posix()]))
+        x.run_as_subprocess(env=build_env, cwd=ctx.args.pkg_inst_dir,
+            args=(ctx.args.objcopy + [f'--add-gnu-debuglink={dbgsym}', merged.as_posix()]))
+    x.run_as_subprocess(env=build_env, cwd=pkg_buld_dir,
+        args=['make', 'uninstall-libs', 'uninstall-pkgconfig'])
+
+
+    # export pkgconf search file
+    _pkgconf_content = '''\
+prefix=${pcfiledir}/../..
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: libffmpeg
+Description: libffmpeg under lgpl
+URL: https://github.com/valord577/nativepkgs
+Version: @PACKAGE_VERSION@
+Requires:
+Cflags: -I${includedir}
+Libs: -L${libdir} -lffmpeg
+'''
+    _pkgconf_content = _pkgconf_content.replace('@PACKAGE_VERSION@', ctx.subproj_src_ver())
+    _pkgconf = (ffmpeg_pkgconf_search / 'libffmpeg.pc'); \
+        _pkgconf.parent.mkdir(parents=True, exist_ok=True)
+    _ = _pkgconf.write_text(_pkgconf_content)
