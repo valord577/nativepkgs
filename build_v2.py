@@ -51,6 +51,8 @@ class BuildCtxArgs:
     target_arch: "str"
     target_info: "str"
 
+    llvm_triple: "str"
+
     target_archinfo: "str"
 
     win32_msvc_env_native: "dict[str, str]"
@@ -167,6 +169,8 @@ class _state:
         self.target_arch: "str" = ''
         self.target_info: "str" = ''
 
+        self.llvm_triple: "str" = ''
+
         #  - API Level 30: android.media.MediaCodec#CONFIGURE_FLAG_USE_BLOCK_MODEL
         #  - API Level 31: android.media.MediaCodec#getSupportedVendorParameters()
         #  - API Level 35: android.media.MediaCodec#PARAMETER_KEY_QP_OFFSET_MAP
@@ -233,6 +237,8 @@ class _state:
             target_arch=self.target_arch,
             target_info=self.target_info,
 
+            llvm_triple=self.llvm_triple,
+
             target_archinfo=self.target_archinfo,
 
             win32_msvc_env_native=self.win32_msvc_env_native,
@@ -287,21 +293,25 @@ def _setctx_linux(
         state.nm.extend(['llvm-nm'])
         state.ldflags.extend(['-fuse-ld=lld'])
         state.objcopy.extend(['llvm-objcopy'])
+
+        x.ENVIRON['CC']  = 'clang'
+        x.ENVIRON['CXX'] = 'clang++'
+        x.ENVIRON['LDFLAGS'] = '-fuse-ld=lld'
     else:
         CROSS_TOOLCHAIN_ROOT = x.get_cross_toolchain_dir(state.target_plat)
 
         state.target_arch = _tuple[2]
         state.target_info = _tuple[3]
-        _target_triple = {
+        state.llvm_triple = {
             'arm64': f'aarch64-unknown-linux-{state.target_info}',
             'amd64': f'x86_64-pc-linux-{state.target_info}',
             'armv7': f'arm-unknown-linux-{state.target_info}',
         }[state.target_arch]
-        _sysroot = (Path(CROSS_TOOLCHAIN_ROOT) / _target_triple).absolute().resolve().as_posix()
+        _sysroot = (Path(CROSS_TOOLCHAIN_ROOT) / state.llvm_triple).absolute().resolve().as_posix()
 
         state.cc.extend([
             f'clang',
-            f'--target={_target_triple}',
+            f'--target={state.llvm_triple}',
             f'--gcc-toolchain={_sysroot}/usr',
             f'--sysroot={_sysroot}'
         ])
@@ -317,15 +327,16 @@ def _setctx_linux(
         state.objcopy.extend(['llvm-objcopy'])
 
         # pkgconf
-        state.pkgconf.extend([f'{CROSS_TOOLCHAIN_ROOT}/pkgconf-wrapper.{_target_triple}'])
+        state.pkgconf.extend([f'{CROSS_TOOLCHAIN_ROOT}/pkgconf-wrapper.{state.llvm_triple}'])
         # cmake toolchain file
-        state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE='{CROSS_TOOLCHAIN_ROOT}/crossfile.cmake.{_target_triple}'"])
+        state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE='{CROSS_TOOLCHAIN_ROOT}/crossfile.cmake.{state.llvm_triple}'"])
         # meson toolchain file
-        state.extra_meson.extend(["--cross-file", f"{CROSS_TOOLCHAIN_ROOT}/crossfile.meson.{_target_triple}"])
+        state.extra_meson.extend(["--cross-file", f"{CROSS_TOOLCHAIN_ROOT}/crossfile.meson.{state.llvm_triple}"])
 def _setctx_apple(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
     state.target_arch = x.NATIVE_ARCH if _native else _tuple[1]
+    state.llvm_triple = f'{state.target_arch}-apple-darwin'
 
     _apple_arch = {
         'arm64': 'arm64',
@@ -388,24 +399,24 @@ def _setctx_win32_mingw(
 
     state.target_arch = _tuple[1]
 
-    _target_triple = {
+    state.llvm_triple = {
         'arm64': f'aarch64-w64-mingw32',
         'amd64': f'x86_64-w64-mingw32',
     }[state.target_arch]
 
     state.cc.extend([
-        f"{(MINGW_ROOT / 'bin' / f'{_target_triple}-clang').as_posix()}",
+        f"{(MINGW_ROOT / 'bin' / f'{state.llvm_triple}-clang').as_posix()}",
         f"-no-canonical-prefixes",
     ])
     if state.target_arch == 'amd64':
         state.cc.extend(['-march=x86-64-v2'])
     if state.target_arch == 'arm64':
         state.cc.extend(['-march=armv8-a'])
-    state.ar.extend([f"{(MINGW_ROOT / 'bin' / f'{_target_triple}-ar').as_posix()}"])
-    state.nm.extend([f"{(MINGW_ROOT / 'bin' / f'{_target_triple}-nm').as_posix()}"])
+    state.ar.extend([f"{(MINGW_ROOT / 'bin' / f'{state.llvm_triple}-ar').as_posix()}"])
+    state.nm.extend([f"{(MINGW_ROOT / 'bin' / f'{state.llvm_triple}-nm').as_posix()}"])
     state.ldflags.extend(['-fuse-ld=lld'])
-    state.objcopy.extend([f"{(MINGW_ROOT / 'bin' / f'{_target_triple}-objcopy').as_posix()}"])
-    state.windres.extend([f"{(MINGW_ROOT / 'bin' / f'{_target_triple}-windres').as_posix()}"])
+    state.objcopy.extend([f"{(MINGW_ROOT / 'bin' / f'{state.llvm_triple}-objcopy').as_posix()}"])
+    state.windres.extend([f"{(MINGW_ROOT / 'bin' / f'{state.llvm_triple}-windres').as_posix()}"])
 
     # pkgconf
     state.pkgconf.extend([f'{CROSS_TOOLCHAIN_ROOT}/pkgconf-wrapper.{state.target_arch}'])
@@ -422,20 +433,25 @@ def _setctx_win32_msvc(
     state.win32_msvc_env_native = x.win32_msvc_dump_env(msvc_dir, msvc_devshell, x.NATIVE_ARCH)
     state.win32_msvc_env_target = x.win32_msvc_dump_env(msvc_dir, msvc_devshell, state.target_arch)
 
-    _target_triple = {
+    state.llvm_triple = {
         'arm64': f'aarch64-pc-windows-msvc',
         'amd64': f'x86_64-pc-windows-msvc',
     }[state.target_arch]
 
     # cmake toolchain file
     state.extra_cmake.extend([
-        '-G', 'Ninja',
-        '-D', 'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded',
+        '-G',  'Ninja',
+        '-D',  'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded',
         "-D", f"CMAKE_C_COMPILER=clang-cl.exe",
         "-D", f"CMAKE_CXX_COMPILER=clang-cl.exe",
-        "-D", f"CMAKE_C_COMPILER_TARGET={_target_triple}",
-        "-D", f"CMAKE_CXX_COMPILER_TARGET={_target_triple}",
+        "-D", f"CMAKE_C_COMPILER_TARGET={state.llvm_triple}",
+        "-D", f"CMAKE_CXX_COMPILER_TARGET={state.llvm_triple}",
     ])
+    if not _native:
+        state.extra_cmake.extend([
+            '-D',  'CMAKE_SYSTEM_NAME=Windows',
+            '-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE',
+        ])
 def _setctx_android(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -460,13 +476,13 @@ def _setctx_android(
         'armv7': f'armv7a-linux-androideabi',
         'amd64': f'x86_64-linux-android',
     }[state.target_arch]
-    _target_triple_ver = f'{_target_triple}{state.android_api_level}'
+    state.llvm_triple = f'{_target_triple}{state.android_api_level}'
 
     ANDROID_NDK_ROOT = x.get_cross_toolchain_dir(state.target_plat)
     CROSS_TOOLCHAIN_ROOT = (Path(ANDROID_NDK_ROOT) / 'toolchains' / 'llvm' / 'prebuilt' / 'linux-x86_64').absolute()
 
     state.cc.extend([
-        f"{(CROSS_TOOLCHAIN_ROOT / 'bin' / f'{_target_triple_ver}-clang').as_posix()}",
+        f"{(CROSS_TOOLCHAIN_ROOT / 'bin' / f'{state.llvm_triple}-clang').as_posix()}",
         f"-no-canonical-prefixes",
     ])
     if state.target_arch == 'amd64':
@@ -506,8 +522,8 @@ def _setctx_android(
         "-D", f"CMAKE_ANDROID_API_MIN={state.android_api_level}",
         "-D", f"CMAKE_ANDROID_ARCH_ABI={_cmake_arch_abi}",
         "-D", f"CMAKE_ANDROID_NDK={ANDROID_NDK_ROOT}",
-        "-D", f"CMAKE_C_COMPILER_TARGET={_target_triple_ver}",
-        "-D", f"CMAKE_CXX_COMPILER_TARGET={_target_triple_ver}",
+        "-D", f"CMAKE_C_COMPILER_TARGET={state.llvm_triple}",
+        "-D", f"CMAKE_CXX_COMPILER_TARGET={state.llvm_triple}",
         "-D", f"CMAKE_EXE_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
         "-D", f"CMAKE_MODULE_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
         "-D", f"CMAKE_SHARED_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
