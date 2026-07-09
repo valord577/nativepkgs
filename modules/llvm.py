@@ -37,7 +37,16 @@ def get_build_env(
         env['CXXFLAGS'] = env['CFLAGS']
     return env
 # ----------------------------
+import shutil
+
 extra_search_dir: "list[str]" = []
+msvc_native_cl: "str | None" = None
+msvc_target_cl: "str | None" = None
+if ctx.args.target_plat == 'win-msvc':
+    msvc_native_cl = shutil.which('cl.exe', path=ctx.args.win32_msvc_env_native['PATH'])
+    msvc_target_cl = shutil.which('cl.exe', path=ctx.args.win32_msvc_env_target['PATH'])
+    if (not msvc_native_cl) or (not msvc_target_cl):
+        x.loge(f'failed to search msvc host cl.exe')
 # ----------------------------
 def _3rd_included():
     from build_v2 import DependencySpec
@@ -59,12 +68,6 @@ def _3rd_included():
 def _fetch_source():
     ctx.fetch_source_from_git('refs/heads/main', 'https://github.com/llvm/llvm-project.git')
 def _build_step_0():
-    import shutil
-
-    msvc_hostcc = shutil.which('cl.exe', path=ctx.args.win32_msvc_env_native['PATH'])
-    if not msvc_hostcc: x.loge(f'failed to search msvc host cc')
-
-
     _tblgen_dir = (Path(x.PROJ_ROOT) / 'tmp' / 'llvm.NATIVE')
     _tblgen_req = ((ctx.args.target_plat == 'win-msvc') and (ctx.args.target_arch != x.NATIVE_ARCH))
 
@@ -117,12 +120,14 @@ def _build_step_0():
                 continue
             if arg.startswith('CMAKE_CXX_COMPILER_TARGET'):
                 continue
-            if arg.startswith('LLVM_ENABLE_ZLIB='):
+            if False:
+                pass  # pyright: ignore[reportUnreachable]
+            elif arg.startswith('LLVM_ENABLE_ZLIB='):
                 arg = f'LLVM_ENABLE_ZLIB=OFF'
             elif arg.startswith('CMAKE_C_COMPILER='):
-                arg = f'CMAKE_C_COMPILER={msvc_hostcc}'
+                arg = f'CMAKE_C_COMPILER={msvc_native_cl}'
             elif arg.startswith('CMAKE_CXX_COMPILER='):
-                arg = f'CMAKE_CXX_COMPILER={msvc_hostcc}'
+                arg = f'CMAKE_CXX_COMPILER={msvc_native_cl}'
             _tblgen_build_args.extend([args[i-2], arg])
         x.run_as_subprocess(env=get_build_env(ctx.args.win32_msvc_env_native), args=_tblgen_build_args)
 
@@ -146,14 +151,35 @@ def _build_step_0():
         args.extend([
             '-D',  'CMAKE_SYSTEM_NAME=Windows',
             '-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE',
-            '-D', f'CMAKE_C_HOST_COMPILER={msvc_hostcc}',
-            '-D', f'CMAKE_CXX_HOST_COMPILER={msvc_hostcc}',
+            '-D', f'CMAKE_C_HOST_COMPILER={msvc_native_cl}',
+            '-D', f'CMAKE_CXX_HOST_COMPILER={msvc_native_cl}',
         ])
 
     if ctx.args.llvm_triple:
         args.extend(['-D', f'LLVM_HOST_TRIPLE={ctx.args.llvm_triple}'])
 
-    x.run_as_subprocess(env=get_build_env(), args=args)
+    # use cl.exe
+    _llvm_build_args: list[str] = []
+    _llvm_build_args.append(args[0])
+
+    i = 1; c = len(args)
+    while i < c:
+        arg = args[i]; i += 1
+        if (i-1) % 2 == 1:
+            continue
+        if arg.startswith('CMAKE_C_COMPILER_TARGET'):
+            continue
+        if arg.startswith('CMAKE_CXX_COMPILER_TARGET'):
+            continue
+        if False:
+            pass  # pyright: ignore[reportUnreachable]
+        elif arg.startswith('CMAKE_C_COMPILER='):
+            arg = f'CMAKE_C_COMPILER={msvc_target_cl}'
+        elif arg.startswith('CMAKE_CXX_COMPILER='):
+            arg = f'CMAKE_CXX_COMPILER={msvc_target_cl}'
+        _llvm_build_args.extend([args[i-2], arg])
+
+    x.run_as_subprocess(env=get_build_env(), args=_llvm_build_args)
 def _build_step_1():
     _build_targets = ['clangd', 'llvm-symbolizer', 'lldb', 'lldb-dap', 'lldb-instr']
     if ctx.args.target_plat == 'linux':
