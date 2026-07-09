@@ -61,6 +61,7 @@ def _fetch_source():
 def _build_step_0():
     _tblgen_dir = (Path(x.PROJ_ROOT) / 'tmp' / 'llvm.NATIVE')
     _tblgen_req = ((ctx.args.target_plat == 'win-msvc') and (ctx.args.target_arch != x.NATIVE_ARCH))
+    _tblgen_req = False
 
     _cmake_search_dir = ';'.join(extra_search_dir)
     args = [
