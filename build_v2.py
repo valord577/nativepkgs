@@ -444,6 +444,7 @@ def _setctx_android(
     if (state.target_arch in ['arm64', 'amd64']
         and state.android_api_level < 21
     ): state.android_api_level = 21
+    x.ENVIRON['ANDROID_API_LEVEL'] = f'{state.android_api_level}' # for pkgconf wrapper
     if (state.android_api_level < 30):
         state.ldflags.extend(['-Wl,--no-rosegment'])
     if (23 <= state.android_api_level) and (state.android_api_level < 28):
