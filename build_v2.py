@@ -681,6 +681,8 @@ if __name__ == "__main__":
 
 
     target_palt = x.NATIVE_PLAT
+    if target_palt == 'windows':
+        target_palt = 'win-msvc'
     if len(argv_sep_0) > 0:
         target_palt = argv_sep_0[0]
 

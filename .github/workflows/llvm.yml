@@ -10,7 +10,6 @@ on:
       - '.github/workflows/llvm.yml'
       - 'patches/llvm/**'
       - 'modules/llvm.py'
-      - 'build_v2.py'
 
 jobs:
   build:

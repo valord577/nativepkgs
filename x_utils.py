@@ -160,6 +160,8 @@ def run_as_subprocess(args: "str | list[str]",
         stdout = sp.PIPE
     if not env:
         env = ENVIRON
+    if (NATIVE_PLAT == 'windows') and (ON_CODE_EDIT):
+        shell = True
     proc = sp.run(args=args, cwd=cwd, env=env, check=True, shell=shell, stdout=stdout, text=True,)
     return proc.stdout if collect_stdout else None
 

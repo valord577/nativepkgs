@@ -60,7 +60,7 @@ def _fetch_source():
     ctx.fetch_source_from_git('refs/heads/main', 'https://github.com/llvm/llvm-project.git')
 def _build_step_0():
     _tblgen_dir = (Path(x.PROJ_ROOT) / 'tmp' / 'llvm.NATIVE')
-    _tblgen_req = ((ctx.args.target_plat == 'win-msvc') and (ctx.args.target_plat != x.NATIVE_ARCH))
+    _tblgen_req = ((ctx.args.target_plat == 'win-msvc') and (ctx.args.target_arch != x.NATIVE_ARCH))
 
     _cmake_search_dir = ';'.join(extra_search_dir)
     args = [

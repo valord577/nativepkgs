@@ -10,7 +10,6 @@ on:
       - '.github/workflows/dav1d.yml'
       - 'patches/dav1d/**'
       - 'modules/dav1d.py'
-      - 'build_v2.py'
   pull_request:
     branches:
       - main
@@ -20,7 +19,6 @@ on:
       - '.github/workflows/dav1d.yml'
       - 'patches/dav1d/**'
       - 'modules/dav1d.py'
-      - 'build_v2.py'
 
 jobs:
   build:
