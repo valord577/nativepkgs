@@ -29,7 +29,7 @@ on:
         required: false
         type: string
       container_vers:
-        default: "20260708T173423Z-e04d611"
+        default: "20260709T161253Z-f8d59b5"
         required: false
         type: string
 
@@ -166,15 +166,18 @@ jobs:
     env:
       PKG_TYPE: ${{ matrix.pkg_type }}
     steps:
+      - name: set sccache
+        uses: mozilla-actions/sccache-action@v0.0.10
       - name: set required something(s) ~ macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           sudo mdutil -a -i off
 
           brew install nasm
-          brew install sccache
 
           brew list -l
+
+          ${SCCACHE_PATH} --show-adv-stats
 
           echo "INST_DIR=${GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "${GITHUB_ENV}"
       - name: set required something(s) ~ windows
@@ -189,12 +192,13 @@ jobs:
           Set-ExecutionPolicy -ExecutionPolicy Bypass -Force -Scope CurrentUser
 
           choco install nasm
-          choco install sccache
 
           choco list
 
           C:/msys64/usr/bin/bash.exe -lc `
             'pacman --noconfirm -S zip unzip;'
+
+          ${env:SCCACHE_PATH} --show-adv-stats
 
           echo "INST_DIR=${env:GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "${env:GITHUB_ENV}"
       - name: clone source
@@ -260,6 +264,8 @@ jobs:
     env:
       PKG_TYPE: ${{ matrix.pkg_type }}
     steps:
+      - name: set sccache
+        uses: mozilla-actions/sccache-action@v0.0.10
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
@@ -270,6 +276,8 @@ jobs:
           git checkout FETCH_HEAD
       - name: set runtime env
         run: |
+          ${SCCACHE_PATH} --show-adv-stats
+
           echo "INST_DIR=${GITHUB_WORKSPACE}/out/${{ env.PKG_NAME }}" >> "${GITHUB_ENV}"
       - name: library buildx - [${{ env.PKG_NAME }} @${{ env.PKG_TYPE }}]
         run: |

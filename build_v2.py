@@ -190,6 +190,10 @@ class _state:
         self.windres: "list[str]" = []
         self.pkgconf: "list[str]" = []
 
+        self.compiler_cache: "str" = 'ccache' if shutil.which('ccache') else ''
+        if shutil.which('sccache'):
+            self.compiler_cache = 'sccache'
+
         CLI_SUPPORTED_TARGETS[self.target_plat]['setctx'](self, is_native_build, build_target)
 
 
@@ -211,6 +215,13 @@ class _state:
         shutil.rmtree(self.pkg_inst_dir, ignore_errors=True); \
             os.makedirs(self.pkg_inst_dir, exist_ok=True)
 
+        if self.compiler_cache:
+            self.extra_cmake.extend([
+                '-D', f'CMAKE_C_COMPILER_LAUNCHER={self.compiler_cache}',
+                '-D', f'CMAKE_CXX_COMPILER_LAUNCHER={self.compiler_cache}',
+                '-D', f'CMAKE_OBJC_COMPILER_LAUNCHER={self.compiler_cache}',
+                '-D', f'CMAKE_OBJCXX_COMPILER_LAUNCHER={self.compiler_cache}',
+            ])
         self.extra_cmake.extend([
             '-D', 'CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON',
             '-D', 'CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON',
@@ -220,6 +231,7 @@ class _state:
             '-B', self.pkg_buld_dir,
             '-D', f'CMAKE_INSTALL_PREFIX={self.pkg_inst_dir}',
         ])
+
         self.extra_meson.extend([
             '--pkgconfig.relocatable',
             '--libdir', 'lib',
