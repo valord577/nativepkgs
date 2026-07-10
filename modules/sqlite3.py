@@ -70,7 +70,7 @@ def _build_step_0():
         '-std=c11', '-fPIC', '-Wall', '-Wextra',
         '-shared', '-v', '-O3', '-DNDEBUG',
         '-ffunction-sections', '-fdata-sections',
-        '-Wl,--icf=safe', '-pthread',
+        '-pthread',
     ]
 
     output = (Path(ctx.args.pkg_inst_dir))
@@ -78,7 +78,8 @@ def _build_step_0():
         output = (output / 'lib' / 'libsqlite3.so'); \
             output.parent.mkdir(parents=True, exist_ok=True)
         args.extend([
-            '-Wl,--gc-sections', '-Wl,-rpath,$ORIGIN', '-Wl,--build-id',
+            '-Wl,--gc-sections', '-Wl,--build-id',
+            '-Wl,--icf=safe', '-Wl,-rpath,$ORIGIN',
             '-o', output.as_posix(), f'-Wl,--soname={output.name}', '-lm',
         ])
     elif ctx.args.target_plat == 'win-mingw':
@@ -87,7 +88,7 @@ def _build_step_0():
         output = (output / 'lib' / 'libsqlite3.dylib'); \
             output.parent.mkdir(parents=True, exist_ok=True)
         args.extend([
-            '-Wl,--gc-sections', '-Wl,--build-id',
+            '-Wl,-dead_strip',
             '-o', output.as_posix(), '-install_name', output.name,
         ])
     args.extend([
