@@ -543,8 +543,6 @@ def _setctx_android(
         "-D", f"CMAKE_ANDROID_API_MIN={state.android_api_level}",
         "-D", f"CMAKE_ANDROID_ARCH_ABI={_cmake_arch_abi}",
         "-D", f"CMAKE_ANDROID_NDK={ANDROID_NDK_ROOT}",
-        "-D", f"CMAKE_C_COMPILER_TARGET={state.llvm_triple}",
-        "-D", f"CMAKE_CXX_COMPILER_TARGET={state.llvm_triple}",
         "-D", f"CMAKE_EXE_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
         "-D", f"CMAKE_MODULE_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
         "-D", f"CMAKE_SHARED_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",

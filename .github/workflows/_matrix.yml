@@ -29,7 +29,7 @@ on:
         required: false
         type: string
       container_vers:
-        default: "20260709T161253Z-f8d59b5"
+        default: "20260710T070440Z-9115325"
         required: false
         type: string
 
