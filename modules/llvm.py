@@ -185,7 +185,7 @@ def _build_step_1():
         _build_targets.append('lldbIntelFeatures')
     if ctx.args.target_plat != 'macosx':
         _build_targets.append('lldb-server')
-    x.run_as_subprocess(env=get_build_env(ctx.args.win32_msvc_env_native),
+    x.run_as_subprocess(env=get_build_env(),
         args=['cmake', '--build', ctx.args.pkg_buld_dir, '-j', f'{x.detect_cpu_count()}', '--target', ';'.join(_build_targets)])
 def _build_step_2():
     _targets_mapping: dict[Path, list[str]]
