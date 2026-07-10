@@ -121,8 +121,8 @@ def _build_step_0():
             if (
                 arg.startswith('CMAKE_C_COMPILER_TARGET=')    or
                 arg.startswith('CMAKE_CXX_COMPILER_TARGET=')  or
-                arg.startswith('CMAKE_C_COMPILER=')    or
-                arg.startswith('CMAKE_CXX_COMPILER=')  or
+#                arg.startswith('CMAKE_C_COMPILER=')    or
+#                arg.startswith('CMAKE_CXX_COMPILER=')  or
                 False
             ): continue
 
@@ -151,34 +151,31 @@ def _build_step_0():
         ])
     else:
         args.extend([
-            '-D',  'CMAKE_SYSTEM_NAME=Windows',
-            '-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE',
-            '-D', f'CMAKE_C_HOST_COMPILER={msvc_native_cl}',
-            '-D', f'CMAKE_CXX_HOST_COMPILER={msvc_native_cl}',
+            '-D', f'CMAKE_C_HOST_COMPILER=clang-cl.exe',
+            '-D', f'CMAKE_CXX_HOST_COMPILER=clang-cl.exe',
         ])
-
     if ctx.args.llvm_triple:
         args.extend(['-D', f'LLVM_HOST_TRIPLE={ctx.args.llvm_triple}'])
 
-    # auto detect compiler
-    _llvm_build_args: list[str] = []
-    _llvm_build_args.append(args[0])
+#    # auto detect compiler
+#    _llvm_build_args: list[str] = []
+#    _llvm_build_args.append(args[0])
+#
+#    i = 1; c = len(args)
+#    while i < c:
+#        arg = args[i]; i += 1
+#        if (i-1) % 2 == 1:
+#            continue
+#        if (
+#            arg.startswith('CMAKE_C_COMPILER_TARGET=')    or
+#            arg.startswith('CMAKE_CXX_COMPILER_TARGET=')  or
+#            arg.startswith('CMAKE_C_COMPILER=')    or
+#            arg.startswith('CMAKE_CXX_COMPILER=')  or
+#            False
+#        ): continue
+#        _llvm_build_args.extend([args[i-2], arg])
 
-    i = 1; c = len(args)
-    while i < c:
-        arg = args[i]; i += 1
-        if (i-1) % 2 == 1:
-            continue
-        if (
-            arg.startswith('CMAKE_C_COMPILER_TARGET=')    or
-            arg.startswith('CMAKE_CXX_COMPILER_TARGET=')  or
-            arg.startswith('CMAKE_C_COMPILER=')    or
-            arg.startswith('CMAKE_CXX_COMPILER=')  or
-            False
-        ): continue
-        _llvm_build_args.extend([args[i-2], arg])
-
-    x.run_as_subprocess(env=get_build_env(), args=_llvm_build_args)
+    x.run_as_subprocess(env=get_build_env(), args=args)
 def _build_step_1():
     _build_targets = ['clangd', 'llvm-symbolizer', 'lldb', 'lldb-dap', 'lldb-instr']
     if ctx.args.target_plat == 'linux':
