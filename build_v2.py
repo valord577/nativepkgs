@@ -16,10 +16,12 @@ if sys.version_info < (3, 8):
     x.loge('Required Python Interpreter ≥ 3.8')  # pyright: ignore[reportUnreachable]
 # ----------------------------
 
+import http.client
 import os
 import runpy
 import shutil
 import time
+import urllib.request
 
 from dataclasses import dataclass
 from typing import Callable, Literal, TypedDict, cast
@@ -132,6 +134,45 @@ class BuildCtx:
         x.gha_append_env({
             'PKG_VERSION': ver,
             'PKG_ZIPNAME': f'{self.args.module}_{self.args.target_plat}_{self.args.target_archinfo}_{ver}_{x.feature("PKG_TYPE")}',
+        })
+
+    def fetch_source_from_http(self,
+        version: "str", url: "str", *,
+        archive_format: "Literal['zip']",
+        archive_prefix: "str | None" = None,
+        extracted_file: "list[str] | None" = None,
+    ):
+        self._subproj_src.mkdir(parents=True, exist_ok=True)
+        if not any(self._subproj_src.iterdir()):
+            archive = (self._subproj_src.parent / f'{self._subproj_src.name}.{archive_format}')
+            x.logv(f'fetch source from "{url}" > "{archive.as_posix()}"')
+            if not archive.exists():
+                with cast(http.client.HTTPResponse,
+                    urllib.request.urlopen(
+                        urllib.request.Request(url)
+                    )
+                ) as resp:
+                    if resp.status != 200:
+                        x.loge(f"respcode: {resp.status}, respbody: ->\n{resp.read().decode(errors='ignore')}")
+                    with archive.open('wb') as dst:
+                        shutil.copyfileobj(resp, dst)
+
+            if False:
+                pass  # pyright: ignore[reportUnreachable]
+            elif archive_format == 'zip':
+                archive_prefix = (archive_prefix or '')
+
+                files: list[str] = []
+                for src in (extracted_file or []):
+                    files.append(f'{archive_prefix}{src}')
+                x.unzip_with_softlink(archive, extract_dir=self._subproj_src.as_posix(), files=files)
+
+
+        _ = self._subproj_ver.write_text(version)
+
+        x.gha_append_env({
+            'PKG_VERSION': version,
+            'PKG_ZIPNAME': f'{self.args.module}_{self.args.target_plat}_{self.args.target_archinfo}_{version}_{x.feature("PKG_TYPE")}',
         })
 
     def subproj_src_dir(self, *subdir: "str | Path") -> Path:
