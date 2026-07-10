@@ -37,7 +37,18 @@ def get_build_env(
         env['CXXFLAGS'] = env['CFLAGS']
     return env
 # ----------------------------
+import shutil
+
 extra_search_dir: "list[str]" = []
+msvc_native_cl: "str | None" = None
+msvc_target_cl: "str | None" = None
+if ctx.args.target_plat == 'win-msvc':
+    msvc_native_cl = shutil.which('cl.exe', path=ctx.args.win32_msvc_env_native['PATH'])
+    msvc_target_cl = shutil.which('cl.exe', path=ctx.args.win32_msvc_env_target['PATH'])
+    if (not msvc_native_cl) or (not msvc_target_cl):
+        x.loge(f'failed to search msvc host cl.exe')
+    msvc_native_cl = (Path(msvc_native_cl)).as_posix()
+    msvc_target_cl = (Path(msvc_target_cl)).as_posix()
 # ----------------------------
 def _3rd_included():
     from build_v2 import DependencySpec
@@ -96,18 +107,33 @@ def _build_step_0():
         args.extend(['-G', 'Ninja'])
 
     if _tblgen_req and (not _tblgen_dir.exists()):
-        _tblgen_build_args: list[str] = [*args]
-        _tblgen_build_args_bdir_idx = 0
-        _tblgen_build_args_zlib_idx = 0
-        for i, entry in enumerate(_tblgen_build_args):
-            if entry == '-B':
-                _tblgen_build_args_bdir_idx = i + 1
-            if entry.startswith('LLVM_ENABLE_ZLIB'):
-                _tblgen_build_args_zlib_idx = i
-        _tblgen_build_args[_tblgen_build_args_bdir_idx] = _tblgen_dir.as_posix()
-        _tblgen_build_args[_tblgen_build_args_zlib_idx] = 'LLVM_ENABLE_ZLIB=OFF'
-        x.run_as_subprocess(env=get_build_env(ctx.args.win32_msvc_env_native),
-            args=_tblgen_build_args)
+        _tblgen_build_args: list[str] = []
+        _tblgen_build_args.append(args[0])
+
+        i = 1; c = len(args)
+        while i < c:
+            arg = args[i]; i += 1
+            if arg == '-B':
+                _tblgen_build_args.extend(['-B', _tblgen_dir.as_posix()])
+                i += 1; continue
+            if (i-1) % 2 == 1:
+                continue
+            if (
+                arg.startswith('CMAKE_C_COMPILER_TARGET=')    or
+                arg.startswith('CMAKE_CXX_COMPILER_TARGET=')  or
+                arg.startswith('CMAKE_SYSTEM_NAME')  or
+                arg.startswith('CMAKE_CROSSCOMPILING')  or
+#                arg.startswith('CMAKE_C_COMPILER=')    or
+#                arg.startswith('CMAKE_CXX_COMPILER=')  or
+                False
+            ): continue
+
+            if False:
+                pass  # pyright: ignore[reportUnreachable]
+            elif arg.startswith('LLVM_ENABLE_ZLIB='):
+                arg = f'LLVM_ENABLE_ZLIB=OFF'
+            _tblgen_build_args.extend([args[i-2], arg])
+        x.run_as_subprocess(env=get_build_env(ctx.args.win32_msvc_env_native), args=_tblgen_build_args)
 
         _tblgen_build_targets = ['llvm-tblgen', 'clang-tblgen', 'lldb-tblgen', 'clang-tidy-confusable-chars-gen']
         x.run_as_subprocess(env=get_build_env(ctx.args.win32_msvc_env_native),
@@ -127,12 +153,29 @@ def _build_step_0():
         ])
     else:
         args.extend([
-            '-D', f'CMAKE_C_HOST_COMPILER="clang-cl.exe"',
-            '-D', f'CMAKE_CXX_HOST_COMPILER="clang-cl.exe"',
+            '-D', f'CMAKE_C_HOST_COMPILER=clang-cl.exe',
+            '-D', f'CMAKE_CXX_HOST_COMPILER=clang-cl.exe',
         ])
-
     if ctx.args.llvm_triple:
         args.extend(['-D', f'LLVM_HOST_TRIPLE={ctx.args.llvm_triple}'])
+
+#    # auto detect compiler
+#    _llvm_build_args: list[str] = []
+#    _llvm_build_args.append(args[0])
+#
+#    i = 1; c = len(args)
+#    while i < c:
+#        arg = args[i]; i += 1
+#        if (i-1) % 2 == 1:
+#            continue
+#        if (
+#            arg.startswith('CMAKE_C_COMPILER_TARGET=')    or
+#            arg.startswith('CMAKE_CXX_COMPILER_TARGET=')  or
+#            arg.startswith('CMAKE_C_COMPILER=')    or
+#            arg.startswith('CMAKE_CXX_COMPILER=')  or
+#            False
+#        ): continue
+#        _llvm_build_args.extend([args[i-2], arg])
 
     x.run_as_subprocess(env=get_build_env(), args=args)
 def _build_step_1():
@@ -141,7 +184,7 @@ def _build_step_1():
         _build_targets.append('lldbIntelFeatures')
     if ctx.args.target_plat != 'macosx':
         _build_targets.append('lldb-server')
-    x.run_as_subprocess(env=get_build_env(ctx.args.win32_msvc_env_native),
+    x.run_as_subprocess(env=get_build_env(),
         args=['cmake', '--build', ctx.args.pkg_buld_dir, '-j', f'{x.detect_cpu_count()}', '--target', ';'.join(_build_targets)])
 def _build_step_2():
     _targets_mapping: dict[Path, list[str]]

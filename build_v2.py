@@ -190,6 +190,10 @@ class _state:
         self.windres: "list[str]" = []
         self.pkgconf: "list[str]" = []
 
+        self.compiler_cache: "str" = 'ccache' if shutil.which('ccache') else ''
+        if shutil.which('sccache'):
+            self.compiler_cache = 'sccache'
+
         CLI_SUPPORTED_TARGETS[self.target_plat]['setctx'](self, is_native_build, build_target)
 
 
@@ -211,6 +215,16 @@ class _state:
         shutil.rmtree(self.pkg_inst_dir, ignore_errors=True); \
             os.makedirs(self.pkg_inst_dir, exist_ok=True)
 
+        if self.compiler_cache:
+            self.extra_cmake.extend([
+                '-D', f'CMAKE_C_COMPILER_LAUNCHER={self.compiler_cache}',
+                '-D', f'CMAKE_CXX_COMPILER_LAUNCHER={self.compiler_cache}',
+            ])
+            if self.target_plat in {'macosx', 'iphoneos', 'iphonesimulator'}:
+                self.extra_cmake.extend([
+                    '-D', f'CMAKE_OBJC_COMPILER_LAUNCHER={self.compiler_cache}',
+                    '-D', f'CMAKE_OBJCXX_COMPILER_LAUNCHER={self.compiler_cache}',
+                ])
         self.extra_cmake.extend([
             '-D', 'CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON',
             '-D', 'CMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON',
@@ -220,6 +234,7 @@ class _state:
             '-B', self.pkg_buld_dir,
             '-D', f'CMAKE_INSTALL_PREFIX={self.pkg_inst_dir}',
         ])
+
         self.extra_meson.extend([
             '--pkgconfig.relocatable',
             '--libdir', 'lib',
@@ -332,6 +347,8 @@ def _setctx_linux(
         state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE='{CROSS_TOOLCHAIN_ROOT}/crossfile.cmake.{state.llvm_triple}'"])
         # meson toolchain file
         state.extra_meson.extend(["--cross-file", f"{CROSS_TOOLCHAIN_ROOT}/crossfile.meson.{state.llvm_triple}"])
+        if (meson_sccache := x.meson_compiler_cache_generate(state.compiler_cache)):
+            state.extra_meson.extend(["--cross-file", meson_sccache.as_posix()])
 def _setctx_apple(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -391,6 +408,8 @@ def _setctx_apple(
     state.extra_cmake.extend(['-D', f'PKG_CONFIG_EXECUTABLE={pkgconf_wrapper.as_posix()}'])
     # meson toolchain file
     state.extra_meson.extend(["--cross-file", meson_crossfile.as_posix()])
+    if (meson_sccache := x.meson_compiler_cache_generate(state.compiler_cache)):
+        state.extra_meson.extend(["--cross-file", meson_sccache.as_posix()])
 def _setctx_win32_mingw(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -424,6 +443,8 @@ def _setctx_win32_mingw(
     state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE='{CROSS_TOOLCHAIN_ROOT}/crossfile.cmake.{state.target_arch}'"])
     # meson toolchain file
     state.extra_meson.extend(["--cross-file", f"{CROSS_TOOLCHAIN_ROOT}/crossfile.meson.{state.target_arch}"])
+    if (meson_sccache := x.meson_compiler_cache_generate(state.compiler_cache)):
+        state.extra_meson.extend(["--cross-file", meson_sccache.as_posix()])
 def _setctx_win32_msvc(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -442,12 +463,12 @@ def _setctx_win32_msvc(
     state.extra_cmake.extend([
         '-G',  'Ninja',
         '-D',  'CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded',
-        "-D", f"CMAKE_C_COMPILER='clang-cl.exe'",
-        "-D", f"CMAKE_CXX_COMPILER='clang-cl.exe'",
+        "-D", f"CMAKE_C_COMPILER=clang-cl.exe",
+        "-D", f"CMAKE_CXX_COMPILER=clang-cl.exe",
         "-D", f"CMAKE_C_COMPILER_TARGET={state.llvm_triple}",
         "-D", f"CMAKE_CXX_COMPILER_TARGET={state.llvm_triple}",
     ])
-    if not _native:
+    if state.target_arch != x.NATIVE_ARCH:
         state.extra_cmake.extend([
             '-D',  'CMAKE_SYSTEM_NAME=Windows',
             '-D',  'CMAKE_CROSSCOMPILING:BOOL=TRUE',
@@ -515,15 +536,13 @@ def _setctx_android(
         'amd64': 'x86_64',
     }[state.target_arch]
     state.extra_cmake.extend([
-        "-D",  "CMAKE_CROSSCOMPILING:BOOL=TRUE",
         "-D",  "CMAKE_SYSTEM_NAME=Android",
+        "-D",  "CMAKE_CROSSCOMPILING:BOOL=TRUE",
         "-D", f"CMAKE_SYSTEM_VERSION={state.android_api_level}",
         "-D", f"CMAKE_ANDROID_API={state.android_api_level}",
         "-D", f"CMAKE_ANDROID_API_MIN={state.android_api_level}",
         "-D", f"CMAKE_ANDROID_ARCH_ABI={_cmake_arch_abi}",
         "-D", f"CMAKE_ANDROID_NDK={ANDROID_NDK_ROOT}",
-        "-D", f"CMAKE_C_COMPILER_TARGET={state.llvm_triple}",
-        "-D", f"CMAKE_CXX_COMPILER_TARGET={state.llvm_triple}",
         "-D", f"CMAKE_EXE_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
         "-D", f"CMAKE_MODULE_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
         "-D", f"CMAKE_SHARED_LINKER_FLAGS_INIT='{' '.join(flexible_page_ldflags)}'",
@@ -536,6 +555,8 @@ def _setctx_android(
     state.extra_cmake.extend(['-D', f"PKG_CONFIG_EXECUTABLE:STRING='{' '.join(state.pkgconf)}'"])
     # meson toolchain file
     state.extra_meson.extend(["--cross-file", f"{ANDROID_NDK_ROOT}/crossfile.meson.{state.target_arch}-{state.target_info}"])
+    if (meson_sccache := x.meson_compiler_cache_generate(state.compiler_cache)):
+        state.extra_meson.extend(["--cross-file", meson_sccache.as_posix()])
 # ----------------------------
 class TargetSpec(TypedDict):
     native: "bool"

@@ -29,7 +29,7 @@ on:
         required: false
         type: string
       container_vers:
-        default: "20260708T173423Z-e04d611"
+        default: "20260710T070440Z-9115325"
         required: false
         type: string
 
@@ -166,13 +166,14 @@ jobs:
     env:
       PKG_TYPE: ${{ matrix.pkg_type }}
     steps:
+      - name: set sccache
+        uses: mozilla-actions/sccache-action@v0.0.10
       - name: set required something(s) ~ macos
         if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
           sudo mdutil -a -i off
 
           brew install nasm
-          brew install sccache
 
           brew list -l
 
@@ -189,7 +190,6 @@ jobs:
           Set-ExecutionPolicy -ExecutionPolicy Bypass -Force -Scope CurrentUser
 
           choco install nasm
-          choco install sccache
 
           choco list
 
@@ -260,6 +260,8 @@ jobs:
     env:
       PKG_TYPE: ${{ matrix.pkg_type }}
     steps:
+      - name: set sccache
+        uses: mozilla-actions/sccache-action@v0.0.10
       - name: clone source
         run: |
           git config --global --add safe.directory "*"
