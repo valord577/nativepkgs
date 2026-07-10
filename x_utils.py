@@ -175,10 +175,12 @@ def runpy_pip(pkgs: "list[str]"):
     args.extend(['pip', *pkgs])
     runpy(args=args)
 # ----------------------------
-def unzip_with_softlink(zipfile: Path, extract_dir: "str | None" = None, is_msys64: bool = False):
+def unzip_with_softlink(zipfile: Path, *,
+    extract_dir: "str | None" = None, files: "list[str] | None" = None, is_msys64: bool = False
+):
     if not extract_dir:
         extract_dir = zipfile.parent.as_posix()
-    cmd = ['unzip', '-o', zipfile.as_posix(), '-d', extract_dir]
+    cmd = ['unzip', '-o', zipfile.as_posix(), '-d', extract_dir] + (files or [])
     if (NATIVE_PLAT == 'windows') and (is_msys64):
         cmd = ['C:/msys64/usr/bin/bash.exe', '-c', ' '.join(cmd)]
     run_as_subprocess(args=cmd)
