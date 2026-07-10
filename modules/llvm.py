@@ -47,6 +47,8 @@ if ctx.args.target_plat == 'win-msvc':
     msvc_target_cl = shutil.which('cl.exe', path=ctx.args.win32_msvc_env_target['PATH'])
     if (not msvc_native_cl) or (not msvc_target_cl):
         x.loge(f'failed to search msvc host cl.exe')
+    msvc_native_cl = (Path(msvc_native_cl)).as_posix()
+    msvc_target_cl = (Path(msvc_target_cl)).as_posix()
 # ----------------------------
 def _3rd_included():
     from build_v2 import DependencySpec
@@ -116,18 +118,18 @@ def _build_step_0():
                 i += 1; continue
             if (i-1) % 2 == 1:
                 continue
-            if arg.startswith('CMAKE_C_COMPILER_TARGET'):
-                continue
-            if arg.startswith('CMAKE_CXX_COMPILER_TARGET'):
-                continue
+            if (
+                arg.startswith('CMAKE_C_COMPILER_TARGET=')    or
+                arg.startswith('CMAKE_CXX_COMPILER_TARGET=')  or
+                arg.startswith('CMAKE_C_COMPILER=')    or
+                arg.startswith('CMAKE_CXX_COMPILER=')  or
+                False
+            ): continue
+
             if False:
                 pass  # pyright: ignore[reportUnreachable]
             elif arg.startswith('LLVM_ENABLE_ZLIB='):
                 arg = f'LLVM_ENABLE_ZLIB=OFF'
-            elif arg.startswith('CMAKE_C_COMPILER='):
-                arg = f'CMAKE_C_COMPILER={msvc_native_cl}'
-            elif arg.startswith('CMAKE_CXX_COMPILER='):
-                arg = f'CMAKE_CXX_COMPILER={msvc_native_cl}'
             _tblgen_build_args.extend([args[i-2], arg])
         x.run_as_subprocess(env=get_build_env(ctx.args.win32_msvc_env_native), args=_tblgen_build_args)
 
@@ -158,7 +160,7 @@ def _build_step_0():
     if ctx.args.llvm_triple:
         args.extend(['-D', f'LLVM_HOST_TRIPLE={ctx.args.llvm_triple}'])
 
-    # use cl.exe
+    # auto detect compiler
     _llvm_build_args: list[str] = []
     _llvm_build_args.append(args[0])
 
@@ -167,16 +169,13 @@ def _build_step_0():
         arg = args[i]; i += 1
         if (i-1) % 2 == 1:
             continue
-        if arg.startswith('CMAKE_C_COMPILER_TARGET'):
-            continue
-        if arg.startswith('CMAKE_CXX_COMPILER_TARGET'):
-            continue
-        if False:
-            pass  # pyright: ignore[reportUnreachable]
-        elif arg.startswith('CMAKE_C_COMPILER='):
-            arg = f'CMAKE_C_COMPILER={msvc_target_cl}'
-        elif arg.startswith('CMAKE_CXX_COMPILER='):
-            arg = f'CMAKE_CXX_COMPILER={msvc_target_cl}'
+        if (
+            arg.startswith('CMAKE_C_COMPILER_TARGET=')    or
+            arg.startswith('CMAKE_CXX_COMPILER_TARGET=')  or
+            arg.startswith('CMAKE_C_COMPILER=')    or
+            arg.startswith('CMAKE_CXX_COMPILER=')  or
+            False
+        ): continue
         _llvm_build_args.extend([args[i-2], arg])
 
     x.run_as_subprocess(env=get_build_env(), args=_llvm_build_args)
