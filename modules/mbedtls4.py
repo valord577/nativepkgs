@@ -32,6 +32,8 @@ def get_build_env() -> "dict[str, str]":
         env['CXXFLAGS'] = env['CFLAGS']
     return env
 # ----------------------------
+x.runpy_pip(['jsonschema', 'jinja2'])
+# ----------------------------
 def _fetch_source():
     git_submodule_tf_psa_crypto = ctx.subproj_src_dir('tf-psa-crypto')
     ctx.fetch_source_from_git('refs/heads/mbedtls-4.1', 'https://github.com/Mbed-TLS/mbedtls.git',
@@ -65,7 +67,6 @@ def _fetch_source():
     ctx.__class__.git_src_factory_reset(git_submodule_tf_psa_crypto)
 
 
-    x.runpy_pip(['jsonschema', 'jinja2'])
     config_py = ctx.subproj_src_dir('scripts', 'config.py').as_posix()
 
     x.runpy([config_py, 'set', 'MBEDTLS_HAVE_SSE2'])

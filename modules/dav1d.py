@@ -32,10 +32,10 @@ def get_build_env() -> "dict[str, str]":
         env['CXXFLAGS'] = env['CFLAGS']
     return env
 # ----------------------------
+x.runpy_pip(['meson', 'ninja'])
+# ----------------------------
 def _fetch_source():
     ctx.fetch_source_from_git('refs/tags/1.5.3', 'https://github.com/videolan/dav1d.git')
-
-    x.runpy_pip(['meson', 'ninja'])
 def _build_step_0():
     x.run_as_subprocess(env=get_build_env(), args=[
          'meson', 'setup',

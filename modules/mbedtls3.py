@@ -32,6 +32,8 @@ def get_build_env() -> "dict[str, str]":
         env['CXXFLAGS'] = env['CFLAGS']
     return env
 # ----------------------------
+x.runpy_pip(['jsonschema', 'jinja2'])
+# ----------------------------
 def _fetch_source():
     ctx.fetch_source_from_git('refs/heads/mbedtls-3.6', 'https://github.com/Mbed-TLS/mbedtls.git',
         submodules=[
@@ -45,7 +47,6 @@ def _fetch_source():
     )
 
 
-    x.runpy_pip(['jsonschema', 'jinja2'])
     config_py = ctx.subproj_src_dir('scripts', 'config.py').as_posix()
 
     x.runpy([config_py, 'set', 'MBEDTLS_HAVE_SSE2'])
