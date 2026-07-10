@@ -356,3 +356,17 @@ cmake = 'cmake'
 
     return (pkgconf_wrapper, meson_crossfile)
 # ----------------------------
+def meson_compiler_cache_generate(compiler_cache: str) -> "Path | None":
+    if not compiler_cache:
+        return
+
+    meson_crossfile = (Path(PROJ_ROOT) / 'tmp' / f'.meson_compiler_cache.ini'); \
+        meson_crossfile.parent.mkdir(parents=True, exist_ok=True)
+    meson_crossfile_content = f'''\
+[constants]
+ccache = ['{compiler_cache}']
+'''
+    if not meson_crossfile.exists():
+        _ = meson_crossfile.write_text(meson_crossfile_content)
+    return meson_crossfile
+# ----------------------------
