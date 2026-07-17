@@ -70,7 +70,7 @@ def _build_step_0():
         '-std=c11', '-fPIC', '-Wall', '-Wextra',
         '-shared', '-v', '-O3', '-DNDEBUG',
         '-ffunction-sections', '-fdata-sections',
-        '-pthread',
+        '-pthread', '-Wl,--strip-all',
     ]
 
     output = (Path(ctx.args.pkg_inst_dir))
