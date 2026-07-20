@@ -16,7 +16,18 @@ sys.path.append(
 
 def _format_size(_path: Path) -> str:
     _size = _path.stat().st_size
-    return f'{_size} bytes (≈ {(_size / 1024.0):.3f} KiB)'
+    _human_size = _size
+    _unit_index = 0 if _human_size < 1024 else 1
+    while _human_size >= 1024 * 1024:
+        _unit_index += 1
+        _human_size //= 1024
+
+    if _unit_index == 0:
+        _human = f'{_human_size:4d}'
+    else:
+        _precision = 0 if (_human_size // 1024) >= 10 else 1
+        _human = f'{(_human_size / 1024.0):3.{_precision}f}{"BKMGT"[_unit_index]}'
+    return f'{_size:13d} (≈ {_human})'
 
 basepath = Path(sys.argv[1])
 depth = 0
