@@ -365,7 +365,7 @@ def _setctx_linux(
         }[state.target_arch]
 
         _sysroot_triple = f'{state.llvm_triple}-{state.target_info}'
-        _sysroot = (Path(CROSS_TOOLCHAIN_ROOT) / state.llvm_triple).absolute().resolve().as_posix()
+        _sysroot = (Path(CROSS_TOOLCHAIN_ROOT) / _sysroot_triple).absolute().resolve().as_posix()
 
         _dynamic_linker = {
             'arm64-gnu':          f'/lib/ld-linux-aarch64.so.1',

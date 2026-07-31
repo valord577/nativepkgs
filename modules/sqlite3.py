@@ -70,7 +70,7 @@ def _build_step_0():
         '-std=c11', '-fPIC', '-Wall', '-Wextra',
         '-shared', '-v', '-O3', '-DNDEBUG',
         '-ffunction-sections', '-fdata-sections',
-        '-pthread', '-Wl,--strip-all',
+        '-pthread',
     ]
 
     output = (Path(ctx.args.pkg_inst_dir))
@@ -78,6 +78,7 @@ def _build_step_0():
         output = (output / 'lib' / 'libsqlite3.so'); \
             output.parent.mkdir(parents=True, exist_ok=True)
         args.extend([
+            '-Wl,--strip-all',
             '-Wl,--gc-sections', '-Wl,--build-id',
             '-Wl,--icf=safe', '-Wl,-rpath,$ORIGIN',
             '-o', output.as_posix(), f'-Wl,--soname={output.name}', '-lm',
@@ -88,7 +89,7 @@ def _build_step_0():
         output = (output / 'lib' / 'libsqlite3.dylib'); \
             output.parent.mkdir(parents=True, exist_ok=True)
         args.extend([
-            '-Wl,-dead_strip',
+            '-Wl,-s,-dead_strip',
             '-o', output.as_posix(), '-install_name', output.name,
         ])
     args.extend([
