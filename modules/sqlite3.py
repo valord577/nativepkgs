@@ -30,10 +30,10 @@ def get_build_env() -> "dict[str, str]":
         env['CXXFLAGS'] = env['CFLAGS']
     return env
 # ----------------------------
-archive_prefix = 'sqlite-amalgamation-3530300'
+archive_prefix = 'sqlite-amalgamation-3530400'
 # ----------------------------
 def _fetch_source():
-    ctx.fetch_source_from_http(version='v3.53.3',
+    ctx.fetch_source_from_http(version='v3.53.4',
         url=f'https://sqlite.org/2026/{archive_prefix}.zip',
         archive_format='zip',
         archive_prefix=f'{archive_prefix}/',
