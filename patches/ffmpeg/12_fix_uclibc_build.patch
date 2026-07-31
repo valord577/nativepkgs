@@ -1,0 +1,20 @@
+diff --git a/libswscale/filters.c b/libswscale/filters.c
+index e94b2ea..148543c 100644
+--- a/libswscale/filters.c
++++ b/libswscale/filters.c
+@@ -388,6 +388,7 @@ av_unused static double sinc(double x, const double *params)
+     return sin(x) / x;
+ }
+ 
++#if 0
+ av_unused static double jinc(double x, const double *params)
+ {
+     if (x < 1e-8)
+@@ -395,6 +396,7 @@ av_unused static double jinc(double x, const double *params)
+     x *= M_PI;
+     return 2.0 * j1(x) / x;
+ }
++#endif
+ 
+ av_unused static double sphinx(double x, const double *params)
+ {

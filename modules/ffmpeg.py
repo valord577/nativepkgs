@@ -141,7 +141,7 @@ def _build_step_1():
 
     bear: list[str] = []
     if x.feature('ENABLE_CLANGD_FOR_LEGACY_TOOLCHAIN') != '0':
-        if bear_exec := shutil.which('bear'): bear.append(bear_exec)
+        if bear_exec := shutil.which('bear'): bear.extend([bear_exec, '--'])
 
     args = ['make', '-j', f'{x.detect_cpu_count()}']
     x.run_as_subprocess(env=get_build_env(), cwd=pkg_buld_dir, args=(bear + args), stdout=sp.DEVNULL)
@@ -261,6 +261,7 @@ def _build_step_2():
             merged.parent.mkdir(parents=True, exist_ok=True)
         cmdlink.extend(['-o', merged.as_posix(), '-install_name', merged.name])
         cmdlink.extend(['-Wl,-exported_symbols_list', ffmpeg_symbol_v.as_posix()])
+        cmdlink.extend(['-Wl,-s,-dead_strip'])
         cmdlink.extend(ffmpeg_mergeso_libdir)
         for _lib in ffmpeg_mergeso_libffm:
             cmdlink.extend(['-Wl,-force_load', f'lib/lib{_lib[2:]}.a'])
