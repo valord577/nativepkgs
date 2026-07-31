@@ -633,6 +633,7 @@ CLI_SUPPORTED_TARGETS: "dict[str, TargetSpec]" = {
             ('linux', 'crossbuild', 'amd64', 'musl'),
             ('linux', 'crossbuild', 'arm64', 'musl'),
             ('linux', 'crossbuild', 'armv7', 'musleabihf'),
+            ('linux', 'crossbuild', 'armv7', 'uclibceabihf'),
         ],
     },
     'macosx': {
