@@ -30,6 +30,11 @@
     "info": "musleabihf"
   },
   {
+    "platform": "linux",
+    "arch": "armv7",
+    "info": "uclibceabihf"
+  },
+  {
     "platform": "win-mingw",
     "arch": "amd64"
   },

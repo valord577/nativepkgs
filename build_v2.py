@@ -344,14 +344,14 @@ def _setctx_linux(
             x.loge(f'unsupported target arch: {state.target_arch}')
         state.target_info = x.detect_libc_runtime()
 
-        state.cc.extend(['clang'])
+        state.cc.extend(['clang', '-march=native'])
         state.ar.extend(['llvm-ar'])
         state.nm.extend(['llvm-nm'])
         state.ldflags.extend(['-fuse-ld=lld'])
         state.objcopy.extend(['llvm-objcopy'])
 
-        x.ENVIRON['CC']  = 'clang'
-        x.ENVIRON['CXX'] = 'clang++'
+        x.ENVIRON['CC']  = 'clang -march=native'
+        x.ENVIRON['CXX'] = 'clang++ -march=native'
         x.ENVIRON['LDFLAGS'] = '-fuse-ld=lld'
     else:
         CROSS_TOOLCHAIN_ROOT = x.get_cross_toolchain_dir(state.target_plat)
@@ -359,16 +359,30 @@ def _setctx_linux(
         state.target_arch = _tuple[2]
         state.target_info = _tuple[3]
         state.llvm_triple = {
-            'arm64': f'aarch64-unknown-linux-{state.target_info}',
-            'amd64': f'x86_64-pc-linux-{state.target_info}',
-            'armv7': f'arm-unknown-linux-{state.target_info}',
+            'arm64': f'aarch64-unknown-linux',
+            'amd64': f'x86_64-pc-linux',
+            'armv7': f'arm-unknown-linux',
         }[state.target_arch]
-        _sysroot = (Path(CROSS_TOOLCHAIN_ROOT) / state.llvm_triple).absolute().resolve().as_posix()
+
+        _sysroot_triple = f'{state.llvm_triple}-{state.target_info}'
+        _sysroot = (Path(CROSS_TOOLCHAIN_ROOT) / _sysroot_triple).absolute().resolve().as_posix()
+
+        _dynamic_linker = {
+            'arm64-gnu':          f'/lib/ld-linux-aarch64.so.1',
+            'amd64-gnu':          f'/lib64/ld-linux-x86-64.so.2',
+            'armv7-gnueabihf':    f'/lib/ld-linux-armhf.so.3',
+            'arm64-musl':         f'/lib/ld-musl-aarch64.so.1',
+            'amd64-musl':         f'/lib/ld-musl-x86_64.so.1',
+            'armv7-musleabihf':   f'/lib/ld-musl-armhf.so.1',
+            'armv7-uclibceabihf': f'/lib/ld-uClibc.so.1',
+        }[f'{state.target_arch}-{state.target_info}']
+        state.ldflags.append(f'-Wl,--dynamic-linker={_dynamic_linker}')
 
         state.cc.extend([
             f'clang',
             f'--target={state.llvm_triple}',
             f'--gcc-toolchain={_sysroot}/usr',
+            f'--gcc-triple={_sysroot_triple}',
             f'--sysroot={_sysroot}'
         ])
         if state.target_arch == 'amd64':
@@ -383,13 +397,13 @@ def _setctx_linux(
         state.objcopy.extend(['llvm-objcopy'])
 
         # pkgconf
-        state.pkgconf.extend([f'{CROSS_TOOLCHAIN_ROOT}/pkgconf-wrapper.{state.llvm_triple}'])
+        state.pkgconf.extend([f'{CROSS_TOOLCHAIN_ROOT}/pkgconf-wrapper.{state.target_arch}-{state.target_info}'])
         # cmake toolchain file
-        state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE='{CROSS_TOOLCHAIN_ROOT}/crossfile.cmake.{state.llvm_triple}'"])
+        state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE='{CROSS_TOOLCHAIN_ROOT}/crossfile.cmake.{state.target_arch}-{state.target_info}'"])
         # meson toolchain file
-        state.extra_meson.extend(["--cross-file", f"{CROSS_TOOLCHAIN_ROOT}/crossfile.meson.{state.llvm_triple}"])
-        if (meson_sccache := x.meson_compiler_cache_generate(state.compiler_cache)):
-            state.extra_meson.extend(["--cross-file", meson_sccache.as_posix()])
+        state.extra_meson.extend(["--cross-file", f"{CROSS_TOOLCHAIN_ROOT}/crossfile.meson.{state.target_arch}-{state.target_info}"])
+        if (meson_compiler_cache := x.meson_compiler_cache_generate(state.compiler_cache)):
+            state.extra_meson.extend(["--cross-file", meson_compiler_cache.as_posix()])
 def _setctx_apple(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -449,8 +463,8 @@ def _setctx_apple(
     state.extra_cmake.extend(['-D', f'PKG_CONFIG_EXECUTABLE={pkgconf_wrapper.as_posix()}'])
     # meson toolchain file
     state.extra_meson.extend(["--cross-file", meson_crossfile.as_posix()])
-    if (meson_sccache := x.meson_compiler_cache_generate(state.compiler_cache)):
-        state.extra_meson.extend(["--cross-file", meson_sccache.as_posix()])
+    if (meson_compiler_cache := x.meson_compiler_cache_generate(state.compiler_cache)):
+        state.extra_meson.extend(["--cross-file", meson_compiler_cache.as_posix()])
 def _setctx_win32_mingw(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -484,8 +498,8 @@ def _setctx_win32_mingw(
     state.extra_cmake.extend(["-D", f"CMAKE_TOOLCHAIN_FILE='{CROSS_TOOLCHAIN_ROOT}/crossfile.cmake.{state.target_arch}'"])
     # meson toolchain file
     state.extra_meson.extend(["--cross-file", f"{CROSS_TOOLCHAIN_ROOT}/crossfile.meson.{state.target_arch}"])
-    if (meson_sccache := x.meson_compiler_cache_generate(state.compiler_cache)):
-        state.extra_meson.extend(["--cross-file", meson_sccache.as_posix()])
+    if (meson_compiler_cache := x.meson_compiler_cache_generate(state.compiler_cache)):
+        state.extra_meson.extend(["--cross-file", meson_compiler_cache.as_posix()])
 def _setctx_win32_msvc(
     state: _state, _native: "bool", _tuple: "tuple[str, ...]",
 ):
@@ -596,8 +610,10 @@ def _setctx_android(
     state.extra_cmake.extend(['-D', f"PKG_CONFIG_EXECUTABLE:STRING='{' '.join(state.pkgconf)}'"])
     # meson toolchain file
     state.extra_meson.extend(["--cross-file", f"{ANDROID_NDK_ROOT}/crossfile.meson.{state.target_arch}-{state.target_info}"])
-    if (meson_sccache := x.meson_compiler_cache_generate(state.compiler_cache)):
-        state.extra_meson.extend(["--cross-file", meson_sccache.as_posix()])
+    meson_android_api_lv = x.meson_android_api_lv_generate(state.android_api_level); \
+        state.extra_meson.extend(["--cross-file", meson_android_api_lv.as_posix()])
+    if (meson_compiler_cache := x.meson_compiler_cache_generate(state.compiler_cache)):
+        state.extra_meson.extend(["--cross-file", meson_compiler_cache.as_posix()])
 # ----------------------------
 class TargetSpec(TypedDict):
     native: "bool"
@@ -617,6 +633,7 @@ CLI_SUPPORTED_TARGETS: "dict[str, TargetSpec]" = {
             ('linux', 'crossbuild', 'amd64', 'musl'),
             ('linux', 'crossbuild', 'arm64', 'musl'),
             ('linux', 'crossbuild', 'armv7', 'musleabihf'),
+            ('linux', 'crossbuild', 'armv7', 'uclibceabihf'),
         ],
     },
     'macosx': {
