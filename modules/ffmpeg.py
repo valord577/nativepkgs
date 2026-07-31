@@ -49,7 +49,7 @@ def _3rd_included():
         {
             'name': 'mbedtls3',
             'type': 'static',
-            'vers': '52beeef',
+            'vers': 'f4a1ace',
             'args': '--enable-mbedtls',
         },
     ]
