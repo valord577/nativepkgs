@@ -131,7 +131,7 @@ def get_cross_toolchain_dir(target_plat: str) -> str:
     if base_env := ENVIRON.get('CROSS_TOOLCHAIN_BASE'):
         base = Path(base_env)
     dir = {
-        'linux':     base / 'linux310-gcc7',
+        'linux':     base / 'linux-libstdcxx',
         'win-mingw': base / 'llvm-mingw',
         'android':   base / 'ndk-r27d-slim',
     }[target_plat]
