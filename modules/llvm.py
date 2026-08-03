@@ -123,8 +123,8 @@ def _build_step_0():
                 arg.startswith('CMAKE_CXX_COMPILER_TARGET=')  or
                 arg.startswith('CMAKE_SYSTEM_NAME')  or
                 arg.startswith('CMAKE_CROSSCOMPILING')  or
-#                arg.startswith('CMAKE_C_COMPILER=')    or
-#                arg.startswith('CMAKE_CXX_COMPILER=')  or
+                #arg.startswith('CMAKE_C_COMPILER=')    or
+                #arg.startswith('CMAKE_CXX_COMPILER=')  or
                 False
             ): continue
 

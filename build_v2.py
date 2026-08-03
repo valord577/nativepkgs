@@ -393,7 +393,7 @@ def _setctx_linux(
             state.cc.extend(['-march=armv7-a', '-mfpu=neon-vfpv4', '-mfloat-abi=hard'])
         state.ar.extend(['llvm-ar'])
         state.nm.extend(['llvm-nm'])
-        state.ldflags.extend(['-fuse-ld=lld'])
+        state.ldflags.extend(['-fuse-ld=lld', '-Wl,--hash-style=both'])
         state.objcopy.extend(['llvm-objcopy'])
 
         # pkgconf
