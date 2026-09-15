@@ -78,6 +78,7 @@ def _build_step_0():
         args.extend([
             '/std:c11', '-DNDEBUG', '/W4', '/Gw', '/Gy', '/MT', '/LD',
             '/clang:-v', '/clang:-O3',
+            '-DSQLITE_API=__declspec(dllexport)',
         ])
 
     output = (Path(ctx.args.pkg_inst_dir))
