@@ -258,7 +258,7 @@ def win32_msvc_detect() -> "tuple[Path, Path]":
     logv(f'load msvc devshell: "{msvc_devshell.as_posix()}"')
     return (msvc_dir, msvc_devshell)
 
-def win32_msvc_dump_env(msvc_dir: Path, msvc_devshell: Path, target_arch: str) -> "dict[str, str]":
+def win32_msvc_dump_env(msvc_dir: Path, msvc_devshell: Path, target_arch: str, winsdk_version: "str | None" = None) -> "dict[str, str]":
     if NATIVE_PLAT != 'windows':
         loge(f'only works on windows, host os: {NATIVE_PLAT}')
 
@@ -267,7 +267,8 @@ def win32_msvc_dump_env(msvc_dir: Path, msvc_devshell: Path, target_arch: str) -
 
     # Only supports access to the VS DevShell from PowerShell
     #  - https://learn.microsoft.com/visualstudio/ide/reference/command-prompt-powershell#developer-powershell
-    vs_devshell_arg = f'-host_arch={NATIVE_ARCH} -arch={target_arch}'
+    vs_devshell_arg = f'-host_arch={NATIVE_ARCH} -arch={target_arch} -no_logo'
+    if winsdk_version: vs_devshell_arg += f' -winsdk={winsdk_version}'
 
     pwsh_script_blk  = f'Import-Module "{msvc_devshell}"; '
     pwsh_script_blk += f'Enter-VsDevShell -VsInstallPath "{msvc_dir}" -SkipAutomaticLocation -DevCmdArguments "{vs_devshell_arg}"; '
@@ -275,7 +276,6 @@ def win32_msvc_dump_env(msvc_dir: Path, msvc_devshell: Path, target_arch: str) -
     run_as_subprocess(['pwsh',
         '-WorkingDirectory', PROJ_ROOT,
         '-NonInteractive',
-        '-NoProfileLoadTime',
         '-ExecutionPolicy', 'Bypass',
         '-Command', pwsh_script_blk
     ])

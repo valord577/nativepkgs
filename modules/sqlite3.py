@@ -66,12 +66,19 @@ def _build_step_0():
         '-DSQLITE_OMIT_SHARED_CACHE',
         '-DSQLITE_OMIT_UTF16',
         '-DSQLITE_STRICT_SUBTYPE=1',
-    ] + [
-        '-std=c11', '-fPIC', '-Wall', '-Wextra',
-        '-shared', '-v', '-O3', '-DNDEBUG',
-        '-ffunction-sections', '-fdata-sections',
-        '-pthread',
     ]
+    if ctx.args.target_plat != 'win-msvc':
+        args.extend([
+            '-std=c11', '-fPIC', '-Wall', '-Wextra',
+            '-shared', '-v', '-O3', '-DNDEBUG',
+            '-ffunction-sections', '-fdata-sections',
+            '-pthread',
+        ])
+    else:
+        args.extend([
+            '/std:c11', '-DNDEBUG', '/W4', '/Gw', '/Gy', '/MT', '/LD',
+            '/clang:-v', '/clang:-O3',
+        ])
 
     output = (Path(ctx.args.pkg_inst_dir))
     if ctx.args.target_plat in {'linux', 'android'}:
@@ -82,6 +89,16 @@ def _build_step_0():
             '-Wl,--gc-sections', '-Wl,--build-id',
             '-Wl,--icf=safe', '-Wl,-rpath,$ORIGIN',
             '-o', output.as_posix(), f'-Wl,--soname={output.name}', '-lm',
+        ])
+    elif ctx.args.target_plat == 'win-msvc':
+        output = (output / 'lib' / 'libsqlite3.dll'); \
+            output.parent.mkdir(parents=True, exist_ok=True)
+        args.extend([
+            '-Xlinker', '/OPT:REF',
+            '-Xlinker', '/OPT:ICF',
+            '-Xlinker', '/WX',
+            '-Xlinker', '/Brepro',
+            '-o', output.as_posix(),
         ])
     elif ctx.args.target_plat == 'win-mingw':
         pass
