@@ -217,6 +217,8 @@ class _state:
         #  - API Level 35: android.media.MediaCodec#PARAMETER_KEY_QP_OFFSET_MAP
         self.android_api_level: "int" = 28
 
+        self.win32_sdk_version: "str" = ''
+        self.win32_compat_vers: "str" = '19.00' # -D_MSC_VER=1900
         self.win32_msvc_env_native: "dict[str, str]" = {}
         self.win32_msvc_env_target: "dict[str, str]" = {}
 
@@ -507,12 +509,31 @@ def _setctx_win32_msvc(
 
     msvc_dir, msvc_devshell = x.win32_msvc_detect()
     state.win32_msvc_env_native = x.win32_msvc_dump_env(msvc_dir, msvc_devshell, x.NATIVE_ARCH)
-    state.win32_msvc_env_target = x.win32_msvc_dump_env(msvc_dir, msvc_devshell, state.target_arch)
+    state.win32_msvc_env_target = x.win32_msvc_dump_env(msvc_dir, msvc_devshell, state.target_arch, state.win32_sdk_version)
 
     state.llvm_triple = {
         'arm64': f'aarch64-pc-windows-msvc',
         'amd64': f'x86_64-pc-windows-msvc',
     }[state.target_arch]
+
+    state.cc.extend([
+        f'clang', f'--driver-mode=cl',
+        f'--target={state.llvm_triple}',
+        f'-fms-compatibility-version={state.win32_compat_vers}',
+    ])
+    if state.win32_sdk_version:
+        state.cc.extend([
+            f'/winsdkversion', state.win32_sdk_version,
+        ])
+    if state.target_arch == 'amd64':
+        state.cc.extend(['-march=x86-64-v2'])
+    if state.target_arch == 'arm64':
+        state.cc.extend(['-march=armv8-a'])
+    state.ar.extend(['llvm-ar'])
+    state.ar.extend(['llvm-nm'])
+    state.ldflags.extend(['/clang:-fuse-ld=lld'])
+    state.objcopy.extend(['llvm-objcopy'])
+    state.objcopy.extend(['llvm-windres'])
 
     # cmake toolchain file
     state.extra_cmake.extend([
